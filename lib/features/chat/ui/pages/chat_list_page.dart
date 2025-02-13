@@ -1,25 +1,36 @@
 import 'package:flutter/material.dart';
 
 class ChatListPage extends StatelessWidget {
-const ChatListPage({ Key? key }) : super(key: key);
+  const ChatListPage({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF58f0d7),
-        leading: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: CircleAvatar(
-              radius: 20, // Adjust the radius as needed
-              backgroundImage: NetworkImage('https://example.com/path/to/profile_picture.jpg'), // Replace with your image URL
-            ),
-          ),
+        leading: buildCircleImage('assets/img/nursejoy.jpg', 1.5),
         title: const Text('Username'),
       ),
       body: Center(
-        child: Text('Chat List')
-      )
+        child: Text('Chat List'),
+      ),
     );
   }
 }
+
+  // Function to create image widget with the cropped image
+  Widget buildCircleImage(String imagePath, double scale) {
+    return Padding(
+      padding: const EdgeInsets.all(6.0),
+      child: ClipOval(
+        child: Transform.scale(
+          scale: scale, // Adjust the scale to zoom in
+          alignment: Alignment.topCenter,
+          child: Image.asset(
+            imagePath,
+            fit: BoxFit.cover, // Ensure the image covers the entire area
+          ),
+        ),
+      ),
+    );
+  }
