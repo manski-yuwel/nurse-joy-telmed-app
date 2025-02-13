@@ -7,7 +7,15 @@ const ChatListPage({ Key? key }) : super(key: key);
   Widget build(BuildContext context){
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Chat List'),
+        backgroundColor: const Color(0xFF58f0d7),
+        leading: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: CircleAvatar(
+              radius: 20, // Adjust the radius as needed
+              backgroundImage: NetworkImage('https://example.com/path/to/profile_picture.jpg'), // Replace with your image URL
+            ),
+          ),
+        title: const Text('Username'),
       ),
       body: Center(
         child: Text('Chat List')

@@ -8,7 +8,8 @@ const ProfilePage({ Key? key }) : super(key: key);
   Widget build(BuildContext context){
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profile'),
+        backgroundColor: const Color(0xFF58f0d7),
+        title: const Text('Profile Page'),
       ),
       body: Center(
         child: Text('Profile')

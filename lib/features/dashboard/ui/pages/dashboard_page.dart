@@ -7,6 +7,7 @@ const DashboardPage({ Key? key }) : super(key: key);
   Widget build(BuildContext context){
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: const Color(0xFF58f0d7),
         title: const Text('Dashboard'),
       ),
       body: Center(
