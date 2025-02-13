@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'features/chat/ui/pages/chat_list_page.dart';
+import 'features/dashboard/ui/pages/dashboard_page.dart';
+import 'features/profile/ui/pages/profile_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -21,7 +24,13 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 1;
+
+  final List<Widget> _pages = [
+    ChatListPage(),
+    DashboardPage(),
+    ProfilePage(),
+  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -36,8 +45,9 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: const Color(0xFF58f0d7),
         title: Text('Nurse Joy'),
       ),
-      body: Center(
-        child: Text('Selected Index: $_selectedIndex'),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _pages,
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
