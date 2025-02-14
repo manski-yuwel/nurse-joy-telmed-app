@@ -47,7 +47,6 @@ class MyApp extends StatelessWidget {
   }
 }
 
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -58,6 +57,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 1;
   User? user;
+  String _appBarTitle = 'Nurse Joy';
 
   @override
   void initState() {
@@ -74,23 +74,39 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      if (index == 0) {
+        _updateTitle('Nurse Joy');
+      } else if (index == 1) {
+        _updateTitle('Dashboard');
+      } else if (index == 2) {
+        _updateTitle('Profile');
+      }
+    });
+  }
+
+  void _updateTitle(String title) {
+    setState(() {
+      _appBarTitle = title;
     });
   }
 
   @override
   Widget build(BuildContext context) {
     double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF58f0d7),
         actions: [
+          if (_selectedIndex == 0)
+                buildCircleImage('assets/img/nursejoy.jpg', 5, 1.5),
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
               Navigator.pushReplacementNamed(context, '/sign-in');
             },
-          )
+          ),
         ],
         centerTitle: true,
         leading: Builder(
@@ -101,16 +117,21 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ),
-        title: const Text(
-          'Nurse Joy',
-          style: TextStyle(
-              color: Colors.white,
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                    color: Colors.black45, offset: Offset(1, 1), blurRadius: 1)
-              ]),
+            
+        title:Text(
+          _appBarTitle,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 30,
+            fontWeight: FontWeight.bold,
+            shadows: [
+              Shadow(
+                color: Colors.black45,
+                offset: Offset(1, 1),
+                blurRadius: 1,
+              ),
+            ],
+          ),
         ),
       ),
       drawer: Drawer(
@@ -164,7 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.monitor_heart),
-            label: 'Dashboard'
+            label: 'Dashboard',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
@@ -179,3 +200,20 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
+
+  // Function to create image widget with the cropped image
+  Widget buildCircleImage(String imagePath, double size, double scale) {
+    return Padding(
+        padding: EdgeInsets.all(size),
+        child: ClipOval(
+          child: Transform.scale(
+            scale: scale, // Adjust the scale to zoom in
+            alignment: Alignment.topCenter,
+            child: Image.asset(
+              imagePath,
+              fit: BoxFit.cover, // Ensure the image covers the entire area
+            ),
+          ),
+        ),
+      );
+  }
