@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1063839307725",
+    "project_id": "nurse-joy-d34d3",
+    "storage_bucket": "nurse-joy-d34d3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1063839307725:android:b6f616606454333f771684",
+        "android_client_info": {
+          "package_name": "com.example.nursejoyapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQX9J3nfKQIjcBtQweH9CDs4NoTXC8i8g"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
