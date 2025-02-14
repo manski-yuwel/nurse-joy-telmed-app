@@ -49,6 +49,8 @@ class MyApp extends StatelessWidget {
 
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -77,10 +79,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF58f0d7),
-        title: Text('Nurse Joy'),
         actions: [
           IconButton(
             icon: Icon(Icons.logout),
@@ -89,7 +91,66 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pushReplacementNamed(context, '/sign-in');
             },
           )
-        ]
+        ],
+        centerTitle: true,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
+        title: const Text(
+          'Nurse Joy',
+          style: TextStyle(
+              color: Colors.white,
+              fontSize: 30,
+              fontWeight: FontWeight.bold,
+              shadows: [
+                Shadow(
+                    color: Colors.black45, offset: Offset(1, 1), blurRadius: 1)
+              ]),
+        ),
+      ),
+      drawer: Drawer(
+        child: Column(
+          children: [
+            Container(
+              height: appBarHeight,
+              width: double.infinity,
+              color: const Color(0xFF58f0d7),
+            ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.home),
+                    title: const Text('Home'),
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.settings),
+                    title: const Text('Settings'),
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.logout),
+                    title: const Text('Logout'),
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
       body: IndexedStack(
         index: _selectedIndex,

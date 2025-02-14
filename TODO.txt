@@ -1,0 +1,10 @@
+TODO:
+-move chat's appbar contents to main
+-changing appbar title
+
+solution: 
+switch case (selectedindex) -->change pagetitle according to pageindex-to-pageTitle mapping
+                            -->under chatpage case, insert buildCircleImage()
+
+-add emergencybutton to main
+-make curved block templates/funcs params: color, size (or install packages)

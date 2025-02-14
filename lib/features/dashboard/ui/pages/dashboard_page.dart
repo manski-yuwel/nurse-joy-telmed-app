@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-class DashboardPage extends StatefulWidget {
-  const DashboardPage({Key? key}) : super(key: key);
+class DashboardPage extends StatelessWidget {
+const DashboardPage({ super.key });
 
   @override
   _DashboardPageState createState() => _DashboardPageState();
@@ -21,9 +21,7 @@ class _DashboardPageState extends State<DashboardPage> {
 
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('Dashboard'),
-        ),
-        body: Center(child: Text('Dashboard: ${user?.email}')));
+      body: Center(child: Text('Dashboard: ${user?.email}')),
+    );
   }
 }
