@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:nursejoyapp/features/signing/ui/pages/loading_page.dart';
+import 'package:nursejoyapp/features/signing/ui/pages/securitycheck_page.dart';
+import 'package:nursejoyapp/features/signing/ui/pages/signin_page.dart';
+import 'package:nursejoyapp/features/signing/ui/pages/register_page.dart';
 import 'features/chat/ui/pages/chat_list_page.dart';
 import 'features/dashboard/ui/pages/dashboard_page.dart';
 import 'features/profile/ui/pages/profile_page.dart';
@@ -13,7 +17,24 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: HomeScreen(),
+      initialRoute: '/loading',
+      routes: {
+        '/loading': (context) => LoadingPage(),
+        '/signin': (context) => SigninPage(),
+        '/register': (context) => RegisterPage(),
+        '/securitycheck': (context) => SecuritycheckPage(),
+      },
+      theme: ThemeData(
+        textTheme: const TextTheme(
+          titleLarge: TextStyle(
+            color: Colors.white,
+            fontSize: 30,
+            fontWeight: FontWeight.bold,
+            shadows: [Shadow(color: Colors.black45, offset: Offset(1, 1), blurRadius: 1)]
+          ),
+        ),
+      ),
+      // home: SigninScreen(),
     );
   }
 }
@@ -55,16 +76,9 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ),
-        title: const Text(
+        title: Text(
           'Nurse Joy',
-          style: TextStyle(
-              color: Colors.white,
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                    color: Colors.black45, offset: Offset(1, 1), blurRadius: 1)
-              ]),
+          style: Theme.of(context).textTheme.titleLarge
         ),
       ),
       drawer: Drawer(
