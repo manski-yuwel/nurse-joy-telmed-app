@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:nursejoyapp/features/signing/ui/pages/loading_page.dart';
-import 'package:nursejoyapp/features/signing/ui/pages/securitycheck_page.dart';
-import 'package:nursejoyapp/features/signing/ui/pages/signin_page.dart';
-import 'package:nursejoyapp/features/signing/ui/pages/register_page.dart';
+import 'features/signing/ui/pages/loading_page.dart';
+import 'features/signing/ui/pages/securitycheck_page.dart';
+import 'features/signing/ui/pages/signin_page.dart';
+import 'features/signing/ui/pages/register_page.dart';
 import 'features/chat/ui/pages/chat_list_page.dart';
 import 'features/dashboard/ui/pages/dashboard_page.dart';
 import 'features/profile/ui/pages/profile_page.dart';
@@ -23,6 +23,7 @@ class MyApp extends StatelessWidget {
         '/signin': (context) => SigninPage(),
         '/register': (context) => RegisterPage(),
         '/securitycheck': (context) => SecuritycheckPage(),
+        '/homescreen': (context) => HomeScreen(),
       },
       theme: ThemeData(
         textTheme: const TextTheme(
