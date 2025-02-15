@@ -1,10 +1,23 @@
 import 'package:flutter/material.dart';
+import 'features/signing/ui/pages/loading_page.dart';
+import 'features/signing/ui/pages/securitycheck_page.dart';
+import 'features/signing/ui/pages/signin_page.dart';
+import 'features/signing/ui/pages/register_page.dart';
 import 'features/chat/ui/pages/chat_list_page.dart';
 import 'features/dashboard/ui/pages/dashboard_page.dart';
 import 'features/profile/ui/pages/profile_page.dart';
 
-void main() {
-  runApp(MyApp());
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
+import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
+import 'package:firebase_ui_auth/firebase_ui_auth.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
@@ -12,8 +25,44 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final providers = [EmailAuthProvider()];
+
     return MaterialApp(
-      home: HomeScreen(),
+      initialRoute: '/loading' FirebaseAuth.instance.currentUser == null ? '/sign-in' : '/home',
+      routes: {
+        '/loading': (context) => LoadingPage(),
+        '/signin': (context) => SigninPage(),
+        '/sign-in': (context) {
+          return SignInScreen(
+            providers: providers,
+            actions: [
+              AuthStateChangeAction<UserCreated>((context, state) {
+                Navigator.pushReplacementNamed(context, '/home');
+              }),
+              AuthStateChangeAction<SignedIn>((context, state) {
+                Navigator.pushReplacementNamed(context, '/home');
+              }),
+            ],
+          );
+        },
+        '/register': (context) => RegisterPage(),
+        '/securitycheck': (context) => SecuritycheckPage(),
+        '/homescreen': (context) => HomeScreen(),
+        '/home': (context) {
+          return HomeScreen();
+        },
+      },
+      theme: ThemeData(
+        textTheme: const TextTheme(
+          titleLarge: TextStyle(
+            color: Colors.white,
+            fontSize: 30,
+            fontWeight: FontWeight.bold,
+            shadows: [Shadow(color: Colors.black45, offset: Offset(1, 1), blurRadius: 1)]
+          ),
+        ),
+      ),
+      // home: SigninScreen(),
     );
   }
 }
@@ -27,6 +76,14 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 1;
+  User? user;
+  String _appBarTitle = 'Nurse Joy';
+
+  @override
+  void initState() {
+    super.initState();
+    user = FirebaseAuth.instance.currentUser;
+  }
 
   final List<Widget> _pages = [
     ChatListPage(),
@@ -37,15 +94,40 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
+      if (index == 0) {
+        _updateTitle('Nurse Joy');
+      } else if (index == 1) {
+        _updateTitle('Dashboard');
+      } else if (index == 2) {
+        _updateTitle('Profile');
+      }
     });
   }
 
-  @override
+  void _updateTitle(String title) {
+    setState(() {
+      _appBarTitle = title;
+    });
+  }
+
+  @override 
   Widget build(BuildContext context) {
     double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF58f0d7),
+        actions: [
+          if (_selectedIndex == 0)
+            buildCircleImage('assets/img/nursejoy.jpg', 5, 1.5),
+          IconButton(
+            icon: Icon(Icons.logout),
+            onPressed: () async {
+              await FirebaseAuth.instance.signOut();
+              Navigator.pushReplacementNamed(context, '/sign-in');
+            },
+          ),
+        ],
         centerTitle: true,
         leading: Builder(
           builder: (context) => IconButton(
@@ -55,16 +137,20 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ),
-        title: const Text(
-          'Nurse Joy',
-          style: TextStyle(
-              color: Colors.white,
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                    color: Colors.black45, offset: Offset(1, 1), blurRadius: 1)
-              ]),
+        title: Text(
+          _appBarTitle,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 30,
+            fontWeight: FontWeight.bold,
+            shadows: [
+              Shadow(
+                color: Colors.black45,
+                offset: Offset(1, 1),
+                blurRadius: 1,
+              ),
+            ],
+          ),
         ),
       ),
       drawer: Drawer(
@@ -134,3 +220,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// Function to create image widget with the cropped image
+Widget buildCircleImage(String imagePath, double size, double scale) {
+  return Padding(
+    padding: EdgeInsets.all(size),
+    child: ClipOval(
+      child: Transform.scale(
+        scale: scale, // Adjust the scale to zoom in
+        alignment: Alignment.topCenter,
+        child: Image.asset(
+          imagePath,
+          fit: BoxFit.cover, // Ensure the image covers the entire area
+        ),
+      ),
+    ),
+  );
+}
