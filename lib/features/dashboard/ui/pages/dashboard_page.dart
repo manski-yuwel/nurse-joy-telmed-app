@@ -37,7 +37,6 @@ class _DashboardPageState extends State<DashboardPage> {
                 padding: EdgeInsets.all(16.0),
                 child: Row(
                   children: [
-                    SizedBox(width: 16),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -47,7 +46,7 @@ class _DashboardPageState extends State<DashboardPage> {
                               "Feeling Sick?",
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 20,
+                                fontSize: 28,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
@@ -56,8 +55,31 @@ class _DashboardPageState extends State<DashboardPage> {
                           Center(
                             child: Text(
                               "Tell us your illness, symptoms, or what you’re feeling, and we’ll get you a doctor fast.",
-                              style: TextStyle(
-                                  fontSize: 14, color: Colors.white),
+                              style:
+                                  TextStyle(fontSize: 14, color: Colors.white),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.symmetric(vertical: 16),
+                            child: Center(
+                              child: TextField(
+                                decoration: InputDecoration(
+                                  prefixIcon: Icon(Icons.mic,
+                                      color: Colors.blue), // Microphone icon
+                                  filled: true,
+                                  fillColor: Colors
+                                      .white, // Light grey background color
+                                  border: OutlineInputBorder(
+                                    borderRadius: BorderRadius.circular(
+                                        30), // Rounded corners
+                                    borderSide:
+                                        BorderSide.none, // No visible border
+                                  ),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      vertical: 10), // Adjust text padding
+                                ),
+                              ),
                             ),
                           ),
                         ],
@@ -83,7 +105,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     Row(
                       children: [
-
                         SizedBox(width: 16),
                         Expanded(
                           child: Text(
@@ -103,19 +124,16 @@ class _DashboardPageState extends State<DashboardPage> {
                         child: const Text("JD"),
                       ),
                       title: Text("Monthly Diet",
-                        style: TextStyle (
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20
-                        )
-                      ),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20)),
                       subtitle: Text("Jane Doe",
-                        style: TextStyle(
-                          color: Colors.white70,
-
-                        )
-                      ),
-                      trailing: Icon(Icons.arrow_forward_ios, color: Colors.white),
+                          style: TextStyle(
+                            color: Colors.white70,
+                          )),
+                      trailing:
+                          Icon(Icons.arrow_forward_ios, color: Colors.white),
                       onTap: () {
                         // TODO: Navigate to Prescription Details
                       },
@@ -128,18 +146,18 @@ class _DashboardPageState extends State<DashboardPage> {
                         child: const Text("JC"),
                       ),
                       title: Text("Daily Heart Maintenance",
-                          style: TextStyle (
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 20
-                          )
-                      ),
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20)),
                       subtitle: Text("Dr. Jake Cruz",
                           style: TextStyle(
                             color: Colors.white70,
-                          )
+                          )),
+                      trailing: Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.white,
                       ),
-                      trailing: Icon(Icons.arrow_forward_ios, color: Colors.white,),
                       onTap: () {
                         // TODO: Navigate to Prescription Details
                       },
@@ -152,18 +170,16 @@ class _DashboardPageState extends State<DashboardPage> {
                         child: const Text("M"),
                       ),
                       title: Text("Cold Prescription",
-                          style: TextStyle (
+                          style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 20
-                          )
-                      ),
+                              fontSize: 20)),
                       subtitle: Text("Dr. Morrie",
                           style: TextStyle(
                             color: Colors.white70,
-                          )
-                      ),
-                      trailing: Icon(Icons.arrow_forward_ios, color: Colors.white),
+                          )),
+                      trailing:
+                          Icon(Icons.arrow_forward_ios, color: Colors.white),
                       onTap: () {
                         // TODO: Navigate to Prescription Details
                       },
@@ -187,7 +203,6 @@ class _DashboardPageState extends State<DashboardPage> {
                   children: [
                     Row(
                       children: [
-
                         SizedBox(width: 16),
                         Expanded(
                           child: Text(
@@ -203,22 +218,19 @@ class _DashboardPageState extends State<DashboardPage> {
                     ),
                     SizedBox(height: 10),
                     ListTile(
-                      leading: Icon(Icons.message, color: Colors.white, size: 32),
+                      leading:
+                          Icon(Icons.message, color: Colors.white, size: 32),
                       title: Text("Dr. Garreth messaged you",
-                            style: TextStyle (
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18
-                            )
-                        ),
-
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18)),
                       subtitle: Text("Jan 29: 02:04",
                           style: TextStyle(
                             color: Colors.white70,
-
-                          )
-                      ),
-                      trailing: Icon(Icons.arrow_forward_ios, color: Colors.white),
+                          )),
+                      trailing:
+                          Icon(Icons.arrow_forward_ios, color: Colors.white),
                       onTap: () {
                         // TODO: Navigate to Prescription Details
                       },
@@ -229,18 +241,16 @@ class _DashboardPageState extends State<DashboardPage> {
                     ListTile(
                       leading: Icon(Icons.star, color: Colors.white, size: 32),
                       title: Text("New Prescription",
-                          style: TextStyle (
+                          style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 20
-                          )
-                      ),
+                              fontSize: 20)),
                       subtitle: Text("Feb 14: 04:03",
                           style: TextStyle(
                             color: Colors.white70,
-                          )
-                      ),
-                      trailing: Icon(Icons.arrow_forward_ios, color: Colors.white),
+                          )),
+                      trailing:
+                          Icon(Icons.arrow_forward_ios, color: Colors.white),
                       onTap: () {
                         // TODO: Navigate to Prescription Details
                       },
@@ -251,18 +261,16 @@ class _DashboardPageState extends State<DashboardPage> {
                     ListTile(
                       leading: Icon(Icons.alarm, color: Colors.white, size: 32),
                       title: Text("Medication Intake Reminder",
-                          style: TextStyle (
+                          style: TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
-                              fontSize: 20
-                          )
-                      ),
+                              fontSize: 20)),
                       subtitle: Text("Feb 16: 12:13",
                           style: TextStyle(
                             color: Colors.white70,
-                          )
-                      ),
-                      trailing: Icon(Icons.arrow_forward_ios, color: Colors.white),
+                          )),
+                      trailing:
+                          Icon(Icons.arrow_forward_ios, color: Colors.white),
                       onTap: () {
                         // TODO: Navigate to Prescription Details
                       },
