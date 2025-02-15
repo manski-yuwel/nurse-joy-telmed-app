@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'features/signing/ui/pages/loading_page.dart';
+import 'features/signing/ui/pages/securitycheck_page.dart';
+import 'features/signing/ui/pages/signin_page.dart';
+import 'features/signing/ui/pages/register_page.dart';
 import 'features/chat/ui/pages/chat_list_page.dart';
 import 'features/dashboard/ui/pages/dashboard_page.dart';
 import 'features/profile/ui/pages/profile_page.dart';
@@ -24,9 +28,10 @@ class MyApp extends StatelessWidget {
     final providers = [EmailAuthProvider()];
 
     return MaterialApp(
-      initialRoute:
-          FirebaseAuth.instance.currentUser == null ? '/sign-in' : '/home',
+      initialRoute: '/loading', FirebaseAuth.instance.currentUser == null ? '/sign-in' : '/home',
       routes: {
+        '/loading': (context) => LoadingPage(),
+        '/signin': (context) => SigninPage(),
         '/sign-in': (context) {
           return SignInScreen(
             providers: providers,
@@ -40,10 +45,24 @@ class MyApp extends StatelessWidget {
             ],
           );
         },
+        '/register': (context) => RegisterPage(),
+        '/securitycheck': (context) => SecuritycheckPage(),
+        '/homescreen': (context) => HomeScreen(),
         '/home': (context) {
           return HomeScreen();
         },
       },
+      theme: ThemeData(
+        textTheme: const TextTheme(
+          titleLarge: TextStyle(
+            color: Colors.white,
+            fontSize: 30,
+            fontWeight: FontWeight.bold,
+            shadows: [Shadow(color: Colors.black45, offset: Offset(1, 1), blurRadius: 1)]
+          ),
+        ),
+      ),
+      // home: SigninScreen(),
     );
   }
 }
