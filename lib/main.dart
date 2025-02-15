@@ -24,7 +24,8 @@ class MyApp extends StatelessWidget {
     final providers = [EmailAuthProvider()];
 
     return MaterialApp(
-      initialRoute: FirebaseAuth.instance.currentUser == null ? '/sign-in' : '/home',
+      initialRoute:
+          FirebaseAuth.instance.currentUser == null ? '/sign-in' : '/home',
       routes: {
         '/sign-in': (context) {
           return SignInScreen(
@@ -99,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: const Color(0xFF58f0d7),
         actions: [
           if (_selectedIndex == 0)
-                buildCircleImage('assets/img/nursejoy.jpg', 5, 1.5),
+            buildCircleImage('assets/img/nursejoy.jpg', 5, 1.5),
           IconButton(
             icon: Icon(Icons.logout),
             onPressed: () async {
@@ -117,8 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
         ),
-            
-        title:Text(
+        title: Text(
           _appBarTitle,
           style: const TextStyle(
             color: Colors.white,
@@ -201,19 +201,19 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-  // Function to create image widget with the cropped image
-  Widget buildCircleImage(String imagePath, double size, double scale) {
-    return Padding(
-        padding: EdgeInsets.all(size),
-        child: ClipOval(
-          child: Transform.scale(
-            scale: scale, // Adjust the scale to zoom in
-            alignment: Alignment.topCenter,
-            child: Image.asset(
-              imagePath,
-              fit: BoxFit.cover, // Ensure the image covers the entire area
-            ),
-          ),
+// Function to create image widget with the cropped image
+Widget buildCircleImage(String imagePath, double size, double scale) {
+  return Padding(
+    padding: EdgeInsets.all(size),
+    child: ClipOval(
+      child: Transform.scale(
+        scale: scale, // Adjust the scale to zoom in
+        alignment: Alignment.topCenter,
+        child: Image.asset(
+          imagePath,
+          fit: BoxFit.cover, // Ensure the image covers the entire area
         ),
-      );
-  }
+      ),
+    ),
+  );
+}
