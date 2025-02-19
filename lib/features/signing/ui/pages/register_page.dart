@@ -67,7 +67,7 @@ class RegisterPage extends StatelessWidget {
                       Align( // Login/Proceed button
                         alignment: Alignment.centerRight,
                         child: ElevatedButton(
-                          onPressed: () => Navigator.pushNamed(context, '/homescreen'), // TODO: Implement sign-up logic
+                          onPressed: () => Navigator.pushNamed(context, '/home'), // TODO: Implement sign-up logic
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.blue,
                             shape: RoundedRectangleBorder(

@@ -14,7 +14,7 @@ class _LoadingScreenState extends State<LoadingPage> {
   void initState() {
     super.initState();
     Future.delayed(Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, '/signin'); // Move to Sign In
+      Navigator.pushReplacementNamed(context, '/sign-in'); // Move to Sign In
     });
   }
 

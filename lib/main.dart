@@ -28,10 +28,10 @@ class MyApp extends StatelessWidget {
     final providers = [EmailAuthProvider()];
 
     return MaterialApp(
-      initialRoute: '/loading', FirebaseAuth.instance.currentUser == null ? '/sign-in' : '/home',
+      initialRoute: '/loading',
       routes: {
+        FirebaseAuth.instance.currentUser == null ? '/sign-in' : '/home'
         '/loading': (context) => LoadingPage(),
-        '/signin': (context) => SigninPage(),
         '/sign-in': (context) {
           return SignInScreen(
             providers: providers,
@@ -47,7 +47,6 @@ class MyApp extends StatelessWidget {
         },
         '/register': (context) => RegisterPage(),
         '/securitycheck': (context) => SecuritycheckPage(),
-        '/homescreen': (context) => HomeScreen(),
         '/home': (context) {
           return HomeScreen();
         },

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../widgets/base_page.dart';
+import 'package:firebase_ui_auth/firebase_ui_auth.dart';
 
 class SigninPage extends StatelessWidget {
 const SigninPage({ super.key });
