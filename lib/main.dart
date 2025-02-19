@@ -28,7 +28,8 @@ class MyApp extends StatelessWidget {
     final providers = [EmailAuthProvider()];
 
     return MaterialApp(
-      initialRoute: '/loading',
+      initialRoute:
+          FirebaseAuth.instance.currentUser == null ? '/signin' : '/home',
       routes: {
         FirebaseAuth.instance.currentUser == null ? '/sign-in' : '/home'
         '/loading': (context) => LoadingPage(),
@@ -54,11 +55,13 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         textTheme: const TextTheme(
           titleLarge: TextStyle(
-            color: Colors.white,
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-            shadows: [Shadow(color: Colors.black45, offset: Offset(1, 1), blurRadius: 1)]
-          ),
+              color: Colors.white,
+              fontSize: 30,
+              fontWeight: FontWeight.bold,
+              shadows: [
+                Shadow(
+                    color: Colors.black45, offset: Offset(1, 1), blurRadius: 1)
+              ]),
         ),
       ),
       // home: SigninScreen(),
