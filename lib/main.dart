@@ -168,21 +168,35 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: EdgeInsets.zero,
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.home),
+                    leading: const Icon(Icons.home_outlined),
                     title: const Text('Home'),
                     onTap: () {
                       Navigator.pop(context);
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.settings),
+                    leading: const Icon(Icons.emergency_outlined),
+                    title: const Text('Activate Emergency Mode'),
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.settings_outlined),
                     title: const Text('Settings'),
                     onTap: () {
                       Navigator.pop(context);
                     },
                   ),
                   ListTile(
-                    leading: const Icon(Icons.logout),
+                    leading: const Icon(Icons.map_outlined),
+                    title: const Text('View Map'),
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.logout_outlined),
                     title: const Text('Logout'),
                     onTap: () {
                       Navigator.pop(context);

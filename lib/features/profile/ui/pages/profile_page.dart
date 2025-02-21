@@ -223,7 +223,7 @@ class _ProfilePageState extends State<ProfilePage> {
                           style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Color.fromARGB(255, 0, 0, 0))),
+                              color: Colors.white)),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _firstNameController,
