@@ -440,7 +440,7 @@ class _EmergencyPageState extends State<EmergencyPage> {
   }
 }
 
-// Card template
+// Card widget template
 Widget displayCard({required List<Widget> children, required Color color}) {
   return Card(
       elevation: 3,
