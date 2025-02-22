@@ -6,6 +6,7 @@ import 'features/signing/ui/pages/register_page.dart';
 import 'features/chat/ui/pages/chat_list_page.dart';
 import 'features/dashboard/ui/pages/dashboard_page.dart';
 import 'features/profile/ui/pages/profile_page.dart';
+import 'features/emergency/ui/pages/emergency_page.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -52,6 +53,7 @@ class MyApp extends StatelessWidget {
         '/home': (context) {
           return HomeScreen();
         },
+        '/emergency': (context) => EmergencyPage(),
       },
       theme: ThemeData(
         textTheme: const TextTheme(
@@ -123,13 +125,21 @@ class _HomeScreenState extends State<HomeScreen> {
         actions: [
           if (_selectedIndex == 0)
             buildCircleImage('assets/img/nursejoy.jpg', 5, 1.5),
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.pushReplacementNamed(context, '/sign-in');
-            },
-          ),
+          if (_selectedIndex == 1)
+            TextButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/emergency');
+              },
+              label: Text(
+                'E.M.',
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              icon: Icon(Icons.warning_sharp, color: Colors.red),
+            ),
         ],
         centerTitle: true,
         leading: Builder(
