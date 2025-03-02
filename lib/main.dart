@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:nursejoyapp/auth/provider/auth_wrapper.dart';
 import 'features/signing/ui/pages/loading_page.dart';
 import 'features/signing/ui/pages/securitycheck_page.dart';
 import 'features/signing/ui/pages/signin_page.dart';
@@ -7,6 +9,7 @@ import 'features/chat/ui/pages/chat_list_page.dart';
 import 'features/dashboard/ui/pages/dashboard_page.dart';
 import 'features/profile/ui/pages/profile_page.dart';
 import 'features/emergency/ui/pages/emergency_page.dart';
+import 'package:provider/provider.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -18,7 +21,14 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthService()),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -29,8 +39,8 @@ class MyApp extends StatelessWidget {
     final providers = [EmailAuthProvider()];
 
     return MaterialApp(
-      initialRoute:
-          FirebaseAuth.instance.currentUser == null ? '/signin' : '/home',
+      title: 'NurseJoy',
+      home: AuthWrapper(),
       routes: {
         '/loading': (context) => LoadingPage(),
         '/signin': (context) => SigninPage(),
@@ -87,7 +97,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    user = FirebaseAuth.instance.currentUser;
+    user = AuthService().user;
   }
 
   final List<Widget> _pages = [
@@ -118,7 +128,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
-
+    final auth = Provider.of<AuthService>(context);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF58f0d7),
@@ -210,7 +220,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     leading: const Icon(Icons.logout_outlined),
                     title: const Text('Logout'),
                     onTap: () {
-                      Navigator.pop(context);
+                      auth.signOut();
+                      Navigator.pushReplacementNamed(context, '/signin');
                     },
                   ),
                 ],
