@@ -39,6 +39,9 @@ dependencies:
   firebase_ui_auth: ^1.16.1
   cloud_firestore: ^5.6.5
   provider: ^6.1.2
+  flutter_map: ^8.1.0
+  latlong2: ^0.9.1
+  geolocator: ^13.0.2
 
 dev_dependencies:
   flutter_test:
