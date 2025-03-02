@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../widgets/base_page.dart';
 import '../../../../auth/provider/auth_service.dart';
+import 'package:provider/provider.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({Key? key}) : super(key: key);
@@ -25,6 +26,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthService>(context);
     return BasePage(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -140,8 +142,7 @@ class _RegisterPageState extends State<RegisterPage> {
                             }
 
                             try {
-                              final res =
-                                  await AuthService().signUp(email, password);
+                              final res = await auth.signUp(email, password);
                               if (res == 'Success') {
                                 // Navigate to home or dashboard
                                 Navigator.pushNamed(context, '/home');

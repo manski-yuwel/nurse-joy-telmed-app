@@ -28,7 +28,7 @@ class ChatListPage extends StatelessWidget {
                 var user = users[index].data() as Map<String, dynamic>;
                 return ListTile(
                   leading: const Icon(Icons.person, color: Colors.green),
-                  title: Text(user['full_name']),
+                  title: Text(user['email']),
                   subtitle: Text('Online'),
                   onTap: () {
                     // Navigate to chat screen with selected user
@@ -55,7 +55,10 @@ class ChatListPage extends StatelessWidget {
                 itemCount: snapshot.data!.docs.length,
                 itemBuilder: (context, index) {
                   return ListTile(
-                    title: Text(snapshot.data!.docs[index]['full_name']),
+                    title: Text(snapshot.data!.docs[index]['email']),
+                    subtitle: Text(snapshot.data!.docs[index]['status_online']
+                        ? 'Online'
+                        : 'Offline'),
                   );
                 },
               );
