@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:nursejoyapp/db/chat_list/chat_list_db.dart';
+import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ChatListPage extends StatelessWidget {
