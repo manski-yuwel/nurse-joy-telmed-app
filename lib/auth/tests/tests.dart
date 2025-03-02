@@ -18,15 +18,40 @@ void main() {
       final password = 'test12345678';
 
       // create the user
-      await auth.createUserWithEmailAndPassword(
-          email: email, password: password);
-
-      // sign in the user and get the user
-      final userCredentials = await auth.signInWithEmailAndPassword(
+      final userCredentials = await auth.createUserWithEmailAndPassword(
           email: email, password: password);
 
       // get the user's uid
       final uid = userCredentials.user!.uid;
+
+      // create the doc for the new user
+      await db.collection('users').doc(uid).set({
+        'email': email,
+        'profile_pic': '',
+        'first_name': '',
+        'last_name': '',
+        'civil_status': '',
+        'age': 0,
+        'birthdate': null,
+        'address': '',
+        'phone_number': '',
+        'role': 'user',
+        'status_online': false,
+      });
+
+      await db
+          .collection('users')
+          .doc(uid)
+          .collection('health_information')
+          .doc('health_info')
+          .set({
+        'height': 0,
+        'weight': 0,
+        'blood_type': '',
+        'allergies': [],
+        'medications': [],
+        'other_information': '',
+      });
 
       // get the user document and test whether it exists
       final userDoc = await db.collection('users').doc(uid).get();
