@@ -57,5 +57,14 @@ void main() {
       final userDoc = await db.collection('users').doc(uid).get();
       expect(userDoc.exists, true);
     });
+
+    test('should update user status_online to true if user signs in', () async {
+      // TO-DO IMPLEMENT TEST
+    });
+
+    test('should update user status_online to false if user is signed out',
+        () async {
+      // TO-DO IMPLEMENT TEST
+    });
   });
 }

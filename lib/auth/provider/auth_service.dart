@@ -1,8 +1,32 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 
-class AuthService {
+class AuthService extends ChangeNotifier {
   final db = FirebaseFirestore.instance;
+  final auth = FirebaseAuth.instance;
+  User? user;
+
+  AuthService() {
+    auth.authStateChanges().listen((User? user) async {
+      this.user = user;
+      if (user == null) {
+        // update the user's status_online to false
+        await db
+            .collection('users')
+            .doc(user!.uid)
+            .update({'status_online': false});
+      } else {
+        // update the user's status_online to true
+        await db
+            .collection('users')
+            .doc(user.uid)
+            .update({'status_online': true});
+      }
+      notifyListeners();
+    });
+  }
+
   Future<String?> signIn(String email, String password) async {
     try {
       final credential = await FirebaseAuth.instance
@@ -54,7 +78,7 @@ class AuthService {
 
   Future<String?> signUp(String email, String password) async {
     try {
-      final credential = await FirebaseAuth.instance
+      await FirebaseAuth.instance
           .createUserWithEmailAndPassword(email: email, password: password);
       return 'Success';
     } on FirebaseAuthException catch (e) {
