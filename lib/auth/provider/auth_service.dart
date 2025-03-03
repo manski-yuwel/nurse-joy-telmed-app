@@ -1,6 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:logger/logger.dart';
+
+final logger = Logger();
 
 class AuthService extends ChangeNotifier {
   final db = FirebaseFirestore.instance;
@@ -12,9 +15,9 @@ class AuthService extends ChangeNotifier {
     auth.authStateChanges().listen((User? user) async {
       this.user = user;
       if (user == null) {
-        print("User is currently signed out!");
+        logger.i("User is signed out!");
       } else {
-        print("User is signed in!");
+        logger.i("User is signed in!");
       }
       notifyListeners();
     });
@@ -26,10 +29,7 @@ class AuthService extends ChangeNotifier {
           .signInWithEmailAndPassword(email: email, password: password);
 
       // update the status of the user to online if the user signs in
-      await db
-          .collection('users')
-          .doc(user!.uid)
-          .update({'status_online': true});
+      updateUserStatus(user, true);
       return 'Success';
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
@@ -98,9 +98,14 @@ class AuthService extends ChangeNotifier {
     await auth.signOut();
 
     // update the status to offline if the user signs out
+    updateUserStatus(user, false);
+  }
+
+  Future<void> updateUserStatus(User? user, bool status) async {
     await db
         .collection('users')
         .doc(user!.uid)
-        .update({'status_online': false});
+        .update({'status_online': status});
+    logger.i('Updated user ${user.uid} status to $status');
   }
 }
