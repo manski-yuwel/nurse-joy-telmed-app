@@ -5,13 +5,14 @@ import 'package:logger/logger.dart';
 
 final logger = Logger();
 
-class AuthService extends ChangeNotifier {
+class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   final db = FirebaseFirestore.instance;
   final auth = FirebaseAuth.instance;
   User? user;
   User? get currentUser => user;
 
   AuthService() {
+    WidgetsBinding.instance!.addObserver(this);
     auth.authStateChanges().listen((User? user) async {
       this.user = user;
       if (user == null) {
@@ -107,5 +108,12 @@ class AuthService extends ChangeNotifier {
         .doc(user!.uid)
         .update({'status_online': status});
     logger.i('Updated user ${user.uid} status to $status');
+  }
+
+  void appCycleChanged(AppLifecycleState state) async {
+    if (state == AppLifecycleState.detached) {
+      updateUserStatus(user, false);
+      logger.i('App is in detached state and user status is set to offline');
+    }
   }
 }
