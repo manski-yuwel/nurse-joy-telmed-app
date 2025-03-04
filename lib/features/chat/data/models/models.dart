@@ -1,7 +1,6 @@
 // collection for the chat room
 final chat_room = {
-  'user1': '',
-  'user2': '',
+  'users': [],
   'last_message': '',
 };
 
