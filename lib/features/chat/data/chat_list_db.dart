@@ -12,10 +12,7 @@ class Chat {
   }
 
   Stream<QuerySnapshot> getOnlineUsers() {
-    return db
-        .collection('users')
-        .where('status_online', isEqualTo: true)
-        .snapshots();
+    return db.collection('users').snapshots();
   }
 
   // function to generate the chatroom

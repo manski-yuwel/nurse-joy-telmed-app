@@ -35,7 +35,15 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
     final auth = Provider.of<AuthService>(context, listen: false);
     user = auth.user;
     return Scaffold(
-      appBar: AppBar(title: Text(widget.recipientFullName)),
+      appBar: AppBar(
+          title: Text(widget.recipientFullName,
+              style: const TextStyle(fontSize: 14)),
+          backgroundColor: const Color(0xFF58f0d7),
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context),
+          )),
       body: Column(
         children: [
           Expanded(
@@ -66,7 +74,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
-                          message['text'],
+                          message['message_body'],
                           style: TextStyle(
                               color: isMe ? Colors.white : Colors.black),
                         ),

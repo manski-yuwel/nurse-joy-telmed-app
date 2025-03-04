@@ -58,7 +58,7 @@ class _ChatListPageState extends State<ChatListPage> {
                       builder: (context) => ChatRoomPage(
                         chatRoomID: chatRoomID,
                         recipientID: recipientID,
-                        recipientFullName: user['full_name'],
+                        recipientFullName: user['email'],
                       ),
                     );
                     chatInstance.generateChatRoom(
@@ -89,8 +89,8 @@ class _ChatListPageState extends State<ChatListPage> {
           var chatRooms = snapshot.data!.docs;
 
           // Extract all recipient IDs
-          List<String> recipientIDs = chatRooms.map((chatRoom) {
-            List<String> users = chatRoom['users'];
+          List<dynamic> recipientIDs = chatRooms.map((chatRoom) {
+            List<dynamic> users = chatRoom['users'];
             return users.first == auth.user!.uid ? users.last : users.first;
           }).toList();
 
@@ -123,9 +123,28 @@ class _ChatListPageState extends State<ChatListPage> {
                   final recipientData = recipientDetails[recipientID] ?? {};
 
                   return ListTile(
-                    title: Text(recipientData['email'] ?? 'Unknown'),
-                    subtitle: Text(chatRoom['last_message'] ?? ''),
-                  );
+                      leading: const Icon(Icons.person, color: Colors.green),
+                      title: Text(recipientData['email'] ?? 'Unknown'),
+                      subtitle: Text(chatRoom['last_message'] ?? ''),
+                      onTap: () {
+                        // get userID and recipientID and chatroomID
+                        final userID = auth.user!.uid;
+                        final chatRoomID = chatInstance.generateChatRoomID(
+                            userID, recipientID);
+                        logger.d(recipientID);
+
+                        // generate the chat room and navigate to it.
+                        MaterialPageRoute route = MaterialPageRoute(
+                          builder: (context) => ChatRoomPage(
+                            chatRoomID: chatRoomID,
+                            recipientID: recipientID,
+                            recipientFullName: recipientData['email'],
+                          ),
+                        );
+                        chatInstance.generateChatRoom(
+                            chatRoomID, userID, recipientID);
+                        Navigator.push(context, route);
+                      });
                 },
               );
             },
