@@ -32,6 +32,11 @@ class Chat {
     return '${chatRoomUsers[0]}_${chatRoomUsers[1]}';
   }
 
+  // function to get the recipient user details
+  Future<DocumentSnapshot<Object>> getRecipientDetails(String userID) async {
+    return await db.collection('users').doc(userID).get();
+  }
+
   Stream<QuerySnapshot> getChatRoomMessages(String chatRoomID) {
     return db
         .collection('chats')
