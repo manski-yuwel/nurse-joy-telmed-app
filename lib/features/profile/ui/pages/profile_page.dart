@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:intl/intl.dart';
 
 class ProfilePage extends StatefulWidget {
   final String userID;
@@ -30,7 +31,7 @@ class _ProfilePageState extends State<ProfilePage> {
   );
   late String _civilStatus;
   final _formKey = GlobalKey<FormState>();
-
+  late final auth;
   // Controllers for form fields
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -47,7 +48,10 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _civilStatus = 'Single';
-    _fetchUserProfile();
+    Future.delayed(Duration.zero, () {
+      auth = Provider.of<AuthService>(context, listen: false);
+      _fetchUserProfile();
+    });
   }
 
   @override
@@ -421,6 +425,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         _contactController.text); // phoneNumber)
                   }
                   logger.i('Profile saved');
+                  // reload the profile page after saving changes
+                  _fetchUserProfile();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF58f0d7),
@@ -446,7 +452,8 @@ class _ProfilePageState extends State<ProfilePage> {
       _lastNameController.text = userProfile['last_name'];
       _civilStatus = userProfile['civil_status'];
       _ageController.text = userProfile['age'].toString();
-      _birthdateController.text = userProfile['birthdate'].toDate().toString();
+      DateTime birthDate = userProfile['birthdate'];
+      _birthdateController.text = DateFormat('yyyy-MM-dd').format(birthDate);
       _contactController.text = userProfile['phone_number'];
       _addressController.text = userProfile['address'];
     } catch (e) {
