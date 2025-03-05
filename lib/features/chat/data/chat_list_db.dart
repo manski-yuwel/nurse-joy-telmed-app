@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:logger/logger.dart';
 
 final db = FirebaseFirestore.instance;
 
 class Chat {
+  final logger = Logger();
   // ghet the chatlist by checking if the userID is included in the users pair in the chat doc
   Stream<QuerySnapshot> getChatList(String userID) {
     return db
@@ -22,6 +24,7 @@ class Chat {
       'users': [userID, recipientID],
       'last_message': '',
     });
+    logger.i('Chatroom $chatRoomID created between $userID and $recipientID');
   }
 
   String generateChatRoomID(String userID, String recipientID) {

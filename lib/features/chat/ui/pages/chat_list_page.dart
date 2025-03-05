@@ -44,7 +44,7 @@ class _ChatListPageState extends State<ChatListPage> {
                 return ListTile(
                   leading: const Icon(Icons.person, color: Colors.green),
                   title: Text(user['email']),
-                  subtitle: Text('Online'),
+                  subtitle: Text(user['status_online'] ? 'Online' : 'Offline'),
                   onTap: () {
                     // get userID and recipientID and chatroomID
                     final userID = auth.user!.uid;

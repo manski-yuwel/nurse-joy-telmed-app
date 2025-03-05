@@ -61,23 +61,53 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                   itemBuilder: (context, index) {
                     var message = messages[index];
                     bool isMe = message['senderID'] == auth.user!.uid;
-
-                    return Align(
-                      alignment:
-                          isMe ? Alignment.centerRight : Alignment.centerLeft,
-                      child: Container(
-                        padding: EdgeInsets.all(12),
-                        margin:
-                            EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: isMe ? Colors.blue : Colors.grey[300],
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          message['message_body'],
-                          style: TextStyle(
-                              color: isMe ? Colors.white : Colors.black),
-                        ),
+                    bool isNotMe = message['recipientID'] == auth.user!.uid;
+                    logger.i(
+                        'isMe: $isMe for message: ${message['message_body']}');
+                    logger.i(
+                        'isNotMe: $isNotMe for message: ${message['message_body']}');
+                    return Container(
+                      margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                      child: Row(
+                        mainAxisAlignment: isMe
+                            ? MainAxisAlignment.end
+                            : MainAxisAlignment.start,
+                        children: [
+                          if (!isMe) ...[
+                            CircleAvatar(
+                              child: Icon(
+                                  Icons.person), // Placeholder for profile pic
+                              backgroundColor: Colors.grey[300],
+                            ),
+                            SizedBox(
+                                width: 8), // Spacing between avatar and message
+                          ],
+                          Flexible(
+                            child: Container(
+                              padding: EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: isMe ? Colors.blue : Colors.grey[300],
+                                borderRadius: BorderRadius.only(
+                                  topLeft: Radius.circular(16),
+                                  topRight: Radius.circular(16),
+                                  bottomLeft:
+                                      isMe ? Radius.circular(16) : Radius.zero,
+                                  bottomRight:
+                                      isMe ? Radius.zero : Radius.circular(16),
+                                ),
+                              ),
+                              constraints: BoxConstraints(
+                                maxWidth: MediaQuery.of(context).size.width *
+                                    0.7, // Limit width
+                              ),
+                              child: Text(
+                                message['message_body'],
+                                style: TextStyle(
+                                    color: isMe ? Colors.white : Colors.black),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     );
                   },
@@ -113,7 +143,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
 
   void _sendMessage() async {
     if (_messageController.text.isNotEmpty) {
-      final String? userID = user?.uid;
+      final userID = user!.uid;
 
       // call the send message function from the Chat class
       await chatInstance.sendMessage(widget.chatRoomID, userID,
