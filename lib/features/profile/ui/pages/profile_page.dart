@@ -1,8 +1,13 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
+import 'package:provider/provider.dart';
+import 'package:nursejoyapp/auth/provider/auth_service.dart';
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final String userID;
+  const ProfilePage({super.key, required this.userID});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -25,7 +30,6 @@ class _ProfilePageState extends State<ProfilePage> {
   );
 
   final _formKey = GlobalKey<FormState>();
-  final user = FirebaseAuth.instance.currentUser;
 
   // Controllers for form fields
   final _usernameController = TextEditingController();
@@ -39,12 +43,24 @@ class _ProfilePageState extends State<ProfilePage> {
   final _contactController = TextEditingController();
   final _addressController = TextEditingController();
 
+  late final auth;
   String _civilStatus = 'Single';
 
   @override
-  void initState() {
+  void initState() async {
     super.initState();
-    _emailController.text = user?.email ?? '';
+
+    // get current user profile and initialize the controllers with user profile data
+    auth = Provider.of<AuthService>(context, listen: false);
+    final DocumentSnapshot userProfile = await getProfile(auth.user!.uid);
+    _emailController.text = userProfile['email'];
+    _firstNameController.text = userProfile['first_name'];
+    _lastNameController.text = userProfile['last_name'];
+    _civilStatus = userProfile['civil_status'];
+    _ageController.text = userProfile['age'].toString();
+    _birthdateController.text = userProfile['birthdate'].toDate().toString();
+    _contactController.text = userProfile['phone_number'];
+    _addressController.text = userProfile['address'];
   }
 
   @override
@@ -64,10 +80,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   CircleAvatar(
                     radius: 60,
                     backgroundColor: Colors.grey[200], // Light grey background
-                    backgroundImage: user?.photoURL != null
-                        ? NetworkImage(user!.photoURL!)
+                    backgroundImage: auth.user?.photoURL != null
+                        ? NetworkImage(auth.user!.photoURL!)
                         : null,
-                    child: user?.photoURL == null
+                    child: auth.user?.photoURL == null
                         ? const Icon(
                             Icons.person,
                             size: 60,
@@ -87,11 +103,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 height: 16,
               ),
               Text(
-                user?.displayName?.isNotEmpty == true
-                    ? user!.displayName!
+                auth.user?.displayName?.isNotEmpty == true
+                    ? auth.user!.displayName!
                     : 'No username',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: user?.displayName?.isNotEmpty == true
+                      color: auth.user?.displayName?.isNotEmpty == true
                           ? null
                           : Colors.black,
                     ),
@@ -404,6 +420,17 @@ class _ProfilePageState extends State<ProfilePage> {
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
                     // TODO: Implement save profile logic
+                    UpdateProfile(
+                        auth.user!.uid,
+                        '', // photoURL -- blank for now TO IMPLEMENT
+                        _emailController.text,
+                        _firstNameController.text,
+                        _lastNameController.text,
+                        _civilStatus,
+                        int.parse(_ageController.text),
+                        DateTime.parse(_birthdateController.text),
+                        _addressController.text,
+                        _contactController.text); // phoneNumber)
                   }
                 },
                 style: ElevatedButton.styleFrom(

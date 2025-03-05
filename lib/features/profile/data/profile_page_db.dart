@@ -4,6 +4,9 @@ import 'package:firebase_auth/firebase_auth.dart';
 // initialize firestore and firebase auth
 final db = FirebaseFirestore.instance;
 final auth = FirebaseAuth.instance;
+
+// update the user's profile
+// did not include username because authentication is yet to be implemented
 Future<void> UpdateProfile(
     String userID,
     String profilePicURL,
@@ -30,4 +33,9 @@ Future<void> UpdateProfile(
     'address': address,
     'phone_number': phoneNumber
   });
+}
+
+// function to get the user's profile details
+Future<DocumentSnapshot> getProfile(String userID) async {
+  return await db.collection('users').doc(userID).get();
 }
