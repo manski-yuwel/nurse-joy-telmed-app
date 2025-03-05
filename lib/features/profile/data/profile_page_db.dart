@@ -19,9 +19,15 @@ Future<void> UpdateProfile(
     String address,
     String phoneNumber) async {
   // use auth to update the user's profile with the ones built-in the user type with firebase auth
-  await auth.currentUser!.updatePhotoURL(profilePicURL);
-  await auth.currentUser!.verifyBeforeUpdateEmail(email);
-  await auth.currentUser!.updateDisplayName('$firstName $lastName');
+  if (profilePicURL != auth.currentUser!.photoURL) {
+    await auth.currentUser!.updatePhotoURL(profilePicURL);
+  }
+  if (email != auth.currentUser!.email) {
+    await auth.currentUser!.verifyBeforeUpdateEmail(email);
+  }
+  if ('$firstName $lastName' != auth.currentUser!.displayName) {
+    await auth.currentUser!.updateDisplayName('$firstName $lastName');
+  }
 
   // update the user's profile through firestore
   return db.collection('users').doc(userID).update({

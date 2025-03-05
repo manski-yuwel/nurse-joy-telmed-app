@@ -28,7 +28,7 @@ class _ProfilePageState extends State<ProfilePage> {
       borderSide: BorderSide(color: Colors.white),
     ),
   );
-
+  late String _civilStatus;
   final _formKey = GlobalKey<FormState>();
 
   // Controllers for form fields
@@ -43,28 +43,16 @@ class _ProfilePageState extends State<ProfilePage> {
   final _contactController = TextEditingController();
   final _addressController = TextEditingController();
 
-  late final auth;
-  String _civilStatus = 'Single';
-
   @override
-  void initState() async {
+  void initState() {
     super.initState();
-
-    // get current user profile and initialize the controllers with user profile data
-    auth = Provider.of<AuthService>(context, listen: false);
-    final DocumentSnapshot userProfile = await getProfile(auth.user!.uid);
-    _emailController.text = userProfile['email'];
-    _firstNameController.text = userProfile['first_name'];
-    _lastNameController.text = userProfile['last_name'];
-    _civilStatus = userProfile['civil_status'];
-    _ageController.text = userProfile['age'].toString();
-    _birthdateController.text = userProfile['birthdate'].toDate().toString();
-    _contactController.text = userProfile['phone_number'];
-    _addressController.text = userProfile['address'];
+    _civilStatus = 'Single';
+    _fetchUserProfile();
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthService>(context, listen: false);
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -282,7 +270,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: _civilStatus,
+                        value: 'Single',
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'Civil Status',
                           labelStyle: TextStyle(
@@ -432,6 +420,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         _addressController.text,
                         _contactController.text); // phoneNumber)
                   }
+                  logger.i('Profile saved');
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF58f0d7),
@@ -446,6 +435,23 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
     );
+  }
+
+  Future<void> _fetchUserProfile() async {
+    try {
+      final DocumentSnapshot userProfile =
+          await getProfile(auth.currentUser!.uid);
+      _emailController.text = userProfile['email'];
+      _firstNameController.text = userProfile['first_name'];
+      _lastNameController.text = userProfile['last_name'];
+      _civilStatus = userProfile['civil_status'];
+      _ageController.text = userProfile['age'].toString();
+      _birthdateController.text = userProfile['birthdate'].toDate().toString();
+      _contactController.text = userProfile['phone_number'];
+      _addressController.text = userProfile['address'];
+    } catch (e) {
+      print("Error fetching profile: $e");
+    }
   }
 
   @override
