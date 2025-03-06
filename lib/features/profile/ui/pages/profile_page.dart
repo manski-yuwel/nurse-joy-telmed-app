@@ -6,6 +6,9 @@ import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:intl/intl.dart';
 
+// TODO:
+// - build backend api for uploading profile pic
+
 class ProfilePage extends StatefulWidget {
   final String userID;
   const ProfilePage({super.key, required this.userID});
@@ -48,6 +51,8 @@ class _ProfilePageState extends State<ProfilePage> {
   void initState() {
     super.initState();
     _civilStatus = 'Single';
+
+    // delays the initialization of auth and fetching to allow building the widget first
     Future.delayed(Duration.zero, () {
       auth = Provider.of<AuthService>(context, listen: false);
       _fetchUserProfile();
@@ -274,7 +279,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: 'Single',
+                        value:
+                            _civilStatus.isNotEmpty ? _civilStatus : 'Single',
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'Civil Status',
                           labelStyle: TextStyle(
@@ -412,7 +418,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
                     // TODO: Implement save profile logic
-                    UpdateProfile(
+                    updateProfile(
                         auth.user!.uid,
                         '', // photoURL -- blank for now TO IMPLEMENT
                         _emailController.text,
@@ -443,21 +449,27 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  // Function to fetch user profile details
   Future<void> _fetchUserProfile() async {
     try {
+      // get the associated user's profile with the logged in user's uid
       final DocumentSnapshot userProfile =
           await getProfile(auth.currentUser!.uid);
-      _emailController.text = userProfile['email'];
-      _firstNameController.text = userProfile['first_name'];
-      _lastNameController.text = userProfile['last_name'];
-      _civilStatus = userProfile['civil_status'];
-      _ageController.text = userProfile['age'].toString();
-      DateTime birthDate = userProfile['birthdate'];
-      _birthdateController.text = DateFormat('yyyy-MM-dd').format(birthDate);
-      _contactController.text = userProfile['phone_number'];
-      _addressController.text = userProfile['address'];
+      setState(() {
+        // populate the controllers with the user's profile details
+        _emailController.text = userProfile['email'];
+        _firstNameController.text = userProfile['first_name'];
+        _lastNameController.text = userProfile['last_name'];
+        _civilStatus = userProfile['civil_status'];
+        _ageController.text = userProfile['age'].toString();
+        DateTime birthDate = userProfile['birthdate'];
+        _birthdateController.text = DateFormat('yyyy-MM-dd').format(birthDate);
+        _contactController.text = userProfile['phone_number'];
+        _addressController.text = userProfile['address'];
+      });
     } catch (e) {
-      print("Error fetching profile: $e");
+      // TODO: IMPLEMENT ERROR HANDLING AND PROPAGATE TO UI
+      logger.e('Error fetching user profile: $e');
     }
   }
 

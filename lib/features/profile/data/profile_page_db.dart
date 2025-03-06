@@ -7,7 +7,7 @@ final auth = FirebaseAuth.instance;
 
 // update the user's profile
 // did not include username because authentication is yet to be implemented
-Future<void> UpdateProfile(
+Future<void> updateProfile(
     String userID,
     String profilePicURL,
     String email,
