@@ -93,19 +93,11 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 1;
   User? user;
   String _appBarTitle = 'Nurse Joy';
-  final auth = AuthService();
 
   @override
   void initState() {
     super.initState();
-    user = auth.user;
   }
-
-  final List<Widget> _pages = [
-    ChatListPage(),
-    DashboardPage(),
-    ProfilePage(),
-  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -128,8 +120,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
     final auth = Provider.of<AuthService>(context);
+    final List<Widget> _pages = [
+      ChatListPage(),
+      DashboardPage(),
+      ProfilePage(userID: auth.user!.uid),
+    ];
+    double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF58f0d7),
