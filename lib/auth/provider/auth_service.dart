@@ -146,5 +146,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         logger.e('$userRole is not valid...');
     }
     appUser?.updateDetailsDB();
+
+    notifyListeners();
   }
 }
