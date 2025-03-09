@@ -12,7 +12,6 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   AppUser? appUser;
   String? userID;
   User? user;
-  User? get currentUser => user;
 
   AuthService() {
     WidgetsBinding.instance.addObserver(this);
@@ -30,8 +29,11 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<String?> signIn(String email, String password) async {
     try {
-      await FirebaseAuth.instance
+      final userCredentials = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
+
+      // set the app user
+      loadUser(userCredentials.user!.uid);
 
       // update the status of the user to online if the user signs in
       updateUserStatus(user, true);
@@ -72,6 +74,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
       };
 
       appUser = AppUser.setDetails(userID, initUserData);
+      appUser?.updateDetailsDB();
 
       notifyListeners();
 
@@ -127,6 +130,24 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  AppUser? getUserProfile(String? userID, String role) {
+    appUser ??= AppUser(userID: userID!);
+
+    switch (role) {
+      case 'patient':
+        appUser = Patient(userID: userID);
+        return appUser;
+      case 'doctor':
+        appUser = Doctor(userID: userID);
+        return appUser;
+      case 'admin':
+        appUser = Admin(userID: userID);
+        return appUser;
+      default:
+        return appUser;
+    }
+  }
+
   void saveUserProfile(Map<String, dynamic> userProfile) async {
     final userRole = userProfile['role'];
 
@@ -143,10 +164,28 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         appUser = Admin.setDetails(userID, userProfile);
         break;
       default:
-        logger.e('$userRole is not valid...');
+        appUser = AppUser.setDetails(userID, userProfile);
     }
     appUser?.updateDetailsDB();
 
+    notifyListeners();
+  }
+
+  void loadUser(String userID) async {
+    // assumes that structure of the document already tailored for the role.
+    // ex. if role is patient, then the document will have fields specific to that role
+    final userInfo = await db.collection('users').doc(userID).get();
+    final userRole = userInfo['role'];
+    switch (userRole) {
+      case 'patient':
+        appUser = Patient.setDetails(userID, userInfo.data()!);
+      case 'doctor':
+        appUser = Doctor.setDetails(userID, userInfo.data()!);
+      case 'admin':
+        appUser = Admin.setDetails(userID, userInfo.data()!);
+      default:
+        appUser = AppUser.setDetails(userID, userInfo.data()!);
+    }
     notifyListeners();
   }
 }

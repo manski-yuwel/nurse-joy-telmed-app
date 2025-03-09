@@ -33,7 +33,7 @@ class AppUser {
   });
 
   /// sets the details of the user and returns an AppUser instance
-  factory AppUser.setDetails(String userID, Map<String, dynamic> userData) {
+  factory AppUser.setDetails(String? userID, Map<String, dynamic> userData) {
     return AppUser(
       userID: userID,
       email: userData['email'],
@@ -74,32 +74,32 @@ class AppUser {
 }
 
 class Patient extends AppUser {
-  final int height;
-  final int weight;
-  final String bloodType;
-  final List<String> allergies;
-  final List<String> medications;
-  final String otherInformation;
+  final int? height;
+  final int? weight;
+  final String? bloodType;
+  final List<String>? allergies;
+  final List<String>? medications;
+  final String? otherInformation;
 
   Patient({
     required super.userID,
-    required super.email,
-    required super.profilePicURL,
-    required super.firstName,
-    required super.lastName,
-    required super.civilStatus,
-    required super.age,
-    required super.birthdate,
-    required super.address,
-    required super.phoneNumber,
-    required super.role,
-    required super.statusOnline,
-    required this.height,
-    required this.weight,
-    required this.bloodType,
-    required this.allergies,
-    required this.medications,
-    required this.otherInformation,
+    super.email,
+    super.profilePicURL,
+    super.firstName,
+    super.lastName,
+    super.civilStatus,
+    super.age,
+    super.birthdate,
+    super.address,
+    super.phoneNumber,
+    super.role,
+    super.statusOnline,
+    this.height,
+    this.weight,
+    this.bloodType,
+    this.allergies,
+    this.medications,
+    this.otherInformation,
   });
 
   factory Patient.setDetails(String? userID, Map<String, dynamic> userData) {
@@ -124,31 +124,49 @@ class Patient extends AppUser {
       otherInformation: userData['other_information'] ?? '',
     );
   }
+
+  @override
+  Map<String, dynamic> getDetails() {
+    return {
+      ...super.getDetails(),
+      'height': height,
+      'weight': weight,
+      'blood_type': bloodType,
+      'allergies': allergies,
+      'medications': medications,
+      'other_information': otherInformation,
+    };
+  }
+
+  @override
+  Future<void> updateDetailsDB() async {
+    await db.collection('users').doc(userID).update(getDetails());
+  }
 }
 
 class Doctor extends AppUser {
-  final String specialization;
-  final List<String> experience;
-  final String education;
-  final List<String> certifications;
+  final String? specialization;
+  final List<String>? experience;
+  final String? education;
+  final List<String>? certifications;
 
   Doctor({
     required super.userID,
-    required super.email,
-    required super.profilePicURL,
-    required super.firstName,
-    required super.lastName,
-    required super.civilStatus,
-    required super.age,
-    required super.birthdate,
-    required super.address,
-    required super.phoneNumber,
-    required super.role,
-    required super.statusOnline,
-    required this.specialization,
-    required this.experience,
-    required this.education,
-    required this.certifications,
+    super.email,
+    super.profilePicURL,
+    super.firstName,
+    super.lastName,
+    super.civilStatus,
+    super.age,
+    super.birthdate,
+    super.address,
+    super.phoneNumber,
+    super.role,
+    super.statusOnline,
+    this.specialization,
+    this.experience,
+    this.education,
+    this.certifications,
   });
 
   factory Doctor.setDetails(String? userID, Map<String, dynamic> userData) {
@@ -171,22 +189,38 @@ class Doctor extends AppUser {
       certifications: List<String>.from(userData['certifications'] ?? []),
     );
   }
+
+  @override
+  Map<String, dynamic> getDetails() {
+    return {
+      ...super.getDetails(),
+      'specialization': specialization,
+      'experience': experience,
+      'education': education,
+      'certifications': certifications,
+    };
+  }
+
+  @override
+  Future<void> updateDetailsDB() async {
+    await db.collection('users').doc(userID).update(getDetails());
+  }
 }
 
 class Admin extends AppUser {
   Admin({
     required super.userID,
-    required super.email,
-    required super.profilePicURL,
-    required super.firstName,
-    required super.lastName,
-    required super.civilStatus,
-    required super.age,
-    required super.birthdate,
-    required super.address,
-    required super.phoneNumber,
-    required super.role,
-    required super.statusOnline,
+    super.email,
+    super.profilePicURL,
+    super.firstName,
+    super.lastName,
+    super.civilStatus,
+    super.age,
+    super.birthdate,
+    super.address,
+    super.phoneNumber,
+    super.role,
+    super.statusOnline,
   });
 
   factory Admin.setDetails(String? userID, Map<String, dynamic> userData) {
@@ -204,5 +238,17 @@ class Admin extends AppUser {
       role: userData['role'],
       statusOnline: userData['status_online'],
     );
+  }
+
+  @override
+  Map<String, dynamic> getDetails() {
+    return {
+      ...super.getDetails(),
+    };
+  }
+
+  @override
+  Future<void> updateDetailsDB() async {
+    await db.collection('users').doc(userID).update(getDetails());
   }
 }
