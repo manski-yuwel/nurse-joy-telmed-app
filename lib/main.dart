@@ -15,6 +15,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
+import 'features/Settings/ui/pages/settings.dart';
+import 'features/map/ui/pages/viewmap.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -64,6 +66,8 @@ class MyApp extends StatelessWidget {
           return HomeScreen();
         },
         '/emergency': (context) => EmergencyPage(),
+        '/settings': (context) => const Settings(),
+        '/viewmappage': (context) => const ViewMapPage(),
       },
       theme: ThemeData(
         textTheme: const TextTheme(
@@ -205,6 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: const Text('Settings'),
                     onTap: () {
                       Navigator.pop(context);
+                      Navigator.pushNamed(context, '/settings');
                     },
                   ),
                   ListTile(
@@ -212,6 +217,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: const Text('View Map'),
                     onTap: () {
                       Navigator.pop(context);
+                      Navigator.pushNamed(context, '/viewmappage');
                     },
                   ),
                   ListTile(
