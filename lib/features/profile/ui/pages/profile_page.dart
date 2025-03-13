@@ -1,8 +1,17 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
+import 'package:provider/provider.dart';
+import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:intl/intl.dart';
+
+// TODO:
+// - build backend api for uploading profile pic
 
 class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+  final String userID;
+  const ProfilePage({super.key, required this.userID});
 
   @override
   State<ProfilePage> createState() => _ProfilePageState();
@@ -23,10 +32,9 @@ class _ProfilePageState extends State<ProfilePage> {
       borderSide: BorderSide(color: Colors.white),
     ),
   );
-
+  late String _civilStatus;
   final _formKey = GlobalKey<FormState>();
-  final user = FirebaseAuth.instance.currentUser;
-
+  late final auth;
   // Controllers for form fields
   final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -39,16 +47,21 @@ class _ProfilePageState extends State<ProfilePage> {
   final _contactController = TextEditingController();
   final _addressController = TextEditingController();
 
-  String _civilStatus = 'Single';
-
   @override
   void initState() {
     super.initState();
-    _emailController.text = user?.email ?? '';
+    _civilStatus = 'Single';
+
+    // delays the initialization of auth and fetching to allow building the widget first
+    Future.delayed(Duration.zero, () {
+      auth = Provider.of<AuthService>(context, listen: false);
+      _fetchUserProfile();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthService>(context, listen: false);
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -64,10 +77,10 @@ class _ProfilePageState extends State<ProfilePage> {
                   CircleAvatar(
                     radius: 60,
                     backgroundColor: Colors.grey[200], // Light grey background
-                    backgroundImage: user?.photoURL != null
-                        ? NetworkImage(user!.photoURL!)
+                    backgroundImage: auth.user?.photoURL != null
+                        ? NetworkImage(auth.user!.photoURL!)
                         : null,
-                    child: user?.photoURL == null
+                    child: auth.user?.photoURL == null
                         ? const Icon(
                             Icons.person,
                             size: 60,
@@ -87,11 +100,11 @@ class _ProfilePageState extends State<ProfilePage> {
                 height: 16,
               ),
               Text(
-                user?.displayName?.isNotEmpty == true
-                    ? user!.displayName!
+                auth.user?.displayName?.isNotEmpty == true
+                    ? auth.user!.displayName!
                     : 'No username',
                 style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: user?.displayName?.isNotEmpty == true
+                      color: auth.user?.displayName?.isNotEmpty == true
                           ? null
                           : Colors.black,
                     ),
@@ -266,7 +279,8 @@ class _ProfilePageState extends State<ProfilePage> {
                       ),
                       const SizedBox(height: 16),
                       DropdownButtonFormField<String>(
-                        value: _civilStatus,
+                        value:
+                            _civilStatus.isNotEmpty ? _civilStatus : 'Single',
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'Civil Status',
                           labelStyle: TextStyle(
@@ -404,7 +418,21 @@ class _ProfilePageState extends State<ProfilePage> {
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
                     // TODO: Implement save profile logic
+                    updateProfile(
+                        auth.user!.uid,
+                        '', // photoURL -- blank for now TO IMPLEMENT
+                        _emailController.text,
+                        _firstNameController.text,
+                        _lastNameController.text,
+                        _civilStatus,
+                        int.parse(_ageController.text),
+                        DateTime.parse(_birthdateController.text),
+                        _addressController.text,
+                        _contactController.text); // phoneNumber)
                   }
+                  logger.i('Profile saved');
+                  // reload the profile page after saving changes
+                  _fetchUserProfile();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF58f0d7),
@@ -419,6 +447,30 @@ class _ProfilePageState extends State<ProfilePage> {
         ),
       ),
     );
+  }
+
+  // Function to fetch user profile details
+  Future<void> _fetchUserProfile() async {
+    try {
+      // get the associated user's profile with the logged in user's uid
+      final DocumentSnapshot userProfile =
+          await getProfile(auth.currentUser!.uid);
+      setState(() {
+        // populate the controllers with the user's profile details
+        _emailController.text = userProfile['email'];
+        _firstNameController.text = userProfile['first_name'];
+        _lastNameController.text = userProfile['last_name'];
+        _civilStatus = userProfile['civil_status'];
+        _ageController.text = userProfile['age'].toString();
+        DateTime birthDate = userProfile['birthdate'];
+        _birthdateController.text = DateFormat('yyyy-MM-dd').format(birthDate);
+        _contactController.text = userProfile['phone_number'];
+        _addressController.text = userProfile['address'];
+      });
+    } catch (e) {
+      // TODO: IMPLEMENT ERROR HANDLING AND PROPAGATE TO UI
+      logger.e('Error fetching user profile: $e');
+    }
   }
 
   @override

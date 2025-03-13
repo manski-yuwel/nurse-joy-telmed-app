@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:nursejoyapp/auth/provider/auth_wrapper.dart';
 import 'features/signing/ui/pages/loading_page.dart';
 import 'features/signing/ui/pages/securitycheck_page.dart';
 import 'features/signing/ui/pages/signin_page.dart';
@@ -6,18 +8,29 @@ import 'features/signing/ui/pages/register_page.dart';
 import 'features/chat/ui/pages/chat_list_page.dart';
 import 'features/dashboard/ui/pages/dashboard_page.dart';
 import 'features/profile/ui/pages/profile_page.dart';
+import 'features/emergency/ui/pages/emergency_page.dart';
+import 'package:provider/provider.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:firebase_ui_auth/firebase_ui_auth.dart';
+import 'features/Settings/ui/pages/settings.dart';
+import 'features/map/ui/pages/viewmap.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthService()),
+      ],
+      child: MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -28,8 +41,8 @@ class MyApp extends StatelessWidget {
     final providers = [EmailAuthProvider()];
 
     return MaterialApp(
-      initialRoute:
-          FirebaseAuth.instance.currentUser == null ? '/signin' : '/home',
+      title: 'NurseJoy',
+      home: AuthWrapper(),
       routes: {
         FirebaseAuth.instance.currentUser == null ? '/sign-in' : '/home'
         '/loading': (context) => LoadingPage(),
@@ -51,6 +64,9 @@ class MyApp extends StatelessWidget {
         '/home': (context) {
           return HomeScreen();
         },
+        '/emergency': (context) => EmergencyPage(),
+        '/settings': (context) => const Settings(),
+        '/viewmappage': (context) => const ViewMapPage(),
       },
       theme: ThemeData(
         textTheme: const TextTheme(
@@ -84,14 +100,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    user = FirebaseAuth.instance.currentUser;
   }
-
-  final List<Widget> _pages = [
-    ChatListPage(),
-    DashboardPage(),
-    ProfilePage(),
-  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -114,21 +123,34 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final auth = Provider.of<AuthService>(context);
+    final List<Widget> _pages = [
+      ChatListPage(),
+      DashboardPage(),
+      ProfilePage(userID: auth.user!.uid),
+    ];
     double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF58f0d7),
         actions: [
           if (_selectedIndex == 0)
             buildCircleImage('assets/img/nursejoy.jpg', 5, 1.5),
-          IconButton(
-            icon: Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              Navigator.pushReplacementNamed(context, '/sign-in');
-            },
-          ),
+          if (_selectedIndex == 1)
+            TextButton.icon(
+              onPressed: () {
+                Navigator.pushNamed(context, '/emergency');
+              },
+              label: Text(
+                'E.M.',
+                style: const TextStyle(
+                  color: Colors.red,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              icon: Icon(Icons.warning_sharp, color: Colors.red),
+            ),
         ],
         centerTitle: true,
         leading: Builder(
@@ -186,6 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: const Text('Settings'),
                     onTap: () {
                       Navigator.pop(context);
+                      Navigator.pushNamed(context, '/settings');
                     },
                   ),
                   ListTile(
@@ -193,13 +216,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: const Text('View Map'),
                     onTap: () {
                       Navigator.pop(context);
+                      Navigator.pushNamed(context, '/viewmappage');
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.logout_outlined),
                     title: const Text('Logout'),
                     onTap: () {
-                      Navigator.pop(context);
+                      auth.signOut();
+                      Navigator.pushReplacementNamed(context, '/signin');
                     },
                   ),
                 ],
