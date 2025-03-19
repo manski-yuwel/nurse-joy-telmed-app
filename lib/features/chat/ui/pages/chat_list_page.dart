@@ -81,31 +81,38 @@ class _ChatListPageState extends State<ChatListPage> {
     return Scaffold(
       body: StreamBuilder<QuerySnapshot>(
         stream: chatInstance.getChatList(auth.user!.uid),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+        builder: (context, chatSnapshot) {
+          if (!chatSnapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          var chatRooms = snapshot.data!.docs;
+          var chatRooms = chatSnapshot.data!.docs;
 
-          // Extract all recipient IDs
-          List<dynamic> recipientIDs = chatRooms.map((chatRoom) {
-            List<dynamic> users = chatRoom['users'];
-            return users.first == auth.user!.uid ? users.last : users.first;
-          }).toList();
+          // Extract recipient IDs safely
+          List<String> recipientIDs = chatRooms
+              .map((chatRoom) {
+                List<String> users = chatRoom['users'];
+                return users.first == auth.user!.uid ? users.last : users.first;
+              })
+              .where((id) => id.isNotEmpty)
+              .toSet() // Ensure unique IDs
+              .toList();
 
-          // Fetch recipient details in one batch query
-          return FutureBuilder<QuerySnapshot>(
-            future: FirebaseFirestore.instance
+          if (recipientIDs.isEmpty) {
+            return const Center(child: Text("No chats available"));
+          }
+
+          return StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
                 .collection('users')
                 .where(FieldPath.documentId, whereIn: recipientIDs)
-                .get(),
+                .snapshots(),
             builder: (context, recipientSnapshot) {
               if (!recipientSnapshot.hasData) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              // Store recipient details in a map for fast lookup
+              // Store recipient details in a map
               recipientDetails = {
                 for (var doc in recipientSnapshot.data!.docs)
                   doc.id: doc.data() as Map<String, dynamic>
@@ -123,28 +130,31 @@ class _ChatListPageState extends State<ChatListPage> {
                   final recipientData = recipientDetails[recipientID] ?? {};
 
                   return ListTile(
-                      leading: const Icon(Icons.person, color: Colors.green),
-                      title: Text(recipientData['email'] ?? 'Unknown'),
-                      subtitle: Text(chatRoom['last_message'] ?? ''),
-                      onTap: () {
-                        // get userID and recipientID and chatroomID
-                        final userID = auth.user!.uid;
-                        final chatRoomID = chatInstance.generateChatRoomID(
-                            userID, recipientID);
-                        logger.d(recipientID);
+                    leading: const Icon(Icons.person, color: Colors.green),
+                    title: Text(recipientData['email'] ?? 'Unknown'),
+                    subtitle: Text(chatRoom['last_message'] ?? ''),
+                    onTap: () {
+                      final userID = auth.user!.uid;
+                      final chatRoomID =
+                          chatInstance.generateChatRoomID(userID, recipientID);
 
-                        // generate the chat room and navigate to it.
-                        MaterialPageRoute route = MaterialPageRoute(
+                      logger.d("Opening chat with: $recipientID");
+
+                      chatInstance.generateChatRoom(
+                          chatRoomID, userID, recipientID);
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
                           builder: (context) => ChatRoomPage(
                             chatRoomID: chatRoomID,
                             recipientID: recipientID,
                             recipientFullName: recipientData['email'],
                           ),
-                        );
-                        chatInstance.generateChatRoom(
-                            chatRoomID, userID, recipientID);
-                        Navigator.push(context, route);
-                      });
+                        ),
+                      );
+                    },
+                  );
                 },
               );
             },
