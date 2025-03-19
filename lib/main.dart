@@ -224,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: const Text('Logout'),
                     onTap: () {
                       auth.signOut();
-                      Navigator.pushReplacementNamed(context, '/signin');
+                      Navigator.pushReplacementNamed(context, '/sign-in');
                     },
                   ),
                 ],
