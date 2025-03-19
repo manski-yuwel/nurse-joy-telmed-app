@@ -462,7 +462,8 @@ class _ProfilePageState extends State<ProfilePage> {
         _lastNameController.text = userProfile['last_name'];
         _civilStatus = userProfile['civil_status'];
         _ageController.text = userProfile['age'].toString();
-        DateTime birthDate = userProfile['birthdate'];
+        Timestamp birthTimestamp = userProfile['birthdate'];
+        DateTime birthDate = birthTimestamp.toDate();
         _birthdateController.text = DateFormat('yyyy-MM-dd').format(birthDate);
         _contactController.text = userProfile['phone_number'];
         _addressController.text = userProfile['address'];
