@@ -91,7 +91,7 @@ class _ChatListPageState extends State<ChatListPage> {
           // Extract recipient IDs safely
           List<String> recipientIDs = chatRooms
               .map((chatRoom) {
-                List<String> users = chatRoom['users'];
+                List<String> users = List<String>.from(chatRoom['users']);
                 return users.first == auth.user!.uid ? users.last : users.first;
               })
               .where((id) => id.isNotEmpty)
