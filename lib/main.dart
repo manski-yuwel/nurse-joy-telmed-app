@@ -44,8 +44,8 @@ class MyApp extends StatelessWidget {
       title: 'NurseJoy',
       home: AuthWrapper(),
       routes: {
-        FirebaseAuth.instance.currentUser == null ? '/sign-in' : '/home'
         '/loading': (context) => LoadingPage(),
+        '/signin': (context) => SigninPage(),
         '/sign-in': (context) {
           return SignInScreen(
             providers: providers,
