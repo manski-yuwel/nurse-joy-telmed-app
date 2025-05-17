@@ -5,15 +5,16 @@ class VideoCallService {
   final logger = Logger();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // Agora App ID for using the Agora SDK
   final String appID = 'AGORA_APP_ID';
-  final String token = 'AGORA_TOKEN';
 
   // Generae channel name using the chat room id
   String generateChannelName(String chatRoomID) {
     return 'nursejoy_$chatRoomID';
   }
 
-  Future<String> generateToken(String channelName) async {
+  // generate token for the call
+  String generateToken(String channelName) {
     // implement token server in next js
     String token = '';
     return token;
