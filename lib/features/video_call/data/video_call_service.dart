@@ -40,6 +40,7 @@ class VideoCallService {
       'senderID': callerID,
       'recipientID': calleeID,
       'message_body': 'Video call initiated.',
+      'message_type': 'video_call',
       'timestamp': FieldValue.serverTimestamp(),
     });
   }

@@ -51,6 +51,8 @@ class _VideoCallPageState extends State<VideoCallPage> {
       final auth = Provider.of<AuthService>(context, listen: false);
       await _videoCallService.initiateCall(
           widget.chatRoomID, auth.user!.uid, widget.calleeID);
+    } else {
+      await _videoCallService.acceptCall(widget.chatRoomID);
     }
   }
 

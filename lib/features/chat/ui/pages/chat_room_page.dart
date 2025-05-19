@@ -47,18 +47,19 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           ),
           actions: [
             IconButton(
-              icon: const Icon(Icons.call),
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => VideoCallPage(
-                  chatRoomID: widget.chatRoomID,
-                  calleeID: widget.recipientID,
-                  callerID: user!.uid,
-                  isInitiator: true,
-                )));
-              }
-            )
-          ]
-      ),
+                icon: const Icon(Icons.call),
+                onPressed: () {
+                  Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                          builder: (context) => VideoCallPage(
+                                chatRoomID: widget.chatRoomID,
+                                calleeID: widget.recipientID,
+                                callerID: user!.uid,
+                                isInitiator: true,
+                              )));
+                })
+          ]),
       body: Column(
         children: [
           Expanded(
@@ -77,10 +78,15 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                     var message = messages[index];
                     bool isMe = message['senderID'] == auth.user!.uid;
                     bool isNotMe = message['recipientID'] == auth.user!.uid;
+
                     logger.i(
                         'isMe: $isMe for message: ${message['message_body']}');
                     logger.i(
                         'isNotMe: $isNotMe for message: ${message['message_body']}');
+                    if (message['message_type'] == 'video_call') {
+                      return _buildCallNotificationMessage(message, isMe);
+                    }
+
                     return Container(
                       margin: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
                       child: Row(
@@ -90,9 +96,9 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                         children: [
                           if (!isMe) ...[
                             CircleAvatar(
+                              backgroundColor: Colors.grey[300],
                               child: Icon(
                                   Icons.person), // Placeholder for profile pic
-                              backgroundColor: Colors.grey[300],
                             ),
                             SizedBox(
                                 width: 8), // Spacing between avatar and message
@@ -165,5 +171,75 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           widget.recipientID, _messageController.text);
       _messageController.clear();
     }
+  }
+
+  Widget _buildCallNotificationMessage(DocumentSnapshot message, bool isMe) {
+    final callStatus = message['call_status'] ?? 'pending';
+    final isCaller = message['senderID'] == user!.uid;
+
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.video_call,
+                  color: Colors.blue,
+                  size: 20,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  isCaller
+                      ? 'You initiated a video call'
+                      : 'Incoming video call',
+                  style: TextStyle(color: Colors.black87),
+                ),
+                if (!isCaller && callStatus == 'pending') ...[
+                  SizedBox(width: 8),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => VideoCallPage(
+                            chatRoomID: widget.chatRoomID,
+                            calleeID: widget.recipientID,
+                            callerID: message['senderID'],
+                            isInitiator: false,
+                          ),
+                        ),
+                      );
+                    },
+                    child: Text(
+                      'Join',
+                      style: TextStyle(color: Colors.blue),
+                    ),
+                  ),
+                ],
+                if (callStatus == 'accepted')
+                  Text(
+                    ' • Call in progress',
+                    style: TextStyle(color: Colors.green),
+                  ),
+                if (callStatus == 'ended')
+                  Text(
+                    ' • Call ended',
+                    style: TextStyle(color: Colors.grey),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
