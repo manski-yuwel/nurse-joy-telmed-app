@@ -49,7 +49,8 @@ class _VideoCallPageState extends State<VideoCallPage> {
 
     if (widget.isInitiator) {
       final auth = Provider.of<AuthService>(context, listen: false);
-      await _videoCallService.initiateCall(widget.chatRoomID, auth.user!.uid, widget.calleeID);
+      await _videoCallService.initiateCall(
+          widget.chatRoomID, auth.user!.uid, widget.calleeID);
     }
   }
 
@@ -83,7 +84,8 @@ class _VideoCallPageState extends State<VideoCallPage> {
           _users.add(uid);
         });
       },
-      onUserOffline: (RtcConnection connection, int uid, UserOfflineReasonType reason) {
+      onUserOffline:
+          (RtcConnection connection, int uid, UserOfflineReasonType reason) {
         setState(() {
           _infoStrings.add('User Offline: $uid');
           _users.remove(uid);
@@ -94,7 +96,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
 
   Future<void> _joinChannel() async {
     await _engine.joinChannel(
-      token: _token,
+      token: "",
       channelId: _channelName,
       options: const ChannelMediaOptions(
         autoSubscribeAudio: true,
@@ -107,7 +109,6 @@ class _VideoCallPageState extends State<VideoCallPage> {
     );
   }
 
-
   @override
   void dispose() {
     _users.clear();
@@ -117,8 +118,130 @@ class _VideoCallPageState extends State<VideoCallPage> {
     super.dispose();
   }
 
+  Widget _buildVideoView(int uid) {
+    return AgoraVideoView(
+      controller: VideoViewController(
+        rtcEngine: _engine,
+        canvas: uid == 0 ? const VideoCanvas(uid: 0) : VideoCanvas(uid: uid),
+      ),
+    );
+  }
 
+  Widget _buildVideoGrid() {
+    final views = <Widget>[];
+
+    views.add(_buildVideoView(0));
+    for (var uid in _users) {
+      views.add(_buildVideoView(uid));
+    }
+
+    if (views.length == 1) {
+      return Container(
+        child: views.first,
+      );
+    }
+
+    return GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: views.length <= 2 ? 1 : 2,
+        childAspectRatio: 1.0,
+        mainAxisSpacing: 4.0,
+        crossAxisSpacing: 4.0,
+      ),
+      itemBuilder: (context, index) => views[index],
+    );
+  }
+
+  Widget _buildControlButtons() {
+    return Container(
+      alignment: Alignment.bottomCenter,
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          RawMaterialButton(
+            onPressed: () {
+              setState(() {
+                muted = !muted;
+              });
+              _engine.muteLocalAudioStream(muted);
+            },
+            shape: CircleBorder(),
+            elevation: 2.0,
+            fillColor: muted ? Colors.blueAccent : Colors.white,
+            padding: const EdgeInsets.all(12.0),
+            child: Icon(
+              muted ? Icons.mic_off : Icons.mic,
+              color: muted ? Colors.white : Colors.blueAccent,
+              size: 20.0,
+            ),
+          ),
+          RawMaterialButton(
+            onPressed: () => Navigator.pop(context),
+            shape: CircleBorder(),
+            elevation: 2.0,
+            fillColor: Colors.redAccent,
+            padding: const EdgeInsets.all(15.0),
+            child: Icon(
+              Icons.call_end,
+              color: Colors.white,
+              size: 35.0,
+            ),
+          ),
+          RawMaterialButton(
+            onPressed: () {
+              setState(() {
+                videoDisabled = !videoDisabled;
+              });
+              _engine.muteLocalVideoStream(videoDisabled);
+            },
+            shape: CircleBorder(),
+            elevation: 2.0,
+            fillColor: videoDisabled ? Colors.blueAccent : Colors.white,
+            padding: const EdgeInsets.all(12.0),
+            child: Icon(
+              videoDisabled ? Icons.videocam_off : Icons.videocam,
+              color: videoDisabled ? Colors.white : Colors.blueAccent,
+              size: 20.0,
+            ),
+          ),
+          RawMaterialButton(
+            onPressed: () {
+              _engine.switchCamera();
+            },
+            shape: CircleBorder(),
+            elevation: 2.0,
+            fillColor: Colors.white,
+            padding: const EdgeInsets.all(12.0),
+            child: Icon(
+              Icons.switch_camera,
+              color: Colors.blueAccent,
+              size: 20.0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return const Placeholder();
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Call with ${widget.isInitiator ? widget.calleeID : widget.callerID}'),
+        backgroundColor: const Color(0xFF58f0d7),
+        centerTitle: true,
+      ),
+      backgroundColor: Colors.black,
+      body: Center(
+        child: Stack(
+          children: <Widget>[
+            _buildVideoGrid(),
+            _buildControlButtons(),
+          ],
+        ),
+      ),
+    );
   }
 }
+
