@@ -10,13 +10,15 @@ class VideoCallPage extends StatefulWidget {
   final String callerID;
   final String calleeID;
   final bool isInitiator;
+  final String? messageId;
 
   const VideoCallPage(
       {super.key,
       required this.chatRoomID,
       required this.callerID,
       required this.calleeID,
-      required this.isInitiator});
+      required this.isInitiator,
+      this.messageId});
 
   @override
   State<VideoCallPage> createState() => _VideoCallPageState();
@@ -24,6 +26,7 @@ class VideoCallPage extends StatefulWidget {
 
 class _VideoCallPageState extends State<VideoCallPage> {
   final VideoCallService _videoCallService = VideoCallService();
+  late String _appID;
   late RtcEngine _engine;
   late String _channelName;
   late String _token;
@@ -37,6 +40,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
     super.initState();
     _channelName = _videoCallService.generateChannelName(widget.chatRoomID);
     _token = _videoCallService.generateToken(_channelName);
+    _appID = _videoCallService.appID;
     _startVideoCall();
   }
 
@@ -63,7 +67,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
   Future<void> _initializeAgoraSDK() async {
     _engine = createAgoraRtcEngine();
     await _engine.initialize(RtcEngineContext(
-        appId: _videoCallService.appID,
+        appId: _appID,
         channelProfile: ChannelProfileType.channelProfileCommunication));
   }
 
@@ -116,7 +120,8 @@ class _VideoCallPageState extends State<VideoCallPage> {
     _users.clear();
     _engine.leaveChannel();
     _engine.release();
-    _videoCallService.endCall(widget.chatRoomID, widget.callerID, widget.calleeID);
+    _videoCallService.endCall(
+        widget.chatRoomID, widget.callerID, widget.calleeID);
     super.dispose();
   }
 
@@ -230,7 +235,8 @@ class _VideoCallPageState extends State<VideoCallPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Call with ${widget.isInitiator ? widget.calleeID : widget.callerID}'),
+        title: Text(
+            'Call with ${widget.isInitiator ? widget.calleeID : widget.callerID}'),
         backgroundColor: const Color(0xFF58f0d7),
         centerTitle: true,
       ),
@@ -246,4 +252,3 @@ class _VideoCallPageState extends State<VideoCallPage> {
     );
   }
 }
-

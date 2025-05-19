@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:intl/intl.dart';
-import 'package:nursejoyapp/auth/models/users/app_users.dart';
 
 // TODO:
 // - build backend api for uploading profile pic
@@ -54,7 +55,7 @@ class _ProfilePageState extends State<ProfilePage> {
     // delays the initialization of auth and fetching to allow building the widget first
     Future.delayed(Duration.zero, () {
       auth = Provider.of<AuthService>(context, listen: false);
-      _fetchUserProfile(auth.appUser);
+      _fetchUserProfile();
     });
   }
 
@@ -417,22 +418,21 @@ class _ProfilePageState extends State<ProfilePage> {
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
                     // TODO: Implement save profile logic
-                    final userProfile = <String, dynamic>{
-                      'email': _emailController.text,
-                      'profile_pic': '',
-                      'first_name': _firstNameController.text,
-                      'last_name': _lastNameController.text,
-                      'civil_status': _civilStatus,
-                      'age': int.parse(_ageController.text),
-                      'birthdate': _birthdateController.text,
-                      'address': _addressController.text,
-                      'phone_number': _contactController.text,
-                    };
-                    auth.saveUserProfile(userProfile);
+                    updateProfile(
+                        auth.user!.uid,
+                        '', // photoURL -- blank for now TO IMPLEMENT
+                        _emailController.text,
+                        _firstNameController.text,
+                        _lastNameController.text,
+                        _civilStatus,
+                        int.parse(_ageController.text),
+                        DateTime.parse(_birthdateController.text),
+                        _addressController.text,
+                        _contactController.text); // phoneNumber)
                   }
                   logger.i('Profile saved');
                   // reload the profile page after saving changes
-                  _fetchUserProfile(auth.appUser);
+                  _fetchUserProfile();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF58f0d7),
@@ -450,11 +450,11 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   // Function to fetch user profile details
-  Future<void> _fetchUserProfile(AppUser? appUser) async {
+  Future<void> _fetchUserProfile() async {
     try {
       // get the associated user's profile with the logged in user's uid
       final DocumentSnapshot userProfile =
-          await auth.getUserProfile(appUser?.userID, appUser?.role);
+          await getProfile(auth.currentUser!.uid);
       setState(() {
         // populate the controllers with the user's profile details
         _emailController.text = userProfile['email'];

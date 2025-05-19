@@ -1,13 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class VideoCallService {
   final logger = Logger();
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Agora App ID for using the Agora SDK
-  final String appID = 'AGORA_APP_ID';
-
+  // get the dotenv.get('AGORA_APP_ID');
+  String get appID => dotenv.get('AGORA_APP_ID');
   // Generae channel name using the chat room id
   String generateChannelName(String chatRoomID) {
     return 'nursejoy_$chatRoomID';
@@ -26,7 +27,7 @@ class VideoCallService {
     final token = await generateToken(channelName);
 
     // Create a new video call document
-    await _firestore.collection('video_calls').doc(chatRoomID).update({
+    await _firestore.collection('video_calls').doc(chatRoomID).set({
       'callerID': callerID,
       'calleeID': calleeID,
       'channelName': channelName,
@@ -36,23 +37,33 @@ class VideoCallService {
     });
 
     // Update the chat room with the last message
-    await _firestore.collection('chats').doc(chatRoomID).collection('messages').add({
+    await _firestore
+        .collection('chats')
+        .doc(chatRoomID)
+        .collection('messages')
+        .add({
       'senderID': callerID,
       'recipientID': calleeID,
       'message_body': 'Video call initiated.',
       'message_type': 'video_call',
+      'call_status': 'pending',
       'timestamp': FieldValue.serverTimestamp(),
     });
   }
 
   // End the call
-  Future<void> endCall(String chatRoomID, String callerID, String calleeID) async {
+  Future<void> endCall(
+      String chatRoomID, String callerID, String calleeID) async {
     await _firestore.collection('video_calls').doc(chatRoomID).update({
       'status': 'ended',
       'endedAt': FieldValue.serverTimestamp(),
     });
 
-    await _firestore.collection('chats').doc(chatRoomID).collection('messages').add({
+    await _firestore
+        .collection('chats')
+        .doc(chatRoomID)
+        .collection('messages')
+        .add({
       'senderID': callerID,
       'recipientID': calleeID,
       'message_body': 'Video call ended.',
@@ -80,5 +91,4 @@ class VideoCallService {
   Stream<DocumentSnapshot> getCall(String chatRoomID) {
     return _firestore.collection('video_calls').doc(chatRoomID).snapshots();
   }
-    
 }

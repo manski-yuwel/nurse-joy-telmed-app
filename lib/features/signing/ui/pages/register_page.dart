@@ -143,7 +143,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
                             try {
                               final res =
-                                  await auth.signUp(email, password, 'user');
+                                  await auth.signUp(email, password);
                               if (res == 'Success') {
                                 // Navigate to home or dashboard
                                 Navigator.pushNamed(context, '/home');

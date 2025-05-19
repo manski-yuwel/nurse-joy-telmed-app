@@ -48,7 +48,15 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           actions: [
             IconButton(
                 icon: const Icon(Icons.call),
-                onPressed: () {
+                onPressed: () async {
+                  // First send call notification
+                  final messageRef = await chatInstance.sendCallNotification(
+                      widget.chatRoomID,
+                      user!.uid,
+                      widget.recipientID,
+                      "video");
+
+                  // Then navigate to video call page
                   Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -57,7 +65,11 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                                 calleeID: widget.recipientID,
                                 callerID: user!.uid,
                                 isInitiator: true,
-                              )));
+                              ))).then((_) {
+                    // Update call status when returning from call
+                    chatInstance.updateCallStatus(
+                        widget.chatRoomID, messageRef.id, 'ended');
+                  });
                 })
           ]),
       body: Column(
@@ -83,7 +95,7 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                         'isMe: $isMe for message: ${message['message_body']}');
                     logger.i(
                         'isNotMe: $isNotMe for message: ${message['message_body']}');
-                    if (message['message_type'] == 'video_call') {
+                    if ((message['message_type'] ?? '') == 'video_call') {
                       return _buildCallNotificationMessage(message, isMe);
                     }
 
@@ -207,6 +219,10 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                   SizedBox(width: 8),
                   TextButton(
                     onPressed: () {
+                      // Update status to accepted
+                      chatInstance.updateCallStatus(
+                          widget.chatRoomID, message.id, 'accepted');
+
                       Navigator.push(
                         context,
                         MaterialPageRoute(
@@ -215,9 +231,14 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
                             calleeID: widget.recipientID,
                             callerID: message['senderID'],
                             isInitiator: false,
+                            messageId: message.id,
                           ),
                         ),
-                      );
+                      ).then((_) {
+                        // Update call status when returning from call
+                        chatInstance.updateCallStatus(
+                            widget.chatRoomID, message.id, 'ended');
+                      });
                     },
                     child: Text(
                       'Join',

@@ -53,7 +53,74 @@ class Chat {
       'senderID': userID,
       'recipientID': recipientID,
       'message_body': messageBody,
+      'message_type': 'text',
       'timestamp': FieldValue.serverTimestamp(),
     });
+  }
+
+  // function to send a call notification message
+  Future<DocumentReference> sendCallNotification(String chatRoomID,
+      String callerID, String recipientID, String callType) async {
+    final docRef = await db
+        .collection('chats')
+        .doc(chatRoomID)
+        .collection('messages')
+        .add({
+      'senderID': callerID,
+      'recipientID': recipientID,
+      'message_body': 'Incoming $callType call',
+      'message_type': 'video_call',
+      'call_status': 'pending',
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+
+    await db.collection('chats').doc(chatRoomID).update({
+      'last_message': 'Video call',
+    });
+
+    return docRef;
+  }
+
+  // function to update call status in message
+  Future<void> updateCallStatus(
+      String chatRoomID, String messageID, String status) async {
+    await db
+        .collection('chats')
+        .doc(chatRoomID)
+        .collection('messages')
+        .doc(messageID)
+        .update({
+      'call_status': status,
+    });
+  }
+
+  Future<void> migrateMessages() async {
+    // Get all chat rooms
+    final snapshot = await db.collection('chats').get();
+
+    for (var chatDoc in snapshot.docs) {
+      String chatRoomID = chatDoc.id;
+
+      // Get all messages in this chat room
+      final messagesSnapshot = await db
+          .collection('chats')
+          .doc(chatRoomID)
+          .collection('messages')
+          .get();
+
+      // Update each message that doesn't have message_type
+      for (var messageDoc in messagesSnapshot.docs) {
+        var messageData = messageDoc.data();
+        if (!messageData.containsKey('message_type')) {
+          await db
+              .collection('chats')
+              .doc(chatRoomID)
+              .collection('messages')
+              .doc(messageDoc.id)
+              .update({'message_type': 'text'});
+        }
+      }
+    }
+    print("Migration complete!");
   }
 }
