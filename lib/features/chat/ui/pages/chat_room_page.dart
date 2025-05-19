@@ -4,6 +4,7 @@ import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:nursejoyapp/features/video_call/ui/video_call_page.dart';
 
 class ChatRoomPage extends StatefulWidget {
   final String chatRoomID;
@@ -43,7 +44,21 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.pop(context),
-          )),
+          ),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.call),
+              onPressed: () {
+                Navigator.push(context, MaterialPageRoute(builder: (context) => VideoCallPage(
+                  chatRoomID: widget.chatRoomID,
+                  calleeID: widget.recipientID,
+                  callerID: user!.uid,
+                  isInitiator: true,
+                )));
+              }
+            )
+          ]
+      ),
       body: Column(
         children: [
           Expanded(

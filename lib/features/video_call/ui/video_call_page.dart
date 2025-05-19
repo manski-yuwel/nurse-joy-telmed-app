@@ -114,7 +114,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
     _users.clear();
     _engine.leaveChannel();
     _engine.release();
-    _videoCallService.endCall(widget.chatRoomID);
+    _videoCallService.endCall(widget.chatRoomID, widget.callerID, widget.calleeID);
     super.dispose();
   }
 

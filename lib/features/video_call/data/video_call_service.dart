@@ -36,17 +36,26 @@ class VideoCallService {
     });
 
     // Update the chat room with the last message
-    await _firestore.collection('chats').doc(chatRoomID).update({
-      'lastMessage': 'Video call initiated.',
-      'lastMessageTimestamp': FieldValue.serverTimestamp(),
+    await _firestore.collection('chats').doc(chatRoomID).collection('messages').add({
+      'senderID': callerID,
+      'recipientID': calleeID,
+      'message_body': 'Video call initiated.',
+      'timestamp': FieldValue.serverTimestamp(),
     });
   }
 
   // End the call
-  Future<void> endCall(String chatRoomID) async {
+  Future<void> endCall(String chatRoomID, String callerID, String calleeID) async {
     await _firestore.collection('video_calls').doc(chatRoomID).update({
       'status': 'ended',
       'endedAt': FieldValue.serverTimestamp(),
+    });
+
+    await _firestore.collection('chats').doc(chatRoomID).collection('messages').add({
+      'senderID': callerID,
+      'recipientID': calleeID,
+      'message_body': 'Video call ended.',
+      'timestamp': FieldValue.serverTimestamp(),
     });
   }
 
