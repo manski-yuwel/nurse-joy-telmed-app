@@ -12,16 +12,21 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   User? get currentUser => user;
 
   AuthService() {
-    WidgetsBinding.instance!.addObserver(this);
+    WidgetsBinding.instance.addObserver(this);
     auth.authStateChanges().listen((User? user) async {
       this.user = user;
       if (user == null) {
         logger.i("User is signed out!");
-      } else {
+      } else { // check if the user is setup
         logger.i("User is signed in!");
       }
       notifyListeners();
     });
+  }
+
+  Future<bool> isUserSetup() async {
+    final userData = await db.collection('users').doc(user!.uid).get();
+    return userData.data()?['is_setup'] ?? false;
   }
 
   Future<String?> signIn(String email, String password) async {
@@ -66,6 +71,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'phone_number': '',
         'role': 'user',
         'status_online': false,
+        'is_setup': false,
       });
 
       await db

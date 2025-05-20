@@ -18,7 +18,7 @@ Future<void> updateProfile(
     int age,
     DateTime birthdate,
     String address,
-    String phoneNumber) async {
+    String phoneNumber,) async {
   // use auth to update the user's profile with the ones built-in the user type with firebase auth
   if (profilePicURL != auth.currentUser!.photoURL) {
     await auth.currentUser!.updatePhotoURL(profilePicURL);
@@ -45,4 +45,10 @@ Future<void> updateProfile(
 // function to get the user's profile details
 Future<DocumentSnapshot> getProfile(String userID) async {
   return await db.collection('users').doc(userID).get();
+}
+
+Future<void> setIsSetup(String userID, bool isSetup) async {
+  return await db.collection('users').doc(userID).update({
+    'is_setup': isSetup,
+  });
 }
