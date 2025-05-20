@@ -5,6 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'dart:async';
+import 'package:intl/intl.dart';
 
 final logger = Logger();
 final chatInstance = Chat();
@@ -18,6 +20,7 @@ class ChatListPage extends StatefulWidget {
 
 class _ChatListPageState extends State<ChatListPage> {
   Map<String, Map<String, dynamic>> recipientDetails = {};
+  Timer? _debounce;
   final TextEditingController _searchController = TextEditingController();
   List<QueryDocumentSnapshot> _searchResults = [];
   bool _isSearching = false;
@@ -27,6 +30,16 @@ class _ChatListPageState extends State<ChatListPage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  // use debounce to prevent multiple searches
+  void _debounceSearch(String searchTerm, String currentUserID) {
+    if (_debounce != null) {
+      _debounce!.cancel();
+    }
+    _debounce = Timer(const Duration(milliseconds: 400), () {
+      _performSearch(searchTerm, currentUserID);
+    });
   }
 
   Future<void> _performSearch(String searchTerm, String currentUserID) async {
@@ -91,7 +104,8 @@ class _ChatListPageState extends State<ChatListPage> {
                       builder: (context) => ChatRoomPage(
                         chatRoomID: chatRoomID,
                         recipientID: recipientID,
-                        recipientFullName: user['email'],
+                        recipientFullName:
+                            "${user['first_name']} ${user['last_name']}",
                       ),
                     );
                     chatInstance.generateChatRoom(
@@ -126,7 +140,7 @@ class _ChatListPageState extends State<ChatListPage> {
 
         return ListTile(
           leading: const Icon(Icons.person, color: Colors.blue),
-          title: Text(user['email'] ?? 'Unknown'),
+          title: Text("${user['first_name']} ${user['last_name']}"),
           subtitle: Text(user['status_online'] == true ? 'Online' : 'Offline'),
           onTap: () {
             final chatRoomID =
@@ -141,7 +155,8 @@ class _ChatListPageState extends State<ChatListPage> {
                 builder: (context) => ChatRoomPage(
                   chatRoomID: chatRoomID,
                   recipientID: recipientID,
-                  recipientFullName: user['email'],
+                  recipientFullName:
+                      "${user['first_name']} ${user['last_name']}",
                 ),
               ),
             );
@@ -182,7 +197,7 @@ class _ChatListPageState extends State<ChatListPage> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: 'Search users by email',
+                  hintText: 'Search users by name',
                   prefixIcon: const Icon(Icons.search),
                   suffixIcon: IconButton(
                     icon: const Icon(Icons.clear),
@@ -195,7 +210,7 @@ class _ChatListPageState extends State<ChatListPage> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                onChanged: (value) => _performSearch(value, auth.user!.uid),
+                onChanged: (value) => _debounceSearch(value, auth.user!.uid),
               ),
             ),
           Expanded(
@@ -260,9 +275,13 @@ class _ChatListPageState extends State<ChatListPage> {
                               return ListTile(
                                 leading: const Icon(Icons.person,
                                     color: Colors.green),
-                                title:
-                                    Text(recipientData['email'] ?? 'Unknown'),
+                                title: Text(
+                                    "${recipientData['first_name']} ${recipientData['last_name']}"),
                                 subtitle: Text(chatRoom['last_message'] ?? ''),
+                                trailing: Text(chatRoom['timestamp'] != null
+                                    ? DateFormat('h:mm a').format(
+                                        chatRoom['timestamp'].toDate())
+                                    : ''),
                                 onTap: () {
                                   final userID = auth.user!.uid;
                                   final chatRoomID = chatInstance
@@ -280,7 +299,7 @@ class _ChatListPageState extends State<ChatListPage> {
                                         chatRoomID: chatRoomID,
                                         recipientID: recipientID,
                                         recipientFullName:
-                                            recipientData['email'],
+                                            "${recipientData['first_name']} ${recipientData['last_name']}",
                                       ),
                                     ),
                                   );

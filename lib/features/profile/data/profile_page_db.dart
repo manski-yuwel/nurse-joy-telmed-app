@@ -14,6 +14,8 @@ Future<void> updateProfile(
     String email,
     String firstName,
     String lastName,
+    String fullName,
+    String fullNameLower,
     String civilStatus,
     int age,
     DateTime birthdate,
@@ -34,6 +36,8 @@ Future<void> updateProfile(
   return db.collection('users').doc(userID).update({
     'first_name': firstName,
     'last_name': lastName,
+    'full_name': fullName,
+    'full_name_lowercase': fullNameLower,
     'civil_status': civilStatus,
     'age': age,
     'birthdate': birthdate,

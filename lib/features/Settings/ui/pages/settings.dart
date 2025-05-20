@@ -3,6 +3,7 @@ import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
 import 'package:nursejoyapp/migrations/profile/profile_migrate.dart';
+import 'package:go_router/go_router.dart';
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -25,11 +26,11 @@ class _SettingsState extends State<Settings> {
     setState(() {
       _selectedIndex = index;
       if (index == 0) {
-        Navigator.pushReplacementNamed(context, "/homescreen");
+        context.go('/home');
       } else if (index == 1) {
-        Navigator.pushReplacementNamed(context, "/homescreen");
+        context.go('/home');
       } else if (index == 2) {
-        Navigator.pushReplacementNamed(context, "/homescreen");
+        context.go('/home');
       }
     });
   }

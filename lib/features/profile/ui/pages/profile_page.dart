@@ -5,6 +5,8 @@ import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:form_builder_validators/form_builder_validators.dart';
 
 // TODO:
 // - build backend api for uploading profile pic
@@ -33,19 +35,21 @@ class _ProfilePageState extends State<ProfilePage> {
     ),
   );
   late String _civilStatus;
-  final _formKey = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormBuilderState>();
   late final auth;
-  // Controllers for form fields
-  final _usernameController = TextEditingController();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _newPasswordController = TextEditingController();
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _ageController = TextEditingController();
-  final _birthdateController = TextEditingController();
-  final _contactController = TextEditingController();
-  final _addressController = TextEditingController();
+
+  // Form field names
+  static const String usernameField = 'username';
+  static const String emailField = 'email';
+  static const String passwordField = 'password';
+  static const String newPasswordField = 'new_password';
+  static const String firstNameField = 'first_name';
+  static const String lastNameField = 'last_name';
+  static const String civilStatusField = 'civil_status';
+  static const String ageField = 'age';
+  static const String birthdateField = 'birthdate';
+  static const String contactField = 'contact';
+  static const String addressField = 'address';
 
   @override
   void initState() {
@@ -65,7 +69,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return Scaffold(
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
-        child: Form(
+        child: FormBuilder(
           key: _formKey,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -125,98 +129,100 @@ class _ProfilePageState extends State<ProfilePage> {
                               fontWeight: FontWeight.bold,
                               color: Colors.white)),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _usernameController,
+                      FormBuilderTextField(
+                        name: usernameField,
                         style: const TextStyle(color: Colors.black),
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'Username',
-                          labelStyle: TextStyle(color: Colors.black),
-                          border: OutlineInputBorder(
+                          labelStyle: const TextStyle(color: Colors.black),
+                          border: const OutlineInputBorder(
+                            borderSide: BorderSide(color: Colors.black),
+                          ),
+                          enabledBorder: const OutlineInputBorder(
                             borderSide:
-                                BorderSide(color: Colors.black), // White border
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(255, 0, 0,
-                                    0)), // White border when not focused
-                          ),
-                          prefixIcon: Icon(Icons.person,
-                              color: const Color.fromARGB(
-                                  255, 0, 0, 0)), // White icon
+                          prefixIcon: const Icon(Icons.person,
+                              color: Color.fromARGB(255, 0, 0, 0)),
                         ),
+                        validator: FormBuilderValidators.compose([
+                          FormBuilderValidators.required(),
+                          FormBuilderValidators.minLength(4),
+                        ]),
                       ),
-                      // Apply the same pattern to other TextFormFields in Login Information
-                      const SizedBox(height: 16), // Added spacing
-                      TextFormField(
-                        controller: _emailController,
+                      const SizedBox(height: 16),
+                      FormBuilderTextField(
+                        name: emailField,
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'Email',
-                          labelStyle: TextStyle(
-                              color: Color.fromARGB(
-                                  255, 0, 0, 0)), // Made label white
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Color.fromARGB(
-                                    255, 0, 0, 0)), // White border
+                          labelStyle: const TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0)),
+                          border: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Color.fromARGB(255, 0, 0,
-                                    0)), // White border when not focused
+                          enabledBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          prefixIcon: Icon(
+                          prefixIcon: const Icon(
                             Icons.email,
                             color: Color.fromARGB(255, 0, 0, 0),
-                          ), // Added email icon
+                          ),
                         ),
+                        validator: FormBuilderValidators.compose([
+                          FormBuilderValidators.required(),
+                          FormBuilderValidators.email(),
+                        ]),
                       ),
-                      const SizedBox(height: 16), // Increased spacing
-                      TextFormField(
-                        controller: _passwordController,
+                      const SizedBox(height: 16),
+                      FormBuilderTextField(
+                        name: passwordField,
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'Current Password',
-                          labelStyle: TextStyle(
-                              color: const Color.fromARGB(255, 0, 0, 0)),
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(
-                                    255, 0, 0, 0)), // White border
+                          labelStyle: const TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0)),
+                          border: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(255, 0, 0,
-                                    0)), // White border when not focused
+                          enabledBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          prefixIcon: Icon(
+                          prefixIcon: const Icon(
                             Icons.lock,
-                            color: const Color.fromARGB(255, 0, 0, 0),
-                          ), // Added lock icon
+                            color: Color.fromARGB(255, 0, 0, 0),
+                          ),
                         ),
                         obscureText: true,
                       ),
-                      const SizedBox(height: 16), // Increased spacing
-                      TextFormField(
-                        controller: _newPasswordController,
+                      const SizedBox(height: 16),
+                      FormBuilderTextField(
+                        name: newPasswordField,
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'New Password',
-                          labelStyle: TextStyle(
-                              color: const Color.fromARGB(255, 0, 0, 0)),
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(
-                                    255, 0, 0, 0)), // White border
+                          labelStyle: const TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0)),
+                          border: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(255, 0, 0,
-                                    0)), // White border when not focused
+                          enabledBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          prefixIcon: Icon(
+                          prefixIcon: const Icon(
                             Icons.lock_reset,
-                            color: const Color.fromARGB(255, 0, 0, 0),
-                          ), // Added lock reset icon
+                            color: Color.fromARGB(255, 0, 0, 0),
+                          ),
                         ),
                         obscureText: true,
+                        validator: FormBuilderValidators.compose([
+                          FormBuilderValidators.minLength(6,
+                              errorText:
+                                  'Password must be at least 6 characters'),
+                        ]),
                       ),
                     ],
                   ),
@@ -238,63 +244,56 @@ class _ProfilePageState extends State<ProfilePage> {
                               fontWeight: FontWeight.bold,
                               color: Colors.white)),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _firstNameController,
+                      FormBuilderTextField(
+                        name: firstNameField,
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'First Name',
-                          labelStyle: TextStyle(
-                              color: const Color.fromARGB(
-                                  255, 0, 0, 0)), // Made label white
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(
-                                    255, 0, 0, 0)), // White border
+                          labelStyle: const TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0)),
+                          border: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(255, 0, 0,
-                                    0)), // White border when not focused
+                          enabledBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
                         ),
+                        validator: FormBuilderValidators.required(),
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _lastNameController,
+                      FormBuilderTextField(
+                        name: lastNameField,
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'Last Name',
-                          labelStyle: TextStyle(
-                              color: Color.fromARGB(
-                                  255, 0, 0, 0)), // Made label white
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Color.fromARGB(
-                                    255, 0, 0, 0)), // White border
+                          labelStyle: const TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0)),
+                          border: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Color.fromARGB(255, 0, 0,
-                                    0)), // White border when not focused
+                          enabledBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
                         ),
+                        validator: FormBuilderValidators.required(),
                       ),
                       const SizedBox(height: 16),
-                      DropdownButtonFormField<String>(
-                        value:
-                            _civilStatus.isNotEmpty ? _civilStatus : 'Single',
+                      FormBuilderDropdown<String>(
+                        name: civilStatusField,
+                        initialValue: _civilStatus,
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'Civil Status',
-                          labelStyle: TextStyle(
-                              color: const Color.fromARGB(
-                                  255, 0, 0, 0)), // Made label white
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(
-                                    255, 0, 0, 0)), // White border
+                          labelStyle: const TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0)),
+                          border: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(255, 0, 0,
-                                    0)), // White border when not focused
+                          enabledBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
                         ),
                         items: ['Single', 'Married', 'Divorced', 'Widowed']
@@ -308,106 +307,98 @@ class _ProfilePageState extends State<ProfilePage> {
                             _civilStatus = value!;
                           });
                         },
+                        validator: FormBuilderValidators.required(),
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _ageController,
+                      FormBuilderTextField(
+                        name: ageField,
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'Age',
-                          labelStyle: TextStyle(
-                              color: const Color.fromARGB(
-                                  255, 0, 0, 0)), // Made label white
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(
-                                    255, 0, 0, 0)), // White border
+                          labelStyle: const TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0)),
+                          border: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(255, 0, 0,
-                                    0)), // White border when not focused
+                          enabledBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
                         ),
                         keyboardType: TextInputType.number,
+                        validator: FormBuilderValidators.compose([
+                          FormBuilderValidators.required(),
+                          FormBuilderValidators.numeric(),
+                          FormBuilderValidators.min(1),
+                          FormBuilderValidators.max(120),
+                        ]),
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _birthdateController,
+                      FormBuilderDateTimePicker(
+                        name: birthdateField,
+                        inputType: InputType.date,
+                        format: DateFormat('yyyy-MM-dd'),
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'Birthdate',
-                          labelStyle: TextStyle(
-                              color: const Color.fromARGB(
-                                  255, 0, 0, 0)), // Made label white
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(
-                                    255, 0, 0, 0)), // White border
+                          labelStyle: const TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0)),
+                          border: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(255, 0, 0,
-                                    0)), // White border when not focused
+                          enabledBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          suffixIcon: Icon(
+                          suffixIcon: const Icon(
                             Icons.calendar_today,
-                            color: const Color.fromARGB(255, 0, 0, 0),
+                            color: Color.fromARGB(255, 0, 0, 0),
                           ),
                         ),
-                        readOnly: true,
-                        onTap: () async {
-                          final date = await showDatePicker(
-                            context: context,
-                            initialDate: DateTime.now(),
-                            firstDate: DateTime(1900),
-                            lastDate: DateTime.now(),
-                          );
-                          if (date != null) {
-                            _birthdateController.text =
-                                "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-                          }
-                        },
+                        validator: FormBuilderValidators.required(),
+                        lastDate: DateTime.now(),
+                        firstDate: DateTime(1900),
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _contactController,
+                      FormBuilderTextField(
+                        name: contactField,
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'Contact Number',
-                          labelStyle: TextStyle(
-                              color: Color.fromARGB(
-                                  255, 0, 0, 0)), // Made label white
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Color.fromARGB(
-                                    255, 0, 0, 0)), // White border
+                          labelStyle: const TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0)),
+                          border: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: Color.fromARGB(255, 0, 0,
-                                    0)), // White border when not focused
+                          enabledBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
                         ),
                         keyboardType: TextInputType.phone,
+                        validator: FormBuilderValidators.compose([
+                          FormBuilderValidators.required(),
+                          FormBuilderValidators.numeric(),
+                        ]),
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _addressController,
+                      FormBuilderTextField(
+                        name: addressField,
                         decoration: _textFieldDecoration.copyWith(
                           labelText: 'Home Address',
-                          labelStyle: TextStyle(
-                              color: const Color.fromARGB(
-                                  255, 0, 0, 0)), // Made label white
-                          border: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(
-                                    255, 0, 0, 0)), // White border
+                          labelStyle: const TextStyle(
+                              color: Color.fromARGB(255, 0, 0, 0)),
+                          border: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
-                          enabledBorder: OutlineInputBorder(
-                            borderSide: BorderSide(
-                                color: const Color.fromARGB(255, 0, 0,
-                                    0)), // White border when not focused
+                          enabledBorder: const OutlineInputBorder(
+                            borderSide:
+                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
                           ),
                         ),
                         maxLines: 3,
+                        validator: FormBuilderValidators.required(),
                       ),
                     ],
                   ),
@@ -417,22 +408,28 @@ class _ProfilePageState extends State<ProfilePage> {
               ElevatedButton(
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
-                    // TODO: Implement save profile logic
+                    _formKey.currentState!.save();
+                    final formData = _formKey.currentState!.value;
+
+                    // Extract values from the form
                     updateProfile(
                         auth.user!.uid,
                         '', // photoURL -- blank for now TO IMPLEMENT
-                        _emailController.text,
-                        _firstNameController.text,
-                        _lastNameController.text,
-                        _civilStatus,
-                        int.parse(_ageController.text),
-                        DateTime.parse(_birthdateController.text),
-                        _addressController.text,
-                        _contactController.text); // phoneNumber)
+                        formData[emailField],
+                        formData[firstNameField],
+                        formData[lastNameField],
+                        '${formData[firstNameField]} ${formData[lastNameField]}',
+                        '${formData[firstNameField].toLowerCase()} ${formData[lastNameField].toLowerCase()}',
+                        formData[civilStatusField],
+                        int.parse(formData[ageField].toString()),
+                        formData[birthdateField],
+                        formData[addressField],
+                        formData[contactField]);
+
+                    logger.i('Profile saved');
+                    // reload the profile page after saving changes
+                    _fetchUserProfile();
                   }
-                  logger.i('Profile saved');
-                  // reload the profile page after saving changes
-                  _fetchUserProfile();
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF58f0d7),
@@ -455,18 +452,25 @@ class _ProfilePageState extends State<ProfilePage> {
       // get the associated user's profile with the logged in user's uid
       final DocumentSnapshot userProfile =
           await getProfile(auth.currentUser!.uid);
+
+      // Convert the Timestamp to DateTime
+      Timestamp birthTimestamp = userProfile['birthdate'];
+      DateTime birthDate = birthTimestamp.toDate();
+
+      // Update form values
+      _formKey.currentState?.patchValue({
+        emailField: userProfile['email'],
+        firstNameField: userProfile['first_name'],
+        lastNameField: userProfile['last_name'],
+        civilStatusField: userProfile['civil_status'],
+        ageField: userProfile['age'].toString(),
+        birthdateField: birthDate,
+        contactField: userProfile['phone_number'],
+        addressField: userProfile['address'],
+      });
+
       setState(() {
-        // populate the controllers with the user's profile details
-        _emailController.text = userProfile['email'];
-        _firstNameController.text = userProfile['first_name'];
-        _lastNameController.text = userProfile['last_name'];
         _civilStatus = userProfile['civil_status'];
-        _ageController.text = userProfile['age'].toString();
-        Timestamp birthTimestamp = userProfile['birthdate'];
-        DateTime birthDate = birthTimestamp.toDate();
-        _birthdateController.text = DateFormat('yyyy-MM-dd').format(birthDate);
-        _contactController.text = userProfile['phone_number'];
-        _addressController.text = userProfile['address'];
       });
     } catch (e) {
       // TODO: IMPLEMENT ERROR HANDLING AND PROPAGATE TO UI
@@ -476,15 +480,6 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    _newPasswordController.dispose();
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _ageController.dispose();
-    _birthdateController.dispose();
-    _contactController.dispose();
-    _addressController.dispose();
     super.dispose();
   }
 }

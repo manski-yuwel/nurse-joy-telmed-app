@@ -21,7 +21,7 @@ class Chat {
   Future<List<QueryDocumentSnapshot>> searchUsers(
       String searchTerm, String currentUserID) async {
     // Don't search if the search term is too short
-    if (searchTerm.length < 3) {
+    if (searchTerm.length < 2) {
       return [];
     }
 
@@ -29,17 +29,18 @@ class Chat {
     String searchTermLower = searchTerm.toLowerCase();
 
     try {
-      // Search for users where email contains the search term
+      // Search for users where full name and email contains the search term
       QuerySnapshot querySnapshot = await db
           .collection('users')
-          .where('email', isGreaterThanOrEqualTo: searchTermLower)
-          .where('email', isLessThanOrEqualTo: searchTermLower + '\uf8ff')
+          .where('full_name_lowercase',
+              isGreaterThanOrEqualTo: searchTermLower)
+          .where('full_name_lowercase',
+              isLessThanOrEqualTo: '$searchTermLower\uFFFF')
           .get();
 
       // Combine results and filter out the current user
       Set<QueryDocumentSnapshot> combinedResults = {};
       combinedResults.addAll(querySnapshot.docs);
-
       // Filter out the current user
       return combinedResults.where((doc) => doc.id != currentUserID).toList();
     } catch (e) {
@@ -50,10 +51,18 @@ class Chat {
 
   // function to generate the chatroom
   Future<void> generateChatRoom(
-      String chatRoomID, String userID, String recipientID) async {
-    await db.collection('chats').doc(chatRoomID).set({
+    String chatRoomID, String userID, String recipientID) async {
+    // check if the chatroom already exists
+    final chatRoomDoc = await db.collection('chats').doc(chatRoomID).get();
+    if (chatRoomDoc.exists) {
+      return;
+    }
+
+    await db.collection('chats').doc(chatRoomID).update({
       'users': [userID, recipientID],
       'last_message': '',
+      'timestamp': FieldValue.serverTimestamp(),
+      'last_message_senderID': '',
     });
     logger.i('Chatroom $chatRoomID created between $userID and $recipientID');
   }
@@ -87,6 +96,12 @@ class Chat {
       'message_type': 'text',
       'timestamp': FieldValue.serverTimestamp(),
     });
+
+    await db.collection('chats').doc(chatRoomID).update({
+      'last_message': messageBody,
+      'timestamp': FieldValue.serverTimestamp(),
+      'last_message_senderID': userID,
+    });
   }
 
   // function to send a call notification message
@@ -107,6 +122,8 @@ class Chat {
 
     await db.collection('chats').doc(chatRoomID).update({
       'last_message': 'Video call',
+      'timestamp': FieldValue.serverTimestamp(),
+      'last_message_senderID': callerID,
     });
 
     return docRef;
@@ -128,6 +145,17 @@ class Chat {
   Future<void> migrateMessages() async {
     // Get all chat rooms
     final snapshot = await db.collection('chats').get();
+
+    // set timestamp for last message, update for all chat rooms
+    for (var chatDoc in snapshot.docs) {
+      String chatRoomID = chatDoc.id;
+      if (!chatDoc.data().containsKey('timestamp')) {
+        await db.collection('chats').doc(chatRoomID).update({
+          'timestamp': FieldValue.serverTimestamp(),
+          'last_message_senderID': '',
+        });
+      }
+    }
 
     for (var chatDoc in snapshot.docs) {
       String chatRoomID = chatDoc.id;

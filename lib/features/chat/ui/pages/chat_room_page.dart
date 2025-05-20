@@ -263,4 +263,10 @@ class _ChatRoomPageState extends State<ChatRoomPage> {
       ),
     );
   }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    super.dispose();
+  }
 }

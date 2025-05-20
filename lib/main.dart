@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
-import 'package:nursejoyapp/auth/provider/auth_wrapper.dart';
-import 'features/signing/ui/pages/loading_page.dart';
+import 'package:nursejoyapp/features/signing/ui/pages/loading_page.dart';
 import 'features/signing/ui/pages/securitycheck_page.dart';
 import 'features/signing/ui/pages/signin_page.dart';
 import 'features/signing/ui/pages/register_page.dart';
@@ -11,6 +10,8 @@ import 'features/profile/ui/pages/profile_page.dart';
 import 'features/emergency/ui/pages/emergency_page.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:go_router/go_router.dart';
+import 'package:nursejoyapp/router.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -25,51 +26,33 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Create an instance of AuthService
+  final authService = AuthService();
+
   runApp(
     MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider<AuthService>.value(value: authService),
       ],
-      child: MyApp(),
+      child: MyApp(authService: authService),
     ),
   );
 }
 
 class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+  final AuthService authService;
+
+  const MyApp({super.key, required this.authService});
 
   @override
   Widget build(BuildContext context) {
-    final providers = [EmailAuthProvider()];
+    // Create router configuration
+    final appRouter = AppRouter(authService);
 
-    return MaterialApp(
+    return MaterialApp.router(
       title: 'NurseJoy',
-      home: AuthWrapper(),
-      routes: {
-        '/loading': (context) => LoadingPage(),
-        '/signin': (context) => SigninPage(),
-        '/sign-in': (context) {
-          return SignInScreen(
-            providers: providers,
-            actions: [
-              AuthStateChangeAction<UserCreated>((context, state) {
-                Navigator.pushReplacementNamed(context, '/home');
-              }),
-              AuthStateChangeAction<SignedIn>((context, state) {
-                Navigator.pushReplacementNamed(context, '/home');
-              }),
-            ],
-          );
-        },
-        '/register': (context) => RegisterPage(),
-        '/securitycheck': (context) => SecuritycheckPage(),
-        '/home': (context) {
-          return HomeScreen();
-        },
-        '/emergency': (context) => EmergencyPage(),
-        '/settings': (context) => const Settings(),
-        '/viewmappage': (context) => const ViewMapPage(),
-      },
+      routerConfig: appRouter.router,
       theme: ThemeData(
         textTheme: const TextTheme(
           titleLarge: TextStyle(
@@ -82,7 +65,6 @@ class MyApp extends StatelessWidget {
               ]),
         ),
       ),
-      // home: SigninScreen(),
     );
   }
 }
@@ -141,17 +123,17 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_selectedIndex == 1)
             TextButton.icon(
               onPressed: () {
-                Navigator.pushNamed(context, '/emergency');
+                context.go('/emergency');
               },
-              label: Text(
+              label: const Text(
                 'E.M.',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.red,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              icon: Icon(Icons.warning_sharp, color: Colors.red),
+              icon: const Icon(Icons.warning_sharp, color: Colors.red),
             ),
         ],
         centerTitle: true,
@@ -203,6 +185,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: const Text('Activate Emergency Mode'),
                     onTap: () {
                       Navigator.pop(context);
+                      context.go('/emergency');
                     },
                   ),
                   ListTile(
@@ -210,7 +193,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: const Text('Settings'),
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, '/settings');
+                      context.go('/settings');
                     },
                   ),
                   ListTile(
@@ -218,15 +201,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     title: const Text('View Map'),
                     onTap: () {
                       Navigator.pop(context);
-                      Navigator.pushNamed(context, '/viewmappage');
+                      context.go('/viewmap');
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.logout_outlined),
                     title: const Text('Logout'),
-                    onTap: () {
-                      auth.signOut();
-                      Navigator.pushReplacementNamed(context, '/signin');
+                    onTap: () async {
+                      await auth.signOut();
+                      context.go('/signin');
                     },
                   ),
                 ],

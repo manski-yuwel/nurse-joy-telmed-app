@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:nursejoyapp/features/signing/ui/pages/signin_page.dart';
-import 'package:nursejoyapp/main.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
-import 'package:nursejoyapp/features/profile/ui/pages/profile_setup.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -14,7 +12,15 @@ class AuthWrapper extends StatelessWidget {
     final user = authService.user;
 
     if (user == null) {
-      return const SigninPage();
+      // Using go_router for navigation
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.go('/signin');
+      });
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
     } else {
       return FutureBuilder<bool>(
         future: authService.isUserSetup(),
@@ -31,18 +37,35 @@ class AuthWrapper extends StatelessWidget {
           // If there's an error, log it and proceed to home screen as fallback
           if (snapshot.hasError) {
             print('Error checking user setup: ${snapshot.error}');
-            return const HomeScreen();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              context.go('/home');
+            });
+            return const Scaffold(
+              body: Center(
+                child: CircularProgressIndicator(),
+              ),
+            );
           }
 
           final isSetup = snapshot.data ?? false;
 
           // If user is not set up, redirect to profile setup page
           if (!isSetup) {
-            return const ProfileSetup();
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              context.go('/profile-setup');
+            });
+          } else {
+            // User is set up, go to home screen
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              context.go('/home');
+            });
           }
 
-          // User is set up, go to home screen
-          return const HomeScreen();
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          );
         },
       );
     }

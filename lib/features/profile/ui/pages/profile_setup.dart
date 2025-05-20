@@ -92,6 +92,8 @@ class _ProfileSetupState extends State<ProfileSetup> {
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
         'first_name': _firstNameController.text.trim(),
         'last_name': _lastNameController.text.trim(),
+        'full_name': '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}',
+        'full_name_lowercase': '${_firstNameController.text.trim().toLowerCase()} ${_lastNameController.text.trim().toLowerCase()}',
         'phone_number': _phoneController.text.trim(),
         'address': _addressController.text.trim(),
         'birthdate': Timestamp.fromDate(_selectedDate!),
