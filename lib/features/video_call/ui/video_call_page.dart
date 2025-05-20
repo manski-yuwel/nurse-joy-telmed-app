@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:agora_rtc_engine/agora_rtc_engine.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:nursejoyapp/features/video_call/data/video_call_service.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 
 class VideoCallPage extends StatefulWidget {
   final String chatRoomID;
@@ -26,109 +25,68 @@ class VideoCallPage extends StatefulWidget {
 
 class _VideoCallPageState extends State<VideoCallPage> {
   final VideoCallService _videoCallService = VideoCallService();
-  late String _appID;
-  late RtcEngine _engine;
-  late String _channelName;
-  late String _token;
-  final _users = <int>[];
-  final _infoStrings = <String>[];
-  bool muted = false;
-  bool videoDisabled = false;
-
+  final List<int> _users = [];
+  bool _muted = false;
+  bool _videoDisabled = false;
+  bool _isInitialized = false;
   @override
   void initState() {
     super.initState();
-    _channelName = _videoCallService.generateChannelName(widget.chatRoomID);
-    _token = _videoCallService.generateToken(_channelName);
-    _appID = _videoCallService.appID;
-    _startVideoCall();
+    _setupCallbacks();
+    _startCall();
   }
 
-  Future<void> _startVideoCall() async {
-    await _requestPermissions();
-    await _initializeAgoraSDK();
-    await _setupLocalVideo();
-    setupEventHandlers();
-    await _joinChannel();
+  void _setupCallbacks() {
+    _videoCallService.onUsersUpdated = (users) {
+      setState(() {
+        _users.clear();
+        _users.addAll(users);
+      });
+    };
 
-    if (widget.isInitiator) {
-      final auth = Provider.of<AuthService>(context, listen: false);
-      await _videoCallService.initiateCall(
-          widget.chatRoomID, auth.user!.uid, widget.calleeID);
-    } else {
-      await _videoCallService.acceptCall(widget.chatRoomID);
-    }
+    _videoCallService.onMuteChanged = (muted) {
+      setState(() {
+        _muted = muted;
+      });
+    };
+
+    _videoCallService.onVideoDisabledChanged = (disabled) {
+      setState(() {
+        _videoDisabled = disabled;
+      });
+    };
+
+    _videoCallService.onInitialized = (initialized) {
+      setState(() {
+        _isInitialized = initialized;
+      });
+    };
   }
 
-  Future<void> _requestPermissions() async {
-    await [Permission.microphone, Permission.camera].request();
-  }
-
-  Future<void> _initializeAgoraSDK() async {
-    _engine = createAgoraRtcEngine();
-    await _engine.initialize(RtcEngineContext(
-        appId: _appID,
-        channelProfile: ChannelProfileType.channelProfileCommunication));
-  }
-
-  Future<void> _setupLocalVideo() async {
-    await _engine.enableVideo();
-    await _engine.startPreview();
-  }
-
-  void setupEventHandlers() {
-    // Register callback handlers
-    _engine.registerEventHandler(RtcEngineEventHandler(
-      onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
-        setState(() {
-          _infoStrings.add('Joined Channel: ${connection.channelId}');
-        });
-      },
-      onUserJoined: (RtcConnection connection, int uid, int elapsed) {
-        setState(() {
-          _infoStrings.add('User Joined: $uid');
-          _users.add(uid);
-        });
-      },
-      onUserOffline:
-          (RtcConnection connection, int uid, UserOfflineReasonType reason) {
-        setState(() {
-          _infoStrings.add('User Offline: $uid');
-          _users.remove(uid);
-        });
-      },
-    ));
-  }
-
-  Future<void> _joinChannel() async {
-    await _engine.joinChannel(
-      token: "",
-      channelId: _channelName,
-      options: const ChannelMediaOptions(
-        autoSubscribeAudio: true,
-        autoSubscribeVideo: true,
-        publishCameraTrack: true,
-        publishMicrophoneTrack: true,
-        clientRoleType: ClientRoleType.clientRoleBroadcaster,
-      ),
-      uid: 0,
+  Future<void> _startCall() async {
+    final auth = Provider.of<AuthService>(context, listen: false);
+    await _videoCallService.startVideoCall(
+      widget.chatRoomID,
+      isInitiator: widget.isInitiator,
+      callerId: widget.isInitiator ? auth.user!.uid : widget.callerID,
+      calleeId: widget.calleeID,
     );
   }
 
   @override
   void dispose() {
-    _users.clear();
-    _engine.leaveChannel();
-    _engine.release();
     _videoCallService.endCall(
         widget.chatRoomID, widget.callerID, widget.calleeID);
     super.dispose();
   }
 
-  Widget _buildVideoView(int uid) {
+  // Create a video view widget for a user
+  Widget buildVideoView(int uid) {
+    if (!_isInitialized) return const CircularProgressIndicator();
+
     return AgoraVideoView(
       controller: VideoViewController(
-        rtcEngine: _engine,
+        rtcEngine: _videoCallService.engine,
         canvas: uid == 0 ? const VideoCanvas(uid: 0) : VideoCanvas(uid: uid),
       ),
     );
@@ -137,15 +95,16 @@ class _VideoCallPageState extends State<VideoCallPage> {
   Widget _buildVideoGrid() {
     final views = <Widget>[];
 
-    views.add(_buildVideoView(0));
+    // Add local view
+    views.add(buildVideoView(0));
+
+    // Add remote views
     for (var uid in _users) {
-      views.add(_buildVideoView(uid));
+      views.add(buildVideoView(uid));
     }
 
     if (views.length == 1) {
-      return Container(
-        child: views.first,
-      );
+      return Container(child: views.first);
     }
 
     return GridView.builder(
@@ -155,6 +114,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
         mainAxisSpacing: 4.0,
         crossAxisSpacing: 4.0,
       ),
+      itemCount: views.length,
       itemBuilder: (context, index) => views[index],
     );
   }
@@ -168,28 +128,25 @@ class _VideoCallPageState extends State<VideoCallPage> {
         children: <Widget>[
           RawMaterialButton(
             onPressed: () {
-              setState(() {
-                muted = !muted;
-              });
-              _engine.muteLocalAudioStream(muted);
+              _videoCallService.toggleMute();
             },
-            shape: CircleBorder(),
+            shape: const CircleBorder(),
             elevation: 2.0,
-            fillColor: muted ? Colors.blueAccent : Colors.white,
+            fillColor: _muted ? Colors.blueAccent : Colors.white,
             padding: const EdgeInsets.all(12.0),
             child: Icon(
-              muted ? Icons.mic_off : Icons.mic,
-              color: muted ? Colors.white : Colors.blueAccent,
+              _muted ? Icons.mic_off : Icons.mic,
+              color: _muted ? Colors.white : Colors.blueAccent,
               size: 20.0,
             ),
           ),
           RawMaterialButton(
             onPressed: () => Navigator.pop(context),
-            shape: CircleBorder(),
+            shape: const CircleBorder(),
             elevation: 2.0,
             fillColor: Colors.redAccent,
             padding: const EdgeInsets.all(15.0),
-            child: Icon(
+            child: const Icon(
               Icons.call_end,
               color: Colors.white,
               size: 35.0,
@@ -197,30 +154,27 @@ class _VideoCallPageState extends State<VideoCallPage> {
           ),
           RawMaterialButton(
             onPressed: () {
-              setState(() {
-                videoDisabled = !videoDisabled;
-              });
-              _engine.muteLocalVideoStream(videoDisabled);
+              _videoCallService.toggleVideo();
             },
-            shape: CircleBorder(),
+            shape: const CircleBorder(),
             elevation: 2.0,
-            fillColor: videoDisabled ? Colors.blueAccent : Colors.white,
+            fillColor: _videoDisabled ? Colors.blueAccent : Colors.white,
             padding: const EdgeInsets.all(12.0),
             child: Icon(
-              videoDisabled ? Icons.videocam_off : Icons.videocam,
-              color: videoDisabled ? Colors.white : Colors.blueAccent,
+              _videoDisabled ? Icons.videocam_off : Icons.videocam,
+              color: _videoDisabled ? Colors.white : Colors.blueAccent,
               size: 20.0,
             ),
           ),
           RawMaterialButton(
             onPressed: () {
-              _engine.switchCamera();
+              _videoCallService.switchCamera();
             },
-            shape: CircleBorder(),
+            shape: const CircleBorder(),
             elevation: 2.0,
             fillColor: Colors.white,
             padding: const EdgeInsets.all(12.0),
-            child: Icon(
+            child: const Icon(
               Icons.switch_camera,
               color: Colors.blueAccent,
               size: 20.0,
