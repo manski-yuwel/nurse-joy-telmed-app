@@ -36,7 +36,6 @@ class Chat {
           .where('email', isLessThanOrEqualTo: searchTermLower + '\uf8ff')
           .get();
 
-
       // Combine results and filter out the current user
       Set<QueryDocumentSnapshot> combinedResults = {};
       combinedResults.addAll(querySnapshot.docs);
