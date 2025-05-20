@@ -18,6 +18,39 @@ class ChatListPage extends StatefulWidget {
 
 class _ChatListPageState extends State<ChatListPage> {
   Map<String, Map<String, dynamic>> recipientDetails = {};
+  final TextEditingController _searchController = TextEditingController();
+  List<QueryDocumentSnapshot> _searchResults = [];
+  bool _isSearching = false;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _performSearch(String searchTerm, String currentUserID) async {
+    if (searchTerm.isEmpty) {
+      setState(() {
+        _searchResults = [];
+        _isSearching = false;
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _isSearching = true;
+    });
+
+    final results = await chatInstance.searchUsers(searchTerm, currentUserID);
+
+    setState(() {
+      _searchResults = results;
+      _isLoading = false;
+    });
+  }
+
   void showOnlineUsers(BuildContext context) {
     final auth = Provider.of<AuthService>(context, listen: false);
     showModalBottomSheet(
@@ -74,94 +107,196 @@ class _ChatListPageState extends State<ChatListPage> {
     );
   }
 
+  Widget _buildSearchResults(String currentUserID) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_searchResults.isEmpty) {
+      return const Center(
+        child: Text("No users found. Try a different search term."),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: _searchResults.length,
+      itemBuilder: (context, index) {
+        final user = _searchResults[index].data() as Map<String, dynamic>;
+        final recipientID = _searchResults[index].id;
+
+        return ListTile(
+          leading: const Icon(Icons.person, color: Colors.blue),
+          title: Text(user['email'] ?? 'Unknown'),
+          subtitle: Text(user['status_online'] == true ? 'Online' : 'Offline'),
+          onTap: () {
+            final chatRoomID =
+                chatInstance.generateChatRoomID(currentUserID, recipientID);
+
+            chatInstance.generateChatRoom(
+                chatRoomID, currentUserID, recipientID);
+
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ChatRoomPage(
+                  chatRoomID: chatRoomID,
+                  recipientID: recipientID,
+                  recipientFullName: user['email'],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthService>(context, listen: false);
 
     return Scaffold(
-      body: StreamBuilder<QuerySnapshot>(
-        stream: chatInstance.getChatList(auth.user!.uid),
-        builder: (context, chatSnapshot) {
-          if (!chatSnapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      appBar: AppBar(
+        title: const Text("Chats"),
+        backgroundColor: const Color(0xFF58f0d7),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  _searchController.clear();
+                  _searchResults = [];
+                }
+              });
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          if (_isSearching)
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: TextField(
+                controller: _searchController,
+                decoration: InputDecoration(
+                  hintText: 'Search users by email',
+                  prefixIcon: const Icon(Icons.search),
+                  suffixIcon: IconButton(
+                    icon: const Icon(Icons.clear),
+                    onPressed: () {
+                      _searchController.clear();
+                      _performSearch('', auth.user!.uid);
+                    },
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onChanged: (value) => _performSearch(value, auth.user!.uid),
+              ),
+            ),
+          Expanded(
+            child: _isSearching
+                ? _buildSearchResults(auth.user!.uid)
+                : StreamBuilder<QuerySnapshot>(
+                    stream: chatInstance.getChatList(auth.user!.uid),
+                    builder: (context, chatSnapshot) {
+                      if (!chatSnapshot.hasData) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
 
-          var chatRooms = chatSnapshot.data!.docs;
+                      var chatRooms = chatSnapshot.data!.docs;
 
-          // Extract recipient IDs safely
-          List<String> recipientIDs = chatRooms
-              .map((chatRoom) {
-                List<String> users = List<String>.from(chatRoom['users']);
-                return users.first == auth.user!.uid ? users.last : users.first;
-              })
-              .where((id) => id.isNotEmpty)
-              .toSet() // Ensure unique IDs
-              .toList();
+                      // Extract recipient IDs safely
+                      List<String> recipientIDs = chatRooms
+                          .map((chatRoom) {
+                            List<String> users =
+                                List<String>.from(chatRoom['users']);
+                            return users.first == auth.user!.uid
+                                ? users.last
+                                : users.first;
+                          })
+                          .where((id) => id.isNotEmpty)
+                          .toSet() // Ensure unique IDs
+                          .toList();
 
-          if (recipientIDs.isEmpty) {
-            return const Center(child: Text("No chats available"));
-          }
+                      if (recipientIDs.isEmpty) {
+                        return const Center(child: Text("No chats available"));
+                      }
 
-          return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance
-                .collection('users')
-                .where(FieldPath.documentId, whereIn: recipientIDs)
-                .snapshots(),
-            builder: (context, recipientSnapshot) {
-              if (!recipientSnapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
-              }
+                      return StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('users')
+                            .where(FieldPath.documentId, whereIn: recipientIDs)
+                            .snapshots(),
+                        builder: (context, recipientSnapshot) {
+                          if (!recipientSnapshot.hasData) {
+                            return const Center(
+                                child: CircularProgressIndicator());
+                          }
 
-              // Store recipient details in a map
-              recipientDetails = {
-                for (var doc in recipientSnapshot.data!.docs)
-                  doc.id: doc.data() as Map<String, dynamic>
-              };
+                          // Store recipient details in a map
+                          recipientDetails = {
+                            for (var doc in recipientSnapshot.data!.docs)
+                              doc.id: doc.data() as Map<String, dynamic>
+                          };
 
-              return ListView.builder(
-                itemCount: chatRooms.length,
-                itemBuilder: (context, index) {
-                  final chatRoom = chatRooms[index];
-                  final List<dynamic> users = chatRoom['users'];
+                          return ListView.builder(
+                            itemCount: chatRooms.length,
+                            itemBuilder: (context, index) {
+                              final chatRoom = chatRooms[index];
+                              final List<dynamic> users = chatRoom['users'];
 
-                  final recipientID =
-                      users.first == auth.user!.uid ? users.last : users.first;
+                              final recipientID = users.first == auth.user!.uid
+                                  ? users.last
+                                  : users.first;
 
-                  final recipientData = recipientDetails[recipientID] ?? {};
+                              final recipientData =
+                                  recipientDetails[recipientID] ?? {};
 
-                  return ListTile(
-                    leading: const Icon(Icons.person, color: Colors.green),
-                    title: Text(recipientData['email'] ?? 'Unknown'),
-                    subtitle: Text(chatRoom['last_message'] ?? ''),
-                    onTap: () {
-                      final userID = auth.user!.uid;
-                      final chatRoomID =
-                          chatInstance.generateChatRoomID(userID, recipientID);
+                              return ListTile(
+                                leading: const Icon(Icons.person,
+                                    color: Colors.green),
+                                title:
+                                    Text(recipientData['email'] ?? 'Unknown'),
+                                subtitle: Text(chatRoom['last_message'] ?? ''),
+                                onTap: () {
+                                  final userID = auth.user!.uid;
+                                  final chatRoomID = chatInstance
+                                      .generateChatRoomID(userID, recipientID);
 
-                      logger.d("Opening chat with: $recipientID");
+                                  logger.d("Opening chat with: $recipientID");
 
-                      chatInstance.generateChatRoom(
-                          chatRoomID, userID, recipientID);
+                                  chatInstance.generateChatRoom(
+                                      chatRoomID, userID, recipientID);
 
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ChatRoomPage(
-                            chatRoomID: chatRoomID,
-                            recipientID: recipientID,
-                            recipientFullName: recipientData['email'],
-                          ),
-                        ),
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => ChatRoomPage(
+                                        chatRoomID: chatRoomID,
+                                        recipientID: recipientID,
+                                        recipientFullName:
+                                            recipientData['email'],
+                                      ),
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
                       );
                     },
-                  );
-                },
-              );
-            },
-          );
-        },
+                  ),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF58f0d7),
         child: const Icon(Icons.add),
         onPressed: () => showOnlineUsers(context),
       ),

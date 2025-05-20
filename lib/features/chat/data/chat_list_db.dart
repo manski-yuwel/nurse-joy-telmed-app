@@ -17,6 +17,38 @@ class Chat {
     return db.collection('users').snapshots();
   }
 
+  // Method to search for users by email
+  Future<List<QueryDocumentSnapshot>> searchUsers(
+      String searchTerm, String currentUserID) async {
+    // Don't search if the search term is too short
+    if (searchTerm.length < 3) {
+      return [];
+    }
+
+    // Get the search term with capitalization variations to improve search
+    String searchTermLower = searchTerm.toLowerCase();
+
+    try {
+      // Search for users where email contains the search term
+      QuerySnapshot querySnapshot = await db
+          .collection('users')
+          .where('email', isGreaterThanOrEqualTo: searchTermLower)
+          .where('email', isLessThanOrEqualTo: searchTermLower + '\uf8ff')
+          .get();
+
+
+      // Combine results and filter out the current user
+      Set<QueryDocumentSnapshot> combinedResults = {};
+      combinedResults.addAll(querySnapshot.docs);
+
+      // Filter out the current user
+      return combinedResults.where((doc) => doc.id != currentUserID).toList();
+    } catch (e) {
+      logger.e('Error searching for users: $e');
+      return [];
+    }
+  }
+
   // function to generate the chatroom
   Future<void> generateChatRoom(
       String chatRoomID, String userID, String recipientID) async {
