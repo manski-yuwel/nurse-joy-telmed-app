@@ -33,6 +33,7 @@ class Chat {
       QuerySnapshot querySnapshot = await db
           .collection('users')
           .where('search_index', arrayContains: searchTermLower)
+          .limit(10)
           .get();
 
       // Combine results and filter out the current user

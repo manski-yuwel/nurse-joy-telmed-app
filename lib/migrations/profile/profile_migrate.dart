@@ -25,9 +25,10 @@ class ProfileMigrate {
         };
         await usersCollection.doc(user.id).update(newUser);
       }
-      if (!user.data().containsKey("search_index")) {
+      if (user.data()['search_index'] == null) {
         // use n-grams to create a search index
-        final List<String> searchIndex = createSearchIndex(user.data()['full_name']);
+        final List<String> searchIndex =
+            createSearchIndex(user.data()['full_name_lowercase']);
         final newUser = {
           'search_index': searchIndex,
         };
@@ -45,12 +46,13 @@ class ProfileMigrate {
     return nGrams;
   }
 
-  List<String> createNGrams(String fullName, {int minGram = 1, int maxGram = 10}) {
+  List<String> createNGrams(String fullName,
+      {int minGram = 1, int maxGram = 10}) {
     final List<String> nGrams = [];
     for (var i = 0; i < fullName.length; i++) {
-      for (var j = minGram; j <= maxGram; j++) {
-        if (i + j <= fullName.length) {
-          nGrams.add(fullName.substring(i, i + j));
+      for (var j = i + minGram; j <= i + maxGram; j++) {
+        if (j <= fullName.length) {
+          nGrams.add(fullName.substring(i, j));
         }
       }
     }
