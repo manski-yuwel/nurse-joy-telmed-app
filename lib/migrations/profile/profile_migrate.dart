@@ -25,14 +25,35 @@ class ProfileMigrate {
         };
         await usersCollection.doc(user.id).update(newUser);
       }
-      if (!user.data().containsKey("search_keywords")) {
-        
+      if (!user.data().containsKey("search_index")) {
+        // use n-grams to create a search index
+        final List<String> searchIndex = createSearchIndex(user.data()['full_name']);
         final newUser = {
-          'search_keywords': [
-            user.data()['full_name'].toLowerCase(),
-            user.data()['email'].toLowerCase(),
-          ],
+          'search_index': searchIndex,
         };
+        await usersCollection.doc(user.id).update(newUser);
+      }
     }
+  }
+
+  List<String> createSearchIndex(String fullName) {
+    final List<String> parts = fullName.split(' ');
+    final List<String> nGrams = [];
+    for (var part in parts) {
+      nGrams.addAll(createNGrams(part));
+    }
+    return nGrams;
+  }
+
+  List<String> createNGrams(String fullName, {int minGram = 1, int maxGram = 10}) {
+    final List<String> nGrams = [];
+    for (var i = 0; i < fullName.length; i++) {
+      for (var j = minGram; j <= maxGram; j++) {
+        if (i + j <= fullName.length) {
+          nGrams.add(fullName.substring(i, i + j));
+        }
+      }
+    }
+    return nGrams;
   }
 }

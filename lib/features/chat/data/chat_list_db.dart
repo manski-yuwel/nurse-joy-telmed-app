@@ -32,10 +32,7 @@ class Chat {
       // Search for users where full name and email contains the search term
       QuerySnapshot querySnapshot = await db
           .collection('users')
-          .where('full_name_lowercase',
-              isGreaterThanOrEqualTo: searchTermLower)
-          .where('full_name_lowercase',
-              isLessThanOrEqualTo: '$searchTermLower\uFFFF')
+          .where('search_index', arrayContains: searchTermLower)
           .get();
 
       // Combine results and filter out the current user
