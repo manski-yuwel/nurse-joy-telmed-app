@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
 
 class ProfileSetup extends StatefulWidget {
   const ProfileSetup({super.key});
@@ -100,6 +101,8 @@ class _ProfileSetupState extends State<ProfileSetup> {
         'age': age,
         'civil_status': _selectedCivilStatus,
         'is_setup': true,
+        'search_index': createSearchIndex(
+            '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'),
       });
 
       if (mounted) {

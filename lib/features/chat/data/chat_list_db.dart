@@ -40,7 +40,7 @@ class Chat {
       Set<QueryDocumentSnapshot> combinedResults = {};
       combinedResults.addAll(querySnapshot.docs);
       // Filter out the current user
-      return combinedResults.where((doc) => doc.id != currentUserID).toList();
+      return combinedResults.toList();
     } catch (e) {
       logger.e('Error searching for users: $e');
       return [];
@@ -49,7 +49,7 @@ class Chat {
 
   // function to generate the chatroom
   Future<void> generateChatRoom(
-    String chatRoomID, String userID, String recipientID) async {
+      String chatRoomID, String userID, String recipientID) async {
     // check if the chatroom already exists
     final chatRoomDoc = await db.collection('chats').doc(chatRoomID).get();
     if (chatRoomDoc.exists) {
