@@ -50,7 +50,8 @@ class StartUpApp extends StatelessWidget {
         if (snapshot.connectionState == ConnectionState.done) {
           return const MaterialApp(home: SplashScreen());
         } else if (snapshot.hasError) {
-          return MaterialApp(home: ErrorScreen(error: snapshot.error.toString()));
+          return MaterialApp(
+              home: ErrorScreen(error: snapshot.error.toString()));
         } else {
           final authService = snapshot.data!['authService'] as AuthService;
           return MultiProvider(providers: [
@@ -78,7 +79,6 @@ class ErrorScreen extends StatelessWidget {
         body: Center(child: Text('Error: $error')),
       );
 }
-
 
 class MyApp extends StatelessWidget {
   final AuthService authService;
@@ -120,10 +120,13 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 1;
   User? user;
   String _appBarTitle = 'Nurse Joy';
+  final List<Widget> _pages = List.filled(3, const SizedBox.shrink());
 
   @override
   void initState() {
     super.initState();
+    final auth = Provider.of<AuthService>(context);
+    user = auth.user;
   }
 
   void _onItemTapped(int index) {
@@ -147,12 +150,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthService>(context);
-    final List<Widget> _pages = [
-      ChatListPage(),
-      DashboardPage(),
-      ProfilePage(userID: auth.user!.uid),
-    ];
     final mediaQuery = MediaQuery.of(context);
     final appBarHeight = kToolbarHeight + mediaQuery.padding.top;
     return Scaffold(
@@ -258,7 +255,12 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: IndexedStack(
         index: _selectedIndex,
-        children: _pages,
+        children: List.generate(_pages.length, (i) {
+          if (_pages[i] is SizedBox) {
+            return const SizedBox.shrink();
+          }
+          return _pages[i] = buildPage(i, user);
+        }),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
@@ -299,4 +301,17 @@ Widget buildCircleImage(String imagePath, double size, double scale) {
       ),
     ),
   );
+}
+
+Widget buildPage(int index, User? user) {
+  switch (index) {
+    case 0:
+      return const ChatListPage();
+    case 1:
+      return const DashboardPage();
+    case 2:
+      return ProfilePage(userID: user!.uid);
+    default:
+      return const SizedBox.shrink();
+  }
 }

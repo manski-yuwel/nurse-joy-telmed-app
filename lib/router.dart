@@ -23,7 +23,6 @@ class AppRouter {
   late final GoRouter router = GoRouter(
     refreshListenable: GoRouterRefreshStream(authService),
     debugLogDiagnostics: kDebugMode,
-    initialLocation: '/',
     redirect: (context, state) async {
       final isLoggedIn = authService.user != null;
       final isLoggingIn = state.uri.path == '/signin' ||
@@ -49,10 +48,6 @@ class AppRouter {
     },
     routes: [
       // Auth routes
-      GoRoute(
-        path: '/',
-        builder: (context, state) => const LoadingPage(),
-      ),
       GoRoute(
         path: '/signin',
         builder: (context, state) => const SigninPage(),
