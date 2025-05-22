@@ -21,24 +21,64 @@ import 'features/Settings/ui/pages/settings.dart';
 import 'features/map/ui/pages/viewmap.dart';
 
 void main() async {
-  await dotenv.load(fileName: '.env');
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-
-  // Create an instance of AuthService
-  final authService = AuthService();
 
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider<AuthService>.value(value: authService),
-      ],
-      child: MyApp(authService: authService),
-    ),
+    const StartUpApp(),
   );
 }
+
+class StartUpApp extends StatelessWidget {
+  const StartUpApp({super.key});
+
+  Future<Map<String, dynamic>> _initialize() async {
+    await dotenv.load(fileName: '.env');
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    final authService = AuthService();
+    return {
+      'authService': authService,
+    };
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _initialize(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done) {
+          return const MaterialApp(home: SplashScreen());
+        } else if (snapshot.hasError) {
+          return MaterialApp(home: ErrorScreen(error: snapshot.error.toString()));
+        } else {
+          final authService = snapshot.data!['authService'] as AuthService;
+          return MultiProvider(providers: [
+            ChangeNotifierProvider<AuthService>.value(value: authService),
+          ], child: MyApp(authService: authService));
+        }
+      },
+    );
+  }
+}
+
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key});
+  @override
+  Widget build(BuildContext context) => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+}
+
+class ErrorScreen extends StatelessWidget {
+  final String error;
+  const ErrorScreen({super.key, required this.error});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: Center(child: Text('Error: $error')),
+      );
+}
+
 
 class MyApp extends StatelessWidget {
   final AuthService authService;
@@ -113,7 +153,8 @@ class _HomeScreenState extends State<HomeScreen> {
       DashboardPage(),
       ProfilePage(userID: auth.user!.uid),
     ];
-    double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
+    final mediaQuery = MediaQuery.of(context);
+    final appBarHeight = kToolbarHeight + mediaQuery.padding.top;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF58f0d7),
@@ -177,14 +218,13 @@ class _HomeScreenState extends State<HomeScreen> {
                     leading: const Icon(Icons.home_outlined),
                     title: const Text('Home'),
                     onTap: () {
-                      Navigator.pop(context);
+                      context.go('/home');
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.emergency_outlined),
                     title: const Text('Activate Emergency Mode'),
                     onTap: () {
-                      Navigator.pop(context);
                       context.go('/emergency');
                     },
                   ),
@@ -192,7 +232,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     leading: const Icon(Icons.settings_outlined),
                     title: const Text('Settings'),
                     onTap: () {
-                      Navigator.pop(context);
                       context.go('/settings');
                     },
                   ),
@@ -200,7 +239,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     leading: const Icon(Icons.map_outlined),
                     title: const Text('View Map'),
                     onTap: () {
-                      Navigator.pop(context);
                       context.go('/viewmap');
                     },
                   ),
