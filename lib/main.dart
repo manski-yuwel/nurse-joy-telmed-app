@@ -47,7 +47,7 @@ class StartUpApp extends StatelessWidget {
     return FutureBuilder<Map<String, dynamic>>(
       future: _initialize(),
       builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.done) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
           return const MaterialApp(home: SplashScreen());
         } else if (snapshot.hasError) {
           return MaterialApp(
@@ -119,13 +119,19 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 1;
   User? user;
-  String _appBarTitle = 'Nurse Joy';
-  final List<Widget> _pages = List.filled(3, const SizedBox.shrink());
+  late AuthService auth;
+  String _appBarTitle = 'Dashboard';
+  final List<Widget?> _pages = List.filled(3, null);
 
   @override
   void initState() {
     super.initState();
-    final auth = Provider.of<AuthService>(context);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    auth = Provider.of<AuthService>(context);
     user = auth.user;
   }
 
@@ -255,12 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: IndexedStack(
         index: _selectedIndex,
-        children: List.generate(_pages.length, (i) {
-          if (_pages[i] is SizedBox) {
-            return const SizedBox.shrink();
-          }
-          return _pages[i] = buildPage(i, user);
-        }),
+        children: List.generate(3, (index) => buildPage(index, user)),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
