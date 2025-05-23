@@ -9,6 +9,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/video_call/ui/video_call_page.dart';
+import 'package:nursejoyapp/features/chat/ui/widgets/message_types.dart';
 
 class ChatRoomPage extends StatefulWidget {
   final String chatRoomID;
@@ -206,6 +207,13 @@ class _ChatRoomPageState extends State<ChatRoomPage>
 
     if (messageType == 'video_call') {
       return _buildCallNotificationMessage(message, isMe);
+    } else if (messageType == 'prescription') {
+      return MessageTypes.buildPrescriptionMessage(
+          context: context,
+          message: message,
+          isMe: isMe,
+          recipientFullName: widget.recipientFullName,
+          recipientData: _recipientData);
     }
 
     return Padding(
@@ -506,6 +514,22 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                       label: 'Audio',
                       onTap: () {
                         // Handle audio recording
+                        setState(() {
+                          _showAttachmentOptions = false;
+                        });
+                      },
+                    ),
+                    _buildAttachmentOption(
+                      icon: Icons.file_present,
+                      color: Colors.purple,
+                      label: 'Prescription',
+                      onTap: () {
+                        MessageTypes.showPrescriptionDialog(
+                            context: context,
+                            chatRoomId: widget.chatRoomID,
+                            senderId: user!.uid,
+                            recipientId: widget.recipientID);
+                        // Handle prescription sharing
                         setState(() {
                           _showAttachmentOptions = false;
                         });
