@@ -1,3 +1,4 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -13,11 +14,13 @@ Future<void> updateProfile(
     String email,
     String firstName,
     String lastName,
+    String fullName,
+    String fullNameLower,
     String civilStatus,
     int age,
     DateTime birthdate,
     String address,
-    String phoneNumber) async {
+    String phoneNumber,) async {
   // use auth to update the user's profile with the ones built-in the user type with firebase auth
   if (profilePicURL != auth.currentUser!.photoURL) {
     await auth.currentUser!.updatePhotoURL(profilePicURL);
@@ -33,6 +36,8 @@ Future<void> updateProfile(
   return db.collection('users').doc(userID).update({
     'first_name': firstName,
     'last_name': lastName,
+    'full_name': fullName,
+    'full_name_lowercase': fullNameLower,
     'civil_status': civilStatus,
     'age': age,
     'birthdate': birthdate,
@@ -45,3 +50,30 @@ Future<void> updateProfile(
 Future<DocumentSnapshot> getProfile(String userID) async {
   return await db.collection('users').doc(userID).get();
 }
+
+Future<void> setIsSetup(String userID, bool isSetup) async {
+  return await db.collection('users').doc(userID).update({
+    'is_setup': isSetup,
+  });
+}
+
+
+List<String> createSearchIndex(String fullName) {
+    final List<String> parts = fullName.split(' ');
+    final List<String> nGrams = [];
+    for (String part in parts) {
+      nGrams.addAll(createNGrams(part));
+    }
+    return nGrams;
+  }
+
+List<String> createNGrams(String part,
+      {int minGram = 1, int maxGram = 10}) {
+    final List<String> nGrams = [];
+    for (int i = 1; i <= maxGram; i++) {
+      if (i <= part.length) {
+        nGrams.add(part.substring(0, i));
+      }
+    }
+    return nGrams;
+  }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
-import 'package:nursejoyapp/auth/provider/auth_wrapper.dart';
-import 'features/signing/ui/pages/loading_page.dart';
+import 'package:nursejoyapp/features/signing/ui/pages/loading_page.dart';
 import 'features/signing/ui/pages/securitycheck_page.dart';
 import 'features/signing/ui/pages/signin_page.dart';
 import 'features/signing/ui/pages/register_page.dart';
@@ -10,6 +9,9 @@ import 'features/dashboard/ui/pages/dashboard_page.dart';
 import 'features/profile/ui/pages/profile_page.dart';
 import 'features/emergency/ui/pages/emergency_page.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:go_router/go_router.dart';
+import 'package:nursejoyapp/router.dart';
 
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
@@ -20,54 +22,77 @@ import 'features/map/ui/pages/viewmap.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+
   runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => AuthService()),
-      ],
-      child: MyApp(),
-    ),
+    const StartUpApp(),
   );
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class StartUpApp extends StatelessWidget {
+  const StartUpApp({super.key});
+
+  Future<Map<String, dynamic>> _initialize() async {
+    await dotenv.load(fileName: '.env');
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    final authService = AuthService();
+    return {
+      'authService': authService,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
-    final providers = [EmailAuthProvider()];
-
-    return MaterialApp(
-      title: 'NurseJoy',
-      home: AuthWrapper(),
-      routes: {
-        '/loading': (context) => LoadingPage(),
-        '/signin': (context) => SigninPage(),
-        '/sign-in': (context) {
-          return SignInScreen(
-            providers: providers,
-            actions: [
-              AuthStateChangeAction<UserCreated>((context, state) {
-                Navigator.pushReplacementNamed(context, '/home');
-              }),
-              AuthStateChangeAction<SignedIn>((context, state) {
-                Navigator.pushReplacementNamed(context, '/home');
-              }),
-            ],
-          );
-        },
-        '/register': (context) => RegisterPage(),
-        '/securitycheck': (context) => SecuritycheckPage(),
-        '/home': (context) {
-          return HomeScreen();
-        },
-        '/emergency': (context) => EmergencyPage(),
-        '/settings': (context) => const Settings(),
-        '/viewmappage': (context) => const ViewMapPage(),
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _initialize(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const MaterialApp(home: SplashScreen());
+        } else if (snapshot.hasError) {
+          return MaterialApp(
+              home: ErrorScreen(error: snapshot.error.toString()));
+        } else {
+          final authService = snapshot.data!['authService'] as AuthService;
+          return MultiProvider(providers: [
+            ChangeNotifierProvider<AuthService>.value(value: authService),
+          ], child: MyApp(authService: authService));
+        }
       },
+    );
+  }
+}
+
+class SplashScreen extends StatelessWidget {
+  const SplashScreen({super.key});
+  @override
+  Widget build(BuildContext context) => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+}
+
+class ErrorScreen extends StatelessWidget {
+  final String error;
+  const ErrorScreen({super.key, required this.error});
+  @override
+  Widget build(BuildContext context) => Scaffold(
+        body: Center(child: Text('Error: $error')),
+      );
+}
+
+class MyApp extends StatelessWidget {
+  final AuthService authService;
+
+  const MyApp({super.key, required this.authService});
+
+  @override
+  Widget build(BuildContext context) {
+    // Create router configuration
+    final appRouter = AppRouter(authService);
+
+    return MaterialApp.router(
+      title: 'NurseJoy',
+      routerConfig: appRouter.router,
       theme: ThemeData(
         textTheme: const TextTheme(
           titleLarge: TextStyle(
@@ -80,7 +105,6 @@ class MyApp extends StatelessWidget {
               ]),
         ),
       ),
-      // home: SigninScreen(),
     );
   }
 }
@@ -95,11 +119,20 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 1;
   User? user;
-  String _appBarTitle = 'Nurse Joy';
+  late AuthService auth;
+  String _appBarTitle = 'Dashboard';
+  final List<Widget?> _pages = List.filled(3, null);
 
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    auth = Provider.of<AuthService>(context);
+    user = auth.user;
   }
 
   void _onItemTapped(int index) {
@@ -123,13 +156,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthService>(context);
-    final List<Widget> _pages = [
-      ChatListPage(),
-      DashboardPage(),
-      ProfilePage(userID: auth.user!.uid),
-    ];
-    double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
+    final mediaQuery = MediaQuery.of(context);
+    final appBarHeight = kToolbarHeight + mediaQuery.padding.top;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF58f0d7),
@@ -139,17 +167,17 @@ class _HomeScreenState extends State<HomeScreen> {
           if (_selectedIndex == 1)
             TextButton.icon(
               onPressed: () {
-                Navigator.pushNamed(context, '/emergency');
+                context.go('/emergency');
               },
-              label: Text(
+              label: const Text(
                 'E.M.',
-                style: const TextStyle(
+                style: TextStyle(
                   color: Colors.red,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              icon: Icon(Icons.warning_sharp, color: Colors.red),
+              icon: const Icon(Icons.warning_sharp, color: Colors.red),
             ),
         ],
         centerTitle: true,
@@ -193,38 +221,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     leading: const Icon(Icons.home_outlined),
                     title: const Text('Home'),
                     onTap: () {
-                      Navigator.pop(context);
+                      context.go('/home');
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.emergency_outlined),
                     title: const Text('Activate Emergency Mode'),
                     onTap: () {
-                      Navigator.pop(context);
+                      context.go('/emergency');
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.settings_outlined),
                     title: const Text('Settings'),
                     onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/settings');
+                      context.go('/settings');
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.map_outlined),
                     title: const Text('View Map'),
                     onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/viewmappage');
+                      context.go('/viewmap');
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.logout_outlined),
                     title: const Text('Logout'),
-                    onTap: () {
-                      auth.signOut();
-                      Navigator.pushReplacementNamed(context, '/signin');
+                    onTap: () async {
+                      await auth.signOut();
+                      context.go('/signin');
                     },
                   ),
                 ],
@@ -235,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: IndexedStack(
         index: _selectedIndex,
-        children: _pages,
+        children: List.generate(3, (index) => buildPage(index, user)),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
@@ -276,4 +302,17 @@ Widget buildCircleImage(String imagePath, double size, double scale) {
       ),
     ),
   );
+}
+
+Widget buildPage(int index, User? user) {
+  switch (index) {
+    case 0:
+      return const ChatListPage();
+    case 1:
+      return const DashboardPage();
+    case 2:
+      return ProfilePage(userID: user!.uid);
+    default:
+      return const SizedBox.shrink();
+  }
 }
