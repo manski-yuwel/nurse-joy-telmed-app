@@ -1,24 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
-import 'package:nursejoyapp/features/signing/ui/pages/loading_page.dart';
-import 'features/signing/ui/pages/securitycheck_page.dart';
-import 'features/signing/ui/pages/signin_page.dart';
-import 'features/signing/ui/pages/register_page.dart';
 import 'features/chat/ui/pages/chat_list_page.dart';
 import 'features/dashboard/ui/pages/dashboard_page.dart';
 import 'features/profile/ui/pages/profile_page.dart';
-import 'features/emergency/ui/pages/emergency_page.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/router.dart';
-
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
-import 'package:firebase_ui_auth/firebase_ui_auth.dart';
-import 'features/Settings/ui/pages/settings.dart';
-import 'features/map/ui/pages/viewmap.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -121,7 +112,6 @@ class _HomeScreenState extends State<HomeScreen> {
   User? user;
   late AuthService auth;
   String _appBarTitle = 'Dashboard';
-  final List<Widget?> _pages = List.filled(3, null);
 
   @override
   void initState() {

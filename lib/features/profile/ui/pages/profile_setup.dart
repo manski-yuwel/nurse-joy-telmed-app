@@ -102,7 +102,7 @@ class _ProfileSetupState extends State<ProfileSetup> {
         'civil_status': _selectedCivilStatus,
         'is_setup': true,
         'search_index': createSearchIndex(
-            '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}'),
+            '${_firstNameController.text.trim().toLowerCase()} ${_lastNameController.text.trim().toLowerCase()}'),
       });
 
       if (mounted) {
