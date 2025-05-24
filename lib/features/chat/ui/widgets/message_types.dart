@@ -11,11 +11,11 @@ class PrescriptionForm extends StatefulWidget {
   final String recipientId;
 
   const PrescriptionForm({
-    Key? key,
+    super.key,
     required this.chatRoomId,
     required this.senderId,
     required this.recipientId,
-  }) : super(key: key);
+  });
 
   @override
   State<PrescriptionForm> createState() => _PrescriptionFormState();
