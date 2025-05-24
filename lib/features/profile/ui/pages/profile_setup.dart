@@ -89,20 +89,23 @@ class _ProfileSetupState extends State<ProfileSetup> {
         age--;
       }
 
+      final fullName = '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}';
+      final fullNameLowercase = fullName.toLowerCase();
+
+
       // Update user profile data
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
         'first_name': _firstNameController.text.trim(),
         'last_name': _lastNameController.text.trim(),
-        'full_name': '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}',
-        'full_name_lowercase': '${_firstNameController.text.trim().toLowerCase()} ${_lastNameController.text.trim().toLowerCase()}',
+        'full_name': fullName,
+        'full_name_lowercase': fullNameLowercase,
         'phone_number': _phoneController.text.trim(),
         'address': _addressController.text.trim(),
         'birthdate': Timestamp.fromDate(_selectedDate!),
         'age': age,
         'civil_status': _selectedCivilStatus,
         'is_setup': true,
-        'search_index': createSearchIndex(
-            '${_firstNameController.text.trim().toLowerCase()} ${_lastNameController.text.trim().toLowerCase()}'),
+        'search_index': createSearchIndex(fullNameLowercase),
       });
 
       if (mounted) {
