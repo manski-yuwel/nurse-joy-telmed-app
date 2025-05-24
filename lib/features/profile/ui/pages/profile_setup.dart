@@ -1,8 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:flutter_form_builder/flutter_form_builder.dart';
+import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
-import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
 
 class ProfileSetup extends StatefulWidget {
   const ProfileSetup({super.key});
@@ -11,46 +16,63 @@ class ProfileSetup extends StatefulWidget {
   State<ProfileSetup> createState() => _ProfileSetupState();
 }
 
-class _ProfileSetupState extends State<ProfileSetup> {
-  final _formKey = GlobalKey<FormState>();
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _phoneController = TextEditingController();
-  final _addressController = TextEditingController();
-
-  DateTime? _selectedDate;
-  String? _selectedCivilStatus;
+class _ProfileSetupState extends State<ProfileSetup>
+    with TickerProviderStateMixin {
+  final _formKey = GlobalKey<FormBuilderState>();
   bool _isLoading = false;
+
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
+
+  // Form field names
+  static const String firstNameField = 'first_name';
+  static const String lastNameField = 'last_name';
+  static const String phoneField = 'phone';
+  static const String addressField = 'address';
+  static const String bioField = 'bio';
+  static const String birthdateField = 'birthdate';
+  static const String civilStatusField = 'civil_status';
+  static const String genderField = 'gender';
 
   final List<String> _civilStatusOptions = [
     'Single',
     'Married',
     'Divorced',
-    'Widowed'
+    'Widowed',
+    'Prefer not to say'
+  ];
+
+  final List<String> _genderOptions = [
+    'Male',
+    'Female',
+    'Non-binary',
+    'Prefer not to say'
   ];
 
   @override
-  void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _phoneController.dispose();
-    _addressController.dispose();
-    super.dispose();
-  }
+  void initState() {
+    super.initState();
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime.now(),
+    _fadeController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 500),
     );
 
-    if (picked != null && picked != _selectedDate) {
-      setState(() {
-        _selectedDate = picked;
-      });
-    }
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _fadeController,
+      curve: Curves.easeInOut,
+    ));
+
+    _fadeController.forward();
+  }
+
+  @override
+  void dispose() {
+    _fadeController.dispose();
+    super.dispose();
   }
 
   Future<void> _saveProfile() async {
@@ -58,17 +80,23 @@ class _ProfileSetupState extends State<ProfileSetup> {
       return;
     }
 
-    if (_selectedDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select your birthdate')),
-      );
+    final formData = _formKey.currentState!.value;
+    final birthdate = formData[birthdateField] as DateTime?;
+    final civilStatus = formData[civilStatusField] as String?;
+    final gender = formData[genderField] as String?;
+
+    if (birthdate == null) {
+      _showSnackBar('Please select your birthdate', Colors.red);
       return;
     }
 
-    if (_selectedCivilStatus == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select your civil status')),
-      );
+    if (civilStatus == null) {
+      _showSnackBar('Please select your civil status', Colors.red);
+      return;
+    }
+
+    if (gender == null) {
+      _showSnackBar('Please select your gender', Colors.red);
       return;
     }
 
@@ -82,40 +110,44 @@ class _ProfileSetupState extends State<ProfileSetup> {
 
       // Calculate age from birthdate
       final today = DateTime.now();
-      int age = today.year - _selectedDate!.year;
-      if (today.month < _selectedDate!.month ||
-          (today.month == _selectedDate!.month &&
-              today.day < _selectedDate!.day)) {
+      int age = today.year - birthdate.year;
+      if (today.month < birthdate.month ||
+          (today.month == birthdate.month && today.day < birthdate.day)) {
         age--;
       }
 
-      final fullName = '${_firstNameController.text.trim()} ${_lastNameController.text.trim()}';
+      final firstName = formData[firstNameField].toString().trim();
+      final lastName = formData[lastNameField].toString().trim();
+      final fullName = '$firstName $lastName';
       final fullNameLowercase = fullName.toLowerCase();
-
 
       // Update user profile data
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
-        'first_name': _firstNameController.text.trim(),
-        'last_name': _lastNameController.text.trim(),
+        'first_name': firstName,
+        'last_name': lastName,
         'full_name': fullName,
         'full_name_lowercase': fullNameLowercase,
-        'phone_number': _phoneController.text.trim(),
-        'address': _addressController.text.trim(),
-        'birthdate': Timestamp.fromDate(_selectedDate!),
+        'phone_number': formData[phoneField].toString().trim(),
+        'address': formData[addressField].toString().trim(),
+        'bio': formData[bioField].toString().trim(),
+        'birthdate': Timestamp.fromDate(birthdate),
         'age': age,
-        'civil_status': _selectedCivilStatus,
+        'civil_status': civilStatus,
+        'gender': gender,
         'is_setup': true,
-        'search_index': createSearchIndex(fullNameLowercase),
+        'profile_completed_at': Timestamp.now(),
+        'search_index': _createSearchIndex(fullNameLowercase),
       });
 
       if (mounted) {
-        Navigator.pushReplacementNamed(context, '/home');
+        _showSnackBar('Profile saved successfully!', Colors.green);
+        // Add a small delay to show the success message
+        await Future.delayed(const Duration(seconds: 1));
+        context.go('/home');
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error saving profile: $error')),
-        );
+        _showSnackBar('Error saving profile: $error', Colors.red);
       }
     } finally {
       if (mounted) {
@@ -126,152 +158,438 @@ class _ProfileSetupState extends State<ProfileSetup> {
     }
   }
 
+  List<String> _createSearchIndex(String fullName) {
+    List<String> searchIndex = [];
+    String currentSubstring = '';
+
+    for (int i = 0; i < fullName.length; i++) {
+      currentSubstring += fullName[i];
+      searchIndex.add(currentSubstring);
+    }
+
+    return searchIndex;
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        margin: const EdgeInsets.all(16),
+      ),
+    );
+  }
+
+  Widget _buildFormField({
+    required String name,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType keyboardType = TextInputType.text,
+    List<String? Function(String?)>? validators,
+    int? maxLines,
+    TextInputFormatter? inputFormatter,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          FormBuilderTextField(
+            name: name,
+            keyboardType: keyboardType,
+            maxLines: maxLines ?? 1,
+            inputFormatters: inputFormatter != null ? [inputFormatter] : null,
+            validator: FormBuilderValidators.compose([
+              FormBuilderValidators.required(errorText: "$label is required"),
+              ...?validators,
+            ]),
+            decoration: InputDecoration(
+              hintText: hint,
+              hintStyle: TextStyle(color: Colors.grey.shade500),
+              prefixIcon: Icon(icon, color: const Color(0xFF58f0d7)),
+              filled: true,
+              fillColor: Colors.grey.shade50,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide:
+                    const BorderSide(color: Color(0xFF58f0d7), width: 2),
+              ),
+              errorBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Colors.red, width: 2),
+              ),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Complete Your Profile'),
-        backgroundColor: const Color(0xFF58f0d7),
-        automaticallyImplyLeading: false, // Disable back button
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      'Welcome! Let\'s set up your profile.',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Full Name
-                    TextFormField(
-                      controller: _firstNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'First Name',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your first name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Last Name
-                    TextFormField(
-                      controller: _lastNameController,
-                      decoration: const InputDecoration(
-                        labelText: 'Last Name',
-                        border: OutlineInputBorder(),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your last name';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Phone Number
-                    TextFormField(
-                      controller: _phoneController,
-                      decoration: const InputDecoration(
-                        labelText: 'Phone Number',
-                        border: OutlineInputBorder(),
-                      ),
-                      keyboardType: TextInputType.phone,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your phone number';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Birthdate
-                    InkWell(
-                      onTap: () => _selectDate(context),
-                      child: InputDecorator(
-                        decoration: const InputDecoration(
-                          labelText: 'Birthdate',
-                          border: OutlineInputBorder(),
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFF58f0d7),
+              Color(0xFF4dd0e1),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: FadeTransition(
+            opacity: _fadeAnimation,
+            child: Column(
+              children: [
+                // Header
+                Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 80,
+                        height: 80,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          shape: BoxShape.circle,
                         ),
-                        child: Text(
-                          _selectedDate == null
-                              ? 'Select your birthdate'
-                              : '${_selectedDate!.day}/${_selectedDate!.month}/${_selectedDate!.year}',
+                        child: const Icon(
+                          Icons.person_outline,
+                          size: 40,
+                          color: Colors.white,
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Civil Status
-                    DropdownButtonFormField<String>(
-                      decoration: const InputDecoration(
-                        labelText: 'Civil Status',
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 16),
+                      const Text(
+                        "Complete Your Profile",
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
                       ),
-                      value: _selectedCivilStatus,
-                      items: _civilStatusOptions.map((status) {
-                        return DropdownMenuItem(
-                          value: status,
-                          child: Text(status),
-                        );
-                      }).toList(),
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedCivilStatus = value;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Address
-                    TextFormField(
-                      controller: _addressController,
-                      decoration: const InputDecoration(
-                        labelText: 'Address',
-                        border: OutlineInputBorder(),
+                      const SizedBox(height: 8),
+                      Text(
+                        "Tell us more about yourself",
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
                       ),
-                      maxLines: 3,
-                      validator: (value) {
-                        if (value == null || value.trim().isEmpty) {
-                          return 'Please enter your address';
-                        }
-                        return null;
-                      },
-                    ),
-                    const SizedBox(height: 24),
-
-                    // Submit Button
-                    ElevatedButton(
-                      onPressed: _saveProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF58f0d7),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                      ),
-                      child: const Text(
-                        'Save and Continue',
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
+
+                // Form Container
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.only(top: 20),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(30),
+                        topRight: Radius.circular(30),
+                      ),
+                    ),
+                    child: FormBuilder(
+                      key: _formKey,
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(24.0),
+                        child: AnimationLimiter(
+                          child: Column(
+                            children: AnimationConfiguration.toStaggeredList(
+                              duration: const Duration(milliseconds: 375),
+                              childAnimationBuilder: (widget) => SlideAnimation(
+                                horizontalOffset: 50.0,
+                                child: FadeInAnimation(child: widget),
+                              ),
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildFormField(
+                                        name: firstNameField,
+                                        label: "First Name",
+                                        hint: "Enter your first name",
+                                        icon: Icons.person_outline,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: _buildFormField(
+                                        name: lastNameField,
+                                        label: "Last Name",
+                                        hint: "Enter your last name",
+                                        icon: Icons.person_outline,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                _buildFormField(
+                                  name: phoneField,
+                                  label: "Phone Number",
+                                  hint: "Enter your phone number",
+                                  icon: Icons.phone_outlined,
+                                  keyboardType: TextInputType.phone,
+                                  inputFormatter:
+                                      FilteringTextInputFormatter.digitsOnly,
+                                ),
+                                _buildFormField(
+                                  name: addressField,
+                                  label: "Address",
+                                  hint: "Enter your address",
+                                  icon: Icons.location_on_outlined,
+                                  maxLines: 2,
+                                ),
+                                _buildFormField(
+                                  name: bioField,
+                                  label: "Bio",
+                                  hint: "Tell us about yourself",
+                                  icon: Icons.description_outlined,
+                                  maxLines: 3,
+                                ),
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 20),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Birthdate",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      FormBuilderDateTimePicker(
+                                        name: birthdateField,
+                                        inputType: InputType.date,
+                                        format: DateFormat('MMM dd, yyyy'),
+                                        initialDate: DateTime(2000),
+                                        firstDate: DateTime(1900),
+                                        lastDate: DateTime.now(),
+                                        decoration: InputDecoration(
+                                          hintText: "Select your birthdate",
+                                          hintStyle: TextStyle(
+                                              color: Colors.grey.shade500),
+                                          prefixIcon: const Icon(
+                                              Icons.calendar_today_outlined,
+                                              color: Color(0xFF58f0d7)),
+                                          filled: true,
+                                          fillColor: Colors.grey.shade50,
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                                color: Colors.grey.shade300),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                                color: Colors.grey.shade300),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: const BorderSide(
+                                                color: Color(0xFF58f0d7),
+                                                width: 2),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 20),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Civil Status",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      FormBuilderDropdown<String>(
+                                        name: civilStatusField,
+                                        items: _civilStatusOptions
+                                            .map((status) => DropdownMenuItem(
+                                                  value: status,
+                                                  child: Text(status),
+                                                ))
+                                            .toList(),
+                                        decoration: InputDecoration(
+                                          hintText: "Select your civil status",
+                                          hintStyle: TextStyle(
+                                              color: Colors.grey.shade500),
+                                          prefixIcon: const Icon(
+                                              Icons.family_restroom_outlined,
+                                              color: Color(0xFF58f0d7)),
+                                          filled: true,
+                                          fillColor: Colors.grey.shade50,
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                                color: Colors.grey.shade300),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                                color: Colors.grey.shade300),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: const BorderSide(
+                                                color: Color(0xFF58f0d7),
+                                                width: 2),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 20),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Gender",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      FormBuilderDropdown<String>(
+                                        name: genderField,
+                                        items: _genderOptions
+                                            .map((gender) => DropdownMenuItem(
+                                                  value: gender,
+                                                  child: Text(gender),
+                                                ))
+                                            .toList(),
+                                        decoration: InputDecoration(
+                                          hintText: "Select your gender",
+                                          hintStyle: TextStyle(
+                                              color: Colors.grey.shade500),
+                                          prefixIcon: const Icon(
+                                              Icons.person_outline,
+                                              color: Color(0xFF58f0d7)),
+                                          filled: true,
+                                          fillColor: Colors.grey.shade50,
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                                color: Colors.grey.shade300),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                                color: Colors.grey.shade300),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: const BorderSide(
+                                                color: Color(0xFF58f0d7),
+                                                width: 2),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton(
+                                    onPressed: _isLoading ? null : _saveProfile,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF58f0d7),
+                                      foregroundColor: Colors.black87,
+                                      padding: const EdgeInsets.symmetric(
+                                          vertical: 16),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      elevation: 0,
+                                    ),
+                                    child: _isLoading
+                                        ? const SizedBox(
+                                            height: 20,
+                                            width: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              valueColor:
+                                                  AlwaysStoppedAnimation<Color>(
+                                                      Colors.black87),
+                                            ),
+                                          )
+                                        : const Text(
+                                            "Complete Setup",
+                                            style: TextStyle(
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
+          ),
+        ),
+      ),
     );
   }
 }

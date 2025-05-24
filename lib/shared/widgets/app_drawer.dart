@@ -62,6 +62,13 @@ class AppDrawer extends StatelessWidget {
                   },
                 ),
                 ListTile(
+                  leading: const Icon(Icons.person_add_alt_1_outlined),
+                  title: const Text('Profile Setup'),
+                  onTap: () {
+                    context.go('/profile-setup');
+                  },
+                ),
+                ListTile(
                   leading: const Icon(Icons.logout_outlined),
                   title: const Text('Logout'),
                   onTap: () async {

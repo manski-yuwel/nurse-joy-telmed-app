@@ -22,9 +22,8 @@ class AppRouter {
     debugLogDiagnostics: kDebugMode,
     redirect: (context, state) async {
       final isLoggedIn = authService.user != null;
-      final isLoggingIn = state.uri.path == '/signin' ||
-          state.uri.path == '/register' ||
-          state.uri.path == '/';
+      final isLoggingIn =
+          state.uri.path == '/signin' || state.uri.path == '/register';
 
       // If not logged in and not on a login page, redirect to signin
       if (!isLoggedIn && !isLoggingIn) {
@@ -45,6 +44,10 @@ class AppRouter {
     },
     routes: [
       // Auth routes
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const HomeScreen(),
+      ),
       GoRoute(
         path: '/signin',
         builder: (context, state) => const SigninPage(),
@@ -82,7 +85,7 @@ class AppRouter {
       GoRoute(
         path: '/chat',
         builder: (context, state) => const ChatListPage(),
-      ),    
+      ),
 
       // Individual feature routes
       GoRoute(
@@ -92,6 +95,11 @@ class AppRouter {
               state.pathParameters['userId'] ?? authService.user!.uid;
           return ProfilePage(userID: userId);
         },
+      ),
+
+      GoRoute(
+        path: '/profile-setup',
+        builder: (context, state) => const ProfileSetup(),
       ),
     ],
   );

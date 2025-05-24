@@ -1,15 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
-import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
-import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
-import 'package:go_router/go_router.dart';
 
 // TODO:
 // - build backend api for uploading profile pic
@@ -40,7 +36,6 @@ class _ProfilePageState extends State<ProfilePage> {
   late String _civilStatus;
   final _formKey = GlobalKey<FormBuilderState>();
   late final auth;
-  int _selectedIndex = 2;
 
   // Form field names
   static const String usernameField = 'username';
@@ -67,49 +62,10 @@ class _ProfilePageState extends State<ProfilePage> {
     });
   }
 
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    if (index == 0) {
-      context.go('/chat');
-    } else if (index == 1) {
-      context.go('/home');
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthService>(context, listen: false);
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF58f0d7),
-        centerTitle: true,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
-        ),
-        title: const Text(
-          'Profile',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(
-                color: Colors.black45,
-                offset: Offset(1, 1),
-                blurRadius: 1,
-              ),
-            ],
-          ),
-        ),
-      ),
-      drawer: const AppDrawer(),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: FormBuilder(
@@ -486,10 +442,6 @@ class _ProfilePageState extends State<ProfilePage> {
           ),
         ),
       ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
     );
   }
 
@@ -527,6 +479,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   @override
   void dispose() {
+    _formKey.currentState?.dispose();
     super.dispose();
   }
 }
