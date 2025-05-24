@@ -10,6 +10,9 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
+import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
+import 'package:go_router/go_router.dart';
 
 final logger = Logger();
 final chatInstance = Chat();
@@ -31,6 +34,7 @@ class _ChatListPageState extends State<ChatListPage>
   bool _isLoading = false;
   late AnimationController _animationController;
   late Animation<double> _animation;
+  int _selectedIndex = 0;
 
   @override
   void initState() {
@@ -486,6 +490,18 @@ class _ChatListPageState extends State<ChatListPage>
     );
   }
 
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    if (index == 1) {
+      context.go('/home');
+    } else if (index == 2) {
+      final auth = Provider.of<AuthService>(context, listen: false);
+      context.go('/profile/${auth.user!.uid}');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthService>(context, listen: false);
@@ -493,6 +509,37 @@ class _ChatListPageState extends State<ChatListPage>
     final primaryColor = const Color(0xFF58f0d7);
 
     return Scaffold(
+      appBar: AppBar(
+        backgroundColor: primaryColor,
+        centerTitle: true,
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
+        title: Text(
+          "Nurse Joy",
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 30,
+            fontWeight: FontWeight.bold,
+            shadows: [
+              Shadow(
+                color: Colors.black45,
+                offset: Offset(1, 1),
+                blurRadius: 1,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          buildCircleImage('assets/img/nursejoy.jpg', 5, 1.5),
+        ],
+      ),
+      drawer: const AppDrawer(),
       body: SafeArea(
         child: Column(
           children: [
@@ -688,6 +735,27 @@ class _ChatListPageState extends State<ChatListPage>
         child: const Icon(Icons.chat_rounded, color: Colors.black87),
         onPressed: () => showOnlineUsers(context),
       ),
+      bottomNavigationBar: AppBottomNavBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+      ),
     );
   }
+}
+
+// Function to create image widget with the cropped image
+Widget buildCircleImage(String imagePath, double size, double scale) {
+  return Padding(
+    padding: EdgeInsets.all(size),
+    child: ClipOval(
+      child: Transform.scale(
+        scale: scale,
+        alignment: Alignment.topCenter,
+        child: Image.asset(
+          imagePath,
+          fit: BoxFit.cover,
+        ),
+      ),
+    ),
+  );
 }

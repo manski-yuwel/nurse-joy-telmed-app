@@ -8,6 +8,7 @@ import 'package:nursejoyapp/features/Settings/ui/pages/settings.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/register_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/securitycheck_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/signin_page.dart';
+import 'package:nursejoyapp/features/chat/ui/pages/chat_list_page.dart';
 import 'package:nursejoyapp/main.dart';
 import 'package:flutter/foundation.dart';
 
@@ -78,6 +79,10 @@ class AppRouter {
         path: '/viewmap',
         builder: (context, state) => const ViewMapPage(),
       ),
+      GoRoute(
+        path: '/chat',
+        builder: (context, state) => const ChatListPage(),
+      ),    
 
       // Individual feature routes
       GoRoute(
