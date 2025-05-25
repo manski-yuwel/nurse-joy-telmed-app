@@ -166,22 +166,6 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
         ),
-        actions: [
-          TextButton.icon(
-            onPressed: () {
-              context.go('/emergency');
-            },
-            label: const Text(
-              'E.M.',
-              style: TextStyle(
-                color: Colors.red,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            icon: const Icon(Icons.warning_sharp, color: Colors.red),
-          ),
-        ],
       ),
       drawer: const AppDrawer(),
       body: const DashboardPage(),

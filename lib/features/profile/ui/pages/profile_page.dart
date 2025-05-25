@@ -66,11 +66,12 @@ class _ProfilePageState extends State<ProfilePage> {
     setState(() => _isLoading = true);
     try {
       final auth = Provider.of<AuthService>(context, listen: false);
-      final DocumentSnapshot userProfile = await getProfile(auth.currentUser!.uid);
-      
+      final DocumentSnapshot userProfile =
+          await getProfile(auth.currentUser!.uid);
+
       if (userProfile.exists) {
         final data = userProfile.data() as Map<String, dynamic>;
-        
+
         // Debug log
         print('Fetched data: $data');
         print('Birthdate from Firestore: ${data['birthdate']}');
@@ -104,7 +105,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
         // Debug log
         print('Form data after setting: $_formData');
-        
+
         // Don't patch - let the rebuild handle it naturally
       }
     } catch (e) {
@@ -148,7 +149,7 @@ class _ProfilePageState extends State<ProfilePage> {
     for (final entry in formState.fields.entries) {
       formData[entry.key] = entry.value.value;
     }
-    
+
     // ENHANCED DEBUG LOGGING
     print('=== FORM SAVE DEBUG ===');
     print('Form data from currentState: $formData');
@@ -190,7 +191,8 @@ class _ProfilePageState extends State<ProfilePage> {
         'full_name_lowercase': fullNameLowercase,
         'phone_number': formData[phoneField].toString().trim(),
         'address': formData[addressField].toString().trim(),
-        'birthdate': birthdate is DateTime ? Timestamp.fromDate(birthdate) : birthdate,
+        'birthdate':
+            birthdate is DateTime ? Timestamp.fromDate(birthdate) : birthdate,
         'age': int.parse(formData[ageField].toString()),
         'civil_status': formData[civilStatusField],
         'gender': formData[genderField],
@@ -292,7 +294,7 @@ class _ProfilePageState extends State<ProfilePage> {
         ],
       ),
       drawer: const AppDrawer(),
-      body: _isLoading || !_isDataLoaded  // Wait for data to be loaded
+      body: _isLoading || !_isDataLoaded // Wait for data to be loaded
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -337,7 +339,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         Expanded(
                           child: FormBuilderTextField(
                             name: firstNameField,
-                            decoration: _getInputDecoration('First Name', Icons.person_outline),
+                            decoration: _getInputDecoration(
+                                'First Name', Icons.person_outline),
                             enabled: _isEditing,
                             validator: FormBuilderValidators.required(),
                           ),
@@ -346,7 +349,8 @@ class _ProfilePageState extends State<ProfilePage> {
                         Expanded(
                           child: FormBuilderTextField(
                             name: lastNameField,
-                            decoration: _getInputDecoration('Last Name', Icons.person_outline),
+                            decoration: _getInputDecoration(
+                                'Last Name', Icons.person_outline),
                             enabled: _isEditing,
                             validator: FormBuilderValidators.required(),
                           ),
@@ -368,7 +372,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 16),
                     FormBuilderTextField(
                       name: addressField,
-                      decoration: _getInputDecoration('Address', Icons.location_on),
+                      decoration:
+                          _getInputDecoration('Address', Icons.location_on),
                       enabled: _isEditing,
                       maxLines: 2,
                       validator: FormBuilderValidators.required(),
@@ -376,7 +381,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 16),
                     FormBuilderDateTimePicker(
                       name: birthdateField,
-                      decoration: _getInputDecoration('Birthdate', Icons.calendar_today),
+                      decoration: _getInputDecoration(
+                          'Birthdate', Icons.calendar_today),
                       enabled: _isEditing,
                       inputType: InputType.date,
                       format: DateFormat('MMM dd, yyyy'),
@@ -392,7 +398,8 @@ class _ProfilePageState extends State<ProfilePage> {
                           final today = DateTime.now();
                           int age = today.year - date.year;
                           if (today.month < date.month ||
-                              (today.month == date.month && today.day < date.day)) {
+                              (today.month == date.month &&
+                                  today.day < date.day)) {
                             age--;
                           }
                           final currentFormState = _formKey.currentState;
@@ -417,7 +424,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 16),
                     FormBuilderDropdown<String>(
                       name: civilStatusField,
-                      decoration: _getInputDecoration('Civil Status', Icons.family_restroom),
+                      decoration: _getInputDecoration(
+                          'Civil Status', Icons.family_restroom),
                       enabled: _isEditing,
                       items: _civilStatusOptions
                           .map((status) => DropdownMenuItem(
@@ -430,7 +438,8 @@ class _ProfilePageState extends State<ProfilePage> {
                     const SizedBox(height: 16),
                     FormBuilderDropdown<String>(
                       name: genderField,
-                      decoration: _getInputDecoration('Gender', Icons.person_outline),
+                      decoration:
+                          _getInputDecoration('Gender', Icons.person_outline),
                       enabled: _isEditing,
                       items: _genderOptions
                           .map((gender) => DropdownMenuItem(
