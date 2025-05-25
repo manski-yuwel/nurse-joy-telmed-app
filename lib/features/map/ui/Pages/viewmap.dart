@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:provider/provider.dart';
 
@@ -22,27 +23,32 @@ class _ViewMapPageState extends State<ViewMapPage> {
       _selectedIndex = index;
     });
     if (index == 0) {
-      Navigator.pushNamed(context, '/home');
+      context.go('/home'); // Changed to GoRouter
     } else if (index == 1) {
-      Navigator.pushNamed(context, '/home');
+      context.go('/home'); // Changed to GoRouter
     } else if (index == 2) {
-      Navigator.pushNamed(context, '/home');
+      // Assuming you want to navigate to the current user's profile
+      final auth = Provider.of<AuthService>(context, listen: false);
+      final userId = auth.user?.uid;
+      if (userId != null) {
+        context.go('/profile/$userId'); // Changed to GoRouter with dynamic path
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthService>(context, listen: false); // Use listen: false
+    final auth = Provider.of<AuthService>(context, listen: false);
     double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF58f0d7),
-        centerTitle: true, // Center the title
+        centerTitle: true,
         title: const Text(
           "Map",
           style: TextStyle(
             color: Colors.white,
-            fontSize: 30, // Consistent font size
+            fontSize: 30,
             fontWeight: FontWeight.bold,
             shadows: [
               Shadow(color: Colors.black45, offset: Offset(1, 1), blurRadius: 1)
@@ -51,7 +57,7 @@ class _ViewMapPageState extends State<ViewMapPage> {
         ),
         leading: Builder(
           builder: (context) => IconButton(
-            icon: const Icon(Icons.menu), // Add const
+            icon: const Icon(Icons.menu),
             onPressed: () {
               Scaffold.of(context).openDrawer();
             },
@@ -74,31 +80,31 @@ class _ViewMapPageState extends State<ViewMapPage> {
                     leading: const Icon(Icons.home_outlined),
                     title: const Text('Home'),
                     onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/home');
+                      context.pop(); // Close drawer
+                      context.go('/home'); // Changed to GoRouter
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.emergency_outlined),
                     title: const Text('Activate Emergency Mode'),
                     onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/emergency');
+                      context.pop(); // Close drawer
+                      context.go('/emergency'); // Changed to GoRouter
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.settings_outlined),
                     title: const Text('Settings'),
                     onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/settings');
+                      context.pop(); // Close drawer
+                      context.go('/settings'); // Changed to GoRouter
                     },
                   ),
                   ListTile(
                     leading: const Icon(Icons.map_outlined),
                     title: const Text('View Map'),
                     onTap: () {
-                      Navigator.pop(context);
+                      context.pop(); // Close drawer
                     },
                   ),
                   ListTile(
@@ -107,11 +113,14 @@ class _ViewMapPageState extends State<ViewMapPage> {
                     onTap: () async {
                       try {
                         await auth.signOut();
-                        Navigator.pushNamedAndRemoveUntil(context, '/signin', (route) => false); // Use pushNamedAndRemoveUntil
+                        if (context.mounted) {
+                          context.go('/signin'); // Changed to GoRouter
+                        }
                       } catch (e) {
-                        // Handle error
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Error during logout: $e")));
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                              content: Text("Error during logout: $e")));
+                        }
                       }
                     },
                   ),
@@ -144,7 +153,7 @@ class _ViewMapPageState extends State<ViewMapPage> {
             label: 'Profile',
           ),
         ],
-        currentIndex: _selectedIndex == -1 ? 0 : _selectedIndex, // Handle initial state
+        currentIndex: _selectedIndex == -1 ? 0 : _selectedIndex,
         selectedItemColor: Colors.amber[800],
         onTap: _onItemTapped,
         backgroundColor: const Color(0xFF58f0d7),
