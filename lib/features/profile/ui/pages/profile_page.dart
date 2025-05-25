@@ -7,9 +7,13 @@ import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:logger/logger.dart';
 
 // TODO:
 // - build backend api for uploading profile pic
+
+// Initialize logger
+final logger = Logger();
 
 class ProfilePage extends StatefulWidget {
   final String userID;
@@ -406,29 +410,88 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
               const SizedBox(height: 16),
               ElevatedButton(
-                onPressed: () {
+                onPressed: () async {
                   if (_formKey.currentState!.validate()) {
                     _formKey.currentState!.save();
                     final formData = _formKey.currentState!.value;
 
-                    // Extract values from the form
-                    updateProfile(
-                        auth.user!.uid,
-                        '', // photoURL -- blank for now TO IMPLEMENT
-                        formData[emailField],
-                        formData[firstNameField],
-                        formData[lastNameField],
-                        '${formData[firstNameField]} ${formData[lastNameField]}',
-                        '${formData[firstNameField].toLowerCase()} ${formData[lastNameField].toLowerCase()}',
-                        formData[civilStatusField],
-                        int.parse(formData[ageField].toString()),
-                        formData[birthdateField],
-                        formData[addressField],
-                        formData[contactField]);
+                    // Show loading indicator
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (context) =>
+                          const Center(child: CircularProgressIndicator()),
+                    );
 
-                    logger.i('Profile saved');
-                    // reload the profile page after saving changes
-                    _fetchUserProfile();
+                    try {
+                      // Get current and new password values
+                      String? currentPassword =
+                          formData[passwordField]?.toString();
+                      String? newPassword =
+                          formData[newPasswordField]?.toString();
+
+                      // Validate password fields
+                      // If new password is provided, current password must be provided as well
+                      if (newPassword != null && newPassword.isNotEmpty) {
+                        if (currentPassword == null ||
+                            currentPassword.isEmpty) {
+                          throw Exception(
+                              'Current password is required to change password');
+                        }
+                      }
+
+                      // If email is changing, current password is required
+                      if (formData[emailField] != auth.user!.email) {
+                        if (currentPassword == null ||
+                            currentPassword.isEmpty) {
+                          throw Exception(
+                              'Current password is required to change email');
+                        }
+                      }
+
+                      // Extract values from the form and update profile
+                      await updateProfile(
+                          auth.user!.uid,
+                          '', // photoURL -- blank for now TO IMPLEMENT
+                          formData[emailField],
+                          formData[firstNameField],
+                          formData[lastNameField],
+                          '${formData[firstNameField]} ${formData[lastNameField]}',
+                          '${formData[firstNameField].toLowerCase()} ${formData[lastNameField].toLowerCase()}',
+                          formData[civilStatusField],
+                          int.parse(formData[ageField].toString()),
+                          formData[birthdateField],
+                          formData[addressField],
+                          formData[contactField],
+                          username: formData[usernameField],
+                          currentPassword: currentPassword,
+                          newPassword: newPassword);
+
+                      // Close loading dialog
+                      Navigator.of(context).pop();
+
+                      // Show success message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                            content: Text('Profile updated successfully')),
+                      );
+
+                      logger.i('Profile saved');
+                      // reload the profile page after saving changes
+                      _fetchUserProfile();
+                    } catch (e) {
+                      // Close loading dialog
+                      Navigator.of(context).pop();
+
+                      // Show error message
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                            content: Text(
+                                'Error updating profile: ${e.toString()}')),
+                      );
+
+                      logger.e('Error updating profile: $e');
+                    }
                   }
                 },
                 style: ElevatedButton.styleFrom(
@@ -450,15 +513,21 @@ class _ProfilePageState extends State<ProfilePage> {
   Future<void> _fetchUserProfile() async {
     try {
       // get the associated user's profile with the logged in user's uid
-      final DocumentSnapshot userProfile =
-          await getProfile(auth.currentUser!.uid);
-
-      // Convert the Timestamp to DateTime
+      final DocumentSnapshot userProfile = await getProfile(
+          auth.currentUser!.uid); // Convert the Timestamp to DateTime
       Timestamp birthTimestamp = userProfile['birthdate'];
       DateTime birthDate = birthTimestamp.toDate();
 
+      // Get username safely - check if field exists using containsKey
+      String? username;
+      Map<String, dynamic> data = userProfile.data() as Map<String, dynamic>;
+      if (data.containsKey('username')) {
+        username = data['username'];
+      }
+
       // Update form values
       _formKey.currentState?.patchValue({
+        usernameField: username ?? auth.user!.displayName,
         emailField: userProfile['email'],
         firstNameField: userProfile['first_name'],
         lastNameField: userProfile['last_name'],
