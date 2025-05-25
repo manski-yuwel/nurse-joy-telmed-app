@@ -42,7 +42,7 @@ Future<void> updateProfile(
     'age': age,
     'birthdate': birthdate,
     'address': address,
-    'phone_number': phoneNumber
+    'phone_number': phoneNumber,
   });
 }
 

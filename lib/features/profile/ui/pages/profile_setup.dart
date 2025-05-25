@@ -29,7 +29,6 @@ class _ProfileSetupState extends State<ProfileSetup>
   static const String lastNameField = 'last_name';
   static const String phoneField = 'phone';
   static const String addressField = 'address';
-  static const String bioField = 'bio';
   static const String birthdateField = 'birthdate';
   static const String civilStatusField = 'civil_status';
   static const String genderField = 'gender';
@@ -80,7 +79,11 @@ class _ProfileSetupState extends State<ProfileSetup>
       return;
     }
 
-    final formData = _formKey.currentState!.value;
+    final formData = <String, dynamic>{};
+    for (final entry in _formKey.currentState!.fields.entries) {
+      formData[entry.key] = entry.value.value;
+    }
+
     final birthdate = formData[birthdateField] as DateTime?;
     final civilStatus = formData[civilStatusField] as String?;
     final gender = formData[genderField] as String?;
@@ -129,13 +132,10 @@ class _ProfileSetupState extends State<ProfileSetup>
         'full_name_lowercase': fullNameLowercase,
         'phone_number': formData[phoneField].toString().trim(),
         'address': formData[addressField].toString().trim(),
-        'bio': formData[bioField].toString().trim(),
         'birthdate': Timestamp.fromDate(birthdate),
         'age': age,
         'civil_status': civilStatus,
         'gender': gender,
-        'is_setup': true,
-        'profile_completed_at': Timestamp.now(),
         'search_index': _createSearchIndex(fullNameLowercase),
       });
 
@@ -367,13 +367,6 @@ class _ProfileSetupState extends State<ProfileSetup>
                                   hint: "Enter your address",
                                   icon: Icons.location_on_outlined,
                                   maxLines: 2,
-                                ),
-                                _buildFormField(
-                                  name: bioField,
-                                  label: "Bio",
-                                  hint: "Tell us about yourself",
-                                  icon: Icons.description_outlined,
-                                  maxLines: 3,
                                 ),
                                 Container(
                                   margin: const EdgeInsets.only(bottom: 20),
