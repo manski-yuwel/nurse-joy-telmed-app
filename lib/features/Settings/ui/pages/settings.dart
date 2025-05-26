@@ -20,7 +20,7 @@ class _SettingsState extends State<Settings> {
   final List<String> _languages = ['English', 'Spanish', 'French', 'German'];
   int _selectedIndex =
       2; // Initialize to a value that doesn't match any bottom nav item.
-  String _appBarTitle = "Settings";
+  final String _appBarTitle = "Settings";
   bool _isMigrating = false;
   String _migrationStatus = "";
 
