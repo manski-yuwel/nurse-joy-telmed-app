@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
-class ModernAppScaffold extends StatefulWidget {
+import 'package:go_router/go_router.dart';
+import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
+
+class AppScaffold extends StatefulWidget {
   final Widget body;
   final String title;
   final int selectedIndex;
@@ -10,7 +13,7 @@ class ModernAppScaffold extends StatefulWidget {
   final bool showBackButton;
   final VoidCallback? onBackPressed;
 
-  const ModernAppScaffold({
+  const AppScaffold({
     super.key,
     required this.body,
     required this.title,
@@ -22,10 +25,10 @@ class ModernAppScaffold extends StatefulWidget {
   });
 
   @override
-  State<ModernAppScaffold> createState() => _ModernAppScaffoldState();
+  State<AppScaffold> createState() => _AppScaffoldState();
 }
 
-class _ModernAppScaffoldState extends State<ModernAppScaffold>
+class _AppScaffoldState extends State<AppScaffold>
     with TickerProviderStateMixin {
   late AnimationController _appBarController;
   late AnimationController _drawerController;
@@ -69,18 +72,14 @@ class _ModernAppScaffoldState extends State<ModernAppScaffold>
     super.dispose();
   }
 
-  void _openDrawer() {
-    Scaffold.of(context).openDrawer();
-    _drawerController.forward();
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       extendBodyBehindAppBar: true,
-      appBar: _buildModernAppBar(),
-      drawer: _buildModernDrawer(),
+      appBar: _buildAppBar(),
+      drawer: const AppDrawer(),
       body: _buildBody(),
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: widget.selectedIndex,
@@ -89,7 +88,7 @@ class _ModernAppScaffoldState extends State<ModernAppScaffold>
     );
   }
 
-  PreferredSizeWidget _buildModernAppBar() {
+  PreferredSizeWidget _buildAppBar() {
     return PreferredSize(
       preferredSize: const Size.fromHeight(100),
       child: AnimatedBuilder(
@@ -125,9 +124,8 @@ class _ModernAppScaffoldState extends State<ModernAppScaffold>
                           ? Icons.arrow_back_ios_rounded
                           : Icons.menu_rounded,
                       onPressed: widget.showBackButton
-                          ? (widget.onBackPressed ??
-                              () => Navigator.pop(context))
-                          : _openDrawer,
+                          ? (widget.onBackPressed ?? () => context.pop())
+                          : () => Scaffold.of(context).openDrawer(),
                     ),
 
                     // Title Section
@@ -229,227 +227,6 @@ class _ModernAppScaffoldState extends State<ModernAppScaffold>
     );
   }
 
-  Widget _buildModernDrawer() {
-    return Drawer(
-      backgroundColor: Colors.transparent,
-      elevation: 0,
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.white,
-              Colors.grey.shade50,
-            ],
-          ),
-        ),
-        child: Column(
-          children: [
-            // Drawer Header
-            Container(
-              height: 200,
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFF58f0d7),
-                    Color(0xFF4dd0e1),
-                  ],
-                ),
-              ),
-              child: SafeArea(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Container(
-                            width: 60,
-                            height: 60,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.white.withOpacity(0.3),
-                                width: 2,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.person_rounded,
-                              color: Colors.white,
-                              size: 30,
-                            ),
-                          ),
-                          IconButton(
-                            onPressed: () => Navigator.pop(context),
-                            icon: const Icon(
-                              Icons.close_rounded,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'John Doe',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        'john.doe@example.com',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            // Drawer Items
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: AnimationLimiter(
-                  child: Column(
-                    children: AnimationConfiguration.toStaggeredList(
-                      duration: const Duration(milliseconds: 375),
-                      childAnimationBuilder: (widget) => SlideAnimation(
-                        horizontalOffset: 50.0,
-                        child: FadeInAnimation(child: widget),
-                      ),
-                      children: [
-                        _buildDrawerItem(
-                          icon: Icons.dashboard_rounded,
-                          title: 'Dashboard',
-                          onTap: () {
-                            Navigator.pop(context);
-                            widget.onItemTapped(1);
-                          },
-                        ),
-                        _buildDrawerItem(
-                          icon: Icons.chat_bubble_rounded,
-                          title: 'Messages',
-                          onTap: () {
-                            Navigator.pop(context);
-                            widget.onItemTapped(0);
-                          },
-                        ),
-                        _buildDrawerItem(
-                          icon: Icons.person_rounded,
-                          title: 'Profile',
-                          onTap: () {
-                            Navigator.pop(context);
-                            widget.onItemTapped(2);
-                          },
-                        ),
-                        _buildDrawerItem(
-                          icon: Icons.settings_rounded,
-                          title: 'Settings',
-                          onTap: () {
-                            Navigator.pop(context);
-                            // Navigate to settings
-                          },
-                        ),
-                        _buildDrawerItem(
-                          icon: Icons.help_rounded,
-                          title: 'Help & Support',
-                          onTap: () {
-                            Navigator.pop(context);
-                            // Navigate to help
-                          },
-                        ),
-                        const Spacer(),
-                        _buildDrawerItem(
-                          icon: Icons.logout_rounded,
-                          title: 'Sign Out',
-                          onTap: () {
-                            Navigator.pop(context);
-                            // Handle sign out
-                          },
-                          isDestructive: true,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDrawerItem({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-    bool isDestructive = false,
-  }) {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: isDestructive
-                        ? Colors.red.withOpacity(0.1)
-                        : const Color(0xFF58f0d7).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    icon,
-                    color: isDestructive ? Colors.red : const Color(0xFF58f0d7),
-                    size: 20,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                      color: isDestructive ? Colors.red : Colors.black87,
-                    ),
-                  ),
-                ),
-                Icon(
-                  Icons.arrow_forward_ios_rounded,
-                  size: 16,
-                  color: Colors.grey.shade400,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildBody() {
     return Container(
       margin: const EdgeInsets.only(top: 100), // Account for custom app bar
@@ -468,119 +245,6 @@ class _ModernAppScaffoldState extends State<ModernAppScaffold>
           ),
           child: widget.body,
         ),
-      ),
-    );
-  }
-}
-
-// Enhanced Scaffold with Floating Elements
-class FloatingAppScaffold extends StatelessWidget {
-  final Widget body;
-  final String title;
-  final int selectedIndex;
-  final Function(int) onItemTapped;
-
-  const FloatingAppScaffold({
-    super.key,
-    required this.body,
-    required this.title,
-    required this.selectedIndex,
-    required this.onItemTapped,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF58f0d7),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Floating App Bar
-            Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF58f0d7).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.menu_rounded,
-                      color: Color(0xFF58f0d7),
-                      size: 20,
-                    ),
-                  ),
-                  Expanded(
-                    child: Center(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF58f0d7).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(
-                      Icons.notifications_rounded,
-                      color: Color(0xFF58f0d7),
-                      size: 20,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Body
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.symmetric(horizontal: 16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 20,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(20),
-                  child: body,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: selectedIndex,
-        onTap: onItemTapped,
       ),
     );
   }
