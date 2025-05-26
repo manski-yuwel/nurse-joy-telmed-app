@@ -1,8 +1,6 @@
 import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
-import 'package:nursejoyapp/features/emergency/ui/pages/emergency_page.dart';
 import 'package:nursejoyapp/features/chat/ui/pages/chat_list_page.dart';
-import 'package:nursejoyapp/features/dashboard/ui/pages/dashboard_page.dart';
 import 'package:nursejoyapp/features/map/ui/pages/viewmap.dart';
 import 'package:nursejoyapp/features/profile/ui/pages/profile_page.dart';
 import 'package:nursejoyapp/features/profile/ui/pages/profile_setup.dart';
@@ -10,7 +8,7 @@ import 'package:nursejoyapp/features/Settings/ui/pages/settings.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/register_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/securitycheck_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/signin_page.dart';
-import 'package:nursejoyapp/features/chat/ui/pages/chat_list_page.dart';
+import 'package:nursejoyapp/features/entry/ui/app_entry.dart';
 import 'package:nursejoyapp/main.dart';
 import 'package:flutter/foundation.dart';
 
@@ -29,7 +27,7 @@ class AppRouter {
 
       // If not logged in and not on a login page, redirect to signin
       if (!isLoggedIn && !isLoggingIn) {
-        return '/signin';
+        return '/entry';
       }
 
       // If logged in and on a login page, redirect to home
@@ -49,6 +47,11 @@ class AppRouter {
       GoRoute(
         path: '/',
         builder: (context, state) => const HomeScreen(),
+      ),
+
+      GoRoute(
+        path: '/entry',
+        builder: (context, state) => const AppEntry(),
       ),
       GoRoute(
         path: '/signin',
