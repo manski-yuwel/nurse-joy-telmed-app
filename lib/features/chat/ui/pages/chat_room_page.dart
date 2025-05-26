@@ -9,6 +9,7 @@ import 'package:shimmer/shimmer.dart';
 import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/video_call/ui/video_call_page.dart';
+import 'package:nursejoyapp/features/chat/ui/widgets/message_types.dart';
 
 class ChatRoomPage extends StatefulWidget {
   final String chatRoomID;
@@ -34,6 +35,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
   User? user;
   final chatInstance = Chat();
   bool _isTyping = false;
+  bool _isImportantToggled = false;
   bool _showAttachmentOptions = false;
   Map<String, dynamic>? _recipientData;
   late AnimationController _sendButtonAnimController;
@@ -108,7 +110,19 @@ class _ChatRoomPageState extends State<ChatRoomPage>
 
       // Send the message
       await chatInstance.sendMessage(
-          widget.chatRoomID, userID, widget.recipientID, messageText);
+        widget.chatRoomID,
+        userID,
+        widget.recipientID,
+        messageText,
+        isImportant: _isImportantToggled,
+      );
+
+      // Reset important toggle
+      if (_isImportantToggled) {
+        setState(() {
+          _isImportantToggled = false;
+        });
+      }
 
       // Scroll to bottom after sending
       Future.delayed(const Duration(milliseconds: 100), () {
@@ -206,6 +220,13 @@ class _ChatRoomPageState extends State<ChatRoomPage>
 
     if (messageType == 'video_call') {
       return _buildCallNotificationMessage(message, isMe);
+    } else if (messageType == 'prescription') {
+      return MessageTypes.buildPrescriptionMessage(
+          context: context,
+          message: message,
+          isMe: isMe,
+          recipientFullName: widget.recipientFullName,
+          recipientData: _recipientData);
     }
 
     return Padding(
@@ -243,6 +264,14 @@ class _ChatRoomPageState extends State<ChatRoomPage>
             ),
             const SizedBox(width: 8),
           ],
+          if (message['is_important']) ...[
+            Icon(
+              Icons.star,
+              color: Colors.amber,
+              size: 20,
+            ),
+            const SizedBox(width: 4),
+          ],
           Flexible(
             child: Column(
               crossAxisAlignment:
@@ -253,8 +282,12 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                       const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   decoration: BoxDecoration(
                     color: isMe
-                        ? const Color(0xFF58f0d7).withOpacity(0.9)
-                        : Colors.white,
+                        ? message['is_important']
+                            ? const Color(0xFF58f0d7)
+                            : const Color(0xFF58f0d7).withOpacity(0.9)
+                        : message['is_important']
+                            ? Colors.white
+                            : Colors.white,
                     borderRadius: BorderRadius.only(
                       topLeft: const Radius.circular(18),
                       topRight: const Radius.circular(18),
@@ -265,10 +298,18 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                           ? const Radius.circular(4)
                           : const Radius.circular(18),
                     ),
+                    border: message['is_important']
+                        ? Border.all(
+                            color: Colors.amber,
+                            width: 2,
+                          )
+                        : null,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 5,
+                        color: message['is_important']
+                            ? Colors.amber.withOpacity(0.2)
+                            : Colors.black.withOpacity(0.05),
+                        blurRadius: message['is_important'] ? 8 : 5,
                         offset: const Offset(0, 2),
                       ),
                     ],
@@ -276,12 +317,42 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                   constraints: BoxConstraints(
                     maxWidth: MediaQuery.of(context).size.width * 0.7,
                   ),
-                  child: Text(
-                    message['message_body'],
-                    style: TextStyle(
-                      color: isMe ? Colors.black87 : Colors.black87,
-                      fontSize: 16,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (message['is_important']) ...[
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.star,
+                              color: Colors.amber,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Important Message',
+                              style: TextStyle(
+                                color: Colors.amber.shade800,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                      ],
+                      Text(
+                        message['message_body'],
+                        style: TextStyle(
+                          color: Colors.black87,
+                          fontSize: 16,
+                          fontWeight: message['is_important']
+                              ? FontWeight.w500
+                              : FontWeight.normal,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 Padding(
@@ -512,11 +583,25 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                       },
                     ),
                     _buildAttachmentOption(
+                      icon: Icons.file_present,
+                      color: Colors.purple,
+                      label: 'Prescription',
+                      onTap: () {
+                        MessageTypes.showPrescriptionDialog(
+                            context: context,
+                            chatRoomId: widget.chatRoomID,
+                            senderId: user!.uid,
+                            recipientId: widget.recipientID);
+                        setState(() {
+                          _showAttachmentOptions = false;
+                        });
+                      },
+                    ),
+                    _buildAttachmentOption(
                       icon: Icons.location_on,
                       color: Colors.blue,
                       label: 'Location',
                       onTap: () {
-                        // Handle location sharing
                         setState(() {
                           _showAttachmentOptions = false;
                         });
@@ -535,6 +620,18 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                   onPressed: () {
                     setState(() {
                       _showAttachmentOptions = !_showAttachmentOptions;
+                    });
+                  },
+                ),
+                IconButton(
+                  icon: Icon(
+                    _isImportantToggled ? Icons.star : Icons.star_border,
+                    color: Colors.grey.shade700,
+                    semanticLabel: "Mark as important",
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isImportantToggled = !_isImportantToggled;
                     });
                   },
                 ),

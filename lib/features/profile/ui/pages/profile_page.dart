@@ -1,12 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
+import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
+import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
+import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
+import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 
 // TODO:
@@ -24,531 +27,444 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  final InputDecoration _textFieldDecoration = const InputDecoration(
-    filled: true,
-    fillColor: Colors.white,
-    labelStyle: TextStyle(color: Colors.black),
-    border: OutlineInputBorder(
-      borderSide: BorderSide(color: Colors.white),
-    ),
-    enabledBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Colors.white),
-    ),
-    focusedBorder: OutlineInputBorder(
-      borderSide: BorderSide(color: Colors.white),
-    ),
-  );
-  late String _civilStatus;
   final _formKey = GlobalKey<FormBuilderState>();
-  late final auth;
+  int _selectedIndex = 2; // Set to 2 for Profile tab
 
   // Form field names
-  static const String usernameField = 'username';
   static const String emailField = 'email';
-  static const String passwordField = 'password';
-  static const String newPasswordField = 'new_password';
   static const String firstNameField = 'first_name';
   static const String lastNameField = 'last_name';
-  static const String civilStatusField = 'civil_status';
   static const String ageField = 'age';
-  static const String birthdateField = 'birthdate';
-  static const String contactField = 'contact';
+  static const String phoneField = 'phone';
   static const String addressField = 'address';
+  static const String birthdateField = 'birthdate';
+  static const String civilStatusField = 'civil_status';
+  static const String genderField = 'gender';
+
+  // State variables
+  String? _currentProfileImageUrl;
+  bool _isLoading = false;
+  bool _isEditing = false;
+  Map<String, dynamic> _formData = {};
+  bool _isDataLoaded = false; // Add this flag
+
+  final List<String> _civilStatusOptions = [
+    'Single',
+    'Married',
+    'Divorced',
+    'Widowed',
+    'Prefer not to say'
+  ];
+
+  final List<String> _genderOptions = [
+    'Male',
+    'Female',
+    'Non-binary',
+    'Prefer not to say'
+  ];
 
   @override
   void initState() {
     super.initState();
-    _civilStatus = 'Single';
-
-    // delays the initialization of auth and fetching to allow building the widget first
-    Future.delayed(Duration.zero, () {
-      auth = Provider.of<AuthService>(context, listen: false);
-      _fetchUserProfile();
-    });
+    _fetchUserProfile();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final auth = Provider.of<AuthService>(context, listen: false);
-    return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: FormBuilder(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Profile Picture Section
-              Stack(
-                alignment: Alignment.bottomRight,
-                children: [
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundColor: Colors.grey[200], // Light grey background
-                    backgroundImage: auth.user?.photoURL != null
-                        ? NetworkImage(auth.user!.photoURL!)
-                        : null,
-                    child: auth.user?.photoURL == null
-                        ? const Icon(
-                            Icons.person,
-                            size: 60,
-                            color: Colors.grey,
-                          )
-                        : null,
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.camera_alt),
-                    onPressed: () {
-                      // TODO: Implement image picker
-                    },
-                  ),
-                ],
-              ),
-              const SizedBox(
-                height: 16,
-              ),
-              Text(
-                auth.user?.displayName?.isNotEmpty == true
-                    ? auth.user!.displayName!
-                    : 'No username',
-                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: auth.user?.displayName?.isNotEmpty == true
-                          ? null
-                          : Colors.black,
-                    ),
-              ),
-              const SizedBox(height: 24),
+  Future<void> _fetchUserProfile() async {
+    setState(() => _isLoading = true);
+    try {
+      final auth = Provider.of<AuthService>(context, listen: false);
+      final DocumentSnapshot userProfile =
+          await getProfile(auth.currentUser!.uid);
 
-              // Login Information Section
-              Card(
-                color: const Color(0xFF00BFFF),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Login Information',
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white)),
-                      const SizedBox(height: 16),
-                      FormBuilderTextField(
-                        name: usernameField,
-                        style: const TextStyle(color: Colors.black),
-                        decoration: _textFieldDecoration.copyWith(
-                          labelText: 'Username',
-                          labelStyle: const TextStyle(color: Colors.black),
-                          border: const OutlineInputBorder(
-                            borderSide: BorderSide(color: Colors.black),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          prefixIcon: const Icon(Icons.person,
-                              color: Color.fromARGB(255, 0, 0, 0)),
-                        ),
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(),
-                          FormBuilderValidators.minLength(4),
-                        ]),
-                      ),
-                      const SizedBox(height: 16),
-                      FormBuilderTextField(
-                        name: emailField,
-                        decoration: _textFieldDecoration.copyWith(
-                          labelText: 'Email',
-                          labelStyle: const TextStyle(
-                              color: Color.fromARGB(255, 0, 0, 0)),
-                          border: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.email,
-                            color: Color.fromARGB(255, 0, 0, 0),
-                          ),
-                        ),
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(),
-                          FormBuilderValidators.email(),
-                        ]),
-                      ),
-                      const SizedBox(height: 16),
-                      FormBuilderTextField(
-                        name: passwordField,
-                        decoration: _textFieldDecoration.copyWith(
-                          labelText: 'Current Password',
-                          labelStyle: const TextStyle(
-                              color: Color.fromARGB(255, 0, 0, 0)),
-                          border: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.lock,
-                            color: Color.fromARGB(255, 0, 0, 0),
-                          ),
-                        ),
-                        obscureText: true,
-                      ),
-                      const SizedBox(height: 16),
-                      FormBuilderTextField(
-                        name: newPasswordField,
-                        decoration: _textFieldDecoration.copyWith(
-                          labelText: 'New Password',
-                          labelStyle: const TextStyle(
-                              color: Color.fromARGB(255, 0, 0, 0)),
-                          border: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.lock_reset,
-                            color: Color.fromARGB(255, 0, 0, 0),
-                          ),
-                        ),
-                        obscureText: true,
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.minLength(6,
-                              errorText:
-                                  'Password must be at least 6 characters'),
-                        ]),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
+      if (userProfile.exists) {
+        final data = userProfile.data() as Map<String, dynamic>;
 
-              // Personal Details Section
-              Card(
-                color: const Color(0xFF00BFFF),
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Personal Details',
-                          style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white)),
-                      const SizedBox(height: 16),
-                      FormBuilderTextField(
-                        name: firstNameField,
-                        decoration: _textFieldDecoration.copyWith(
-                          labelText: 'First Name',
-                          labelStyle: const TextStyle(
-                              color: Color.fromARGB(255, 0, 0, 0)),
-                          border: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                        ),
-                        validator: FormBuilderValidators.required(),
-                      ),
-                      const SizedBox(height: 16),
-                      FormBuilderTextField(
-                        name: lastNameField,
-                        decoration: _textFieldDecoration.copyWith(
-                          labelText: 'Last Name',
-                          labelStyle: const TextStyle(
-                              color: Color.fromARGB(255, 0, 0, 0)),
-                          border: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                        ),
-                        validator: FormBuilderValidators.required(),
-                      ),
-                      const SizedBox(height: 16),
-                      FormBuilderDropdown<String>(
-                        name: civilStatusField,
-                        initialValue: _civilStatus,
-                        decoration: _textFieldDecoration.copyWith(
-                          labelText: 'Civil Status',
-                          labelStyle: const TextStyle(
-                              color: Color.fromARGB(255, 0, 0, 0)),
-                          border: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                        ),
-                        items: ['Single', 'Married', 'Divorced', 'Widowed']
-                            .map((status) => DropdownMenuItem(
-                                  value: status,
-                                  child: Text(status),
-                                ))
-                            .toList(),
-                        onChanged: (value) {
-                          setState(() {
-                            _civilStatus = value!;
-                          });
-                        },
-                        validator: FormBuilderValidators.required(),
-                      ),
-                      const SizedBox(height: 16),
-                      FormBuilderTextField(
-                        name: ageField,
-                        decoration: _textFieldDecoration.copyWith(
-                          labelText: 'Age',
-                          labelStyle: const TextStyle(
-                              color: Color.fromARGB(255, 0, 0, 0)),
-                          border: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                        ),
-                        keyboardType: TextInputType.number,
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(),
-                          FormBuilderValidators.numeric(),
-                          FormBuilderValidators.min(1),
-                          FormBuilderValidators.max(120),
-                        ]),
-                      ),
-                      const SizedBox(height: 16),
-                      FormBuilderDateTimePicker(
-                        name: birthdateField,
-                        inputType: InputType.date,
-                        format: DateFormat('yyyy-MM-dd'),
-                        decoration: _textFieldDecoration.copyWith(
-                          labelText: 'Birthdate',
-                          labelStyle: const TextStyle(
-                              color: Color.fromARGB(255, 0, 0, 0)),
-                          border: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          suffixIcon: const Icon(
-                            Icons.calendar_today,
-                            color: Color.fromARGB(255, 0, 0, 0),
-                          ),
-                        ),
-                        validator: FormBuilderValidators.required(),
-                        lastDate: DateTime.now(),
-                        firstDate: DateTime(1900),
-                      ),
-                      const SizedBox(height: 16),
-                      FormBuilderTextField(
-                        name: contactField,
-                        decoration: _textFieldDecoration.copyWith(
-                          labelText: 'Contact Number',
-                          labelStyle: const TextStyle(
-                              color: Color.fromARGB(255, 0, 0, 0)),
-                          border: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                        ),
-                        keyboardType: TextInputType.phone,
-                        validator: FormBuilderValidators.compose([
-                          FormBuilderValidators.required(),
-                          FormBuilderValidators.numeric(),
-                        ]),
-                      ),
-                      const SizedBox(height: 16),
-                      FormBuilderTextField(
-                        name: addressField,
-                        decoration: _textFieldDecoration.copyWith(
-                          labelText: 'Home Address',
-                          labelStyle: const TextStyle(
-                              color: Color.fromARGB(255, 0, 0, 0)),
-                          border: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                          enabledBorder: const OutlineInputBorder(
-                            borderSide:
-                                BorderSide(color: Color.fromARGB(255, 0, 0, 0)),
-                          ),
-                        ),
-                        maxLines: 3,
-                        validator: FormBuilderValidators.required(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () async {
-                  if (_formKey.currentState!.validate()) {
-                    _formKey.currentState!.save();
-                    final formData = _formKey.currentState!.value;
+        // Debug log
+        print('Fetched data: $data');
+        print('Birthdate from Firestore: ${data['birthdate']}');
 
-                    // Show loading indicator
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (context) =>
-                          const Center(child: CircularProgressIndicator()),
-                    );
+        DateTime? birthdate;
+        if (data['birthdate'] != null) {
+          if (data['birthdate'] is Timestamp) {
+            birthdate = (data['birthdate'] as Timestamp).toDate();
+          } else if (data['birthdate'] is DateTime) {
+            birthdate = data['birthdate'] as DateTime;
+          }
+        }
 
-                    try {
-                      // Get current and new password values
-                      String? currentPassword =
-                          formData[passwordField]?.toString();
-                      String? newPassword =
-                          formData[newPasswordField]?.toString();
+        print('Converted birthdate: $birthdate');
 
-                      // Validate password fields
-                      // If new password is provided, current password must be provided as well
-                      if (newPassword != null && newPassword.isNotEmpty) {
-                        if (currentPassword == null ||
-                            currentPassword.isEmpty) {
-                          throw Exception(
-                              'Current password is required to change password');
-                        }
-                      }
+        setState(() {
+          _formData = {
+            emailField: data['email'] ?? '',
+            firstNameField: data['first_name'] ?? '',
+            lastNameField: data['last_name'] ?? '',
+            ageField: data['age']?.toString() ?? '',
+            phoneField: data['phone_number'] ?? '',
+            addressField: data['address'] ?? '',
+            civilStatusField: data['civil_status'],
+            genderField: data['gender'],
+            birthdateField: birthdate,
+          };
+          _currentProfileImageUrl = data['avatarurl'];
+          _isDataLoaded = true; // Set flag when data is ready
+        });
 
-                      // If email is changing, current password is required
-                      if (formData[emailField] != auth.user!.email) {
-                        if (currentPassword == null ||
-                            currentPassword.isEmpty) {
-                          throw Exception(
-                              'Current password is required to change email');
-                        }
-                      }
+        // Debug log
+        print('Form data after setting: $_formData');
 
-                      // Extract values from the form and update profile
-                      await updateProfile(
-                          auth.user!.uid,
-                          '', // photoURL -- blank for now TO IMPLEMENT
-                          formData[emailField],
-                          formData[firstNameField],
-                          formData[lastNameField],
-                          '${formData[firstNameField]} ${formData[lastNameField]}',
-                          '${formData[firstNameField].toLowerCase()} ${formData[lastNameField].toLowerCase()}',
-                          formData[civilStatusField],
-                          int.parse(formData[ageField].toString()),
-                          formData[birthdateField],
-                          formData[addressField],
-                          formData[contactField],
-                          username: formData[usernameField],
-                          currentPassword: currentPassword,
-                          newPassword: newPassword);
+        // Don't patch - let the rebuild handle it naturally
+      }
+    } catch (e) {
+      print('Error in _fetchUserProfile: $e');
+      _showSnackBar('Error loading profile: $e', Colors.red);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
 
-                      // Close loading dialog
-                      Navigator.of(context).pop();
 
-                      // Show success message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                            content: Text('Profile updated successfully')),
-                      );
-
-                      logger.i('Profile saved');
-                      // reload the profile page after saving changes
-                      _fetchUserProfile();
-                    } catch (e) {
-                      // Close loading dialog
-                      Navigator.of(context).pop();
-
-                      // Show error message
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text(
-                                'Error updating profile: ${e.toString()}')),
-                      );
-
-                      logger.e('Error updating profile: $e');
-                    }
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF58f0d7),
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 48, vertical: 12),
-                ),
-                child: const Text('Save Changes',
-                    style: TextStyle(color: Color.fromARGB(255, 0, 0, 0))),
-              ),
-            ],
-          ),
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
         ),
+        margin: const EdgeInsets.all(16),
       ),
     );
   }
 
-  // Function to fetch user profile details
-  Future<void> _fetchUserProfile() async {
-    try {
-      // get the associated user's profile with the logged in user's uid
-      final DocumentSnapshot userProfile = await getProfile(
-          auth.currentUser!.uid); // Convert the Timestamp to DateTime
-      Timestamp birthTimestamp = userProfile['birthdate'];
-      DateTime birthDate = birthTimestamp.toDate();
+  Future<void> _saveProfile() async {
+    // Add null checks for form state
+    final formState = _formKey.currentState;
+    if (formState == null) {
+      print('Form state is null - cannot save');
+      _showSnackBar('Form is not ready. Please try again.', Colors.red);
+      return;
+    }
 
-      // Get username safely - check if field exists using containsKey
-      String? username;
-      Map<String, dynamic> data = userProfile.data() as Map<String, dynamic>;
-      if (data.containsKey('username')) {
-        username = data['username'];
+    if (!formState.validate()) {
+      return;
+    }
+
+    // Don't use formState.value - it's returning empty {}
+    // Instead, get values directly from fields
+    final formData = <String, dynamic>{};
+    for (final entry in formState.fields.entries) {
+      formData[entry.key] = entry.value.value;
+    }
+
+    // ENHANCED DEBUG LOGGING
+    print('=== FORM SAVE DEBUG ===');
+    print('Form data from currentState: $formData');
+    print('FormBuilder fields: ${formState.fields.keys.toList()}');
+    print('Birthdate field state: ${formState.fields[birthdateField]?.value}');
+    print('All field values:');
+    formState.fields.forEach((key, field) {
+      print('  $key: ${field.value}');
+    });
+    print('=======================');
+
+    final birthdate = formData[birthdateField];
+
+    setState(() => _isLoading = true);
+
+    try {
+      final auth = Provider.of<AuthService>(context, listen: false);
+      final user = auth.user;
+      if (user == null) {
+        throw Exception('User not authenticated');
+      }
+      final userId = user.uid;
+
+      final firstName = formData[firstNameField].toString().trim();
+      final lastName = formData[lastNameField].toString().trim();
+      final fullName = '$firstName $lastName';
+      final fullNameLowercase = fullName.toLowerCase();
+
+      if (birthdate == null) {
+        throw Exception('Birthdate cannot be null');
       }
 
-      // Update form values
-      _formKey.currentState?.patchValue({
-        usernameField: username ?? auth.user!.displayName,
-        emailField: userProfile['email'],
-        firstNameField: userProfile['first_name'],
-        lastNameField: userProfile['last_name'],
-        civilStatusField: userProfile['civil_status'],
-        ageField: userProfile['age'].toString(),
-        birthdateField: birthDate,
-        contactField: userProfile['phone_number'],
-        addressField: userProfile['address'],
+      // Update user profile data
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'email': formData[emailField].toString().trim(),
+        'first_name': firstName,
+        'last_name': lastName,
+        'full_name': fullName,
+        'full_name_lowercase': fullNameLowercase,
+        'phone_number': formData[phoneField].toString().trim(),
+        'address': formData[addressField].toString().trim(),
+        'birthdate':
+            birthdate is DateTime ? Timestamp.fromDate(birthdate) : birthdate,
+        'age': int.parse(formData[ageField].toString()),
+        'civil_status': formData[civilStatusField],
+        'gender': formData[genderField],
+        'updated_at': Timestamp.now(),
+        'search_index': _createSearchIndex(fullNameLowercase),
       });
 
-      setState(() {
-        _civilStatus = userProfile['civil_status'];
-      });
-    } catch (e) {
-      // TODO: IMPLEMENT ERROR HANDLING AND PROPAGATE TO UI
-      logger.e('Error fetching user profile: $e');
+      setState(() => _isEditing = false);
+      _showSnackBar('Profile updated successfully!', Colors.green);
+    } catch (error) {
+      print('Error in _saveProfile: $error');
+      _showSnackBar('Error updating profile: $error', Colors.red);
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  List<String> _createSearchIndex(String fullName) {
+    List<String> searchIndex = [];
+    String currentSubstring = '';
+    for (int i = 0; i < fullName.length; i++) {
+      currentSubstring += fullName[i];
+      searchIndex.add(currentSubstring);
+    }
+    return searchIndex;
+  }
+
+  InputDecoration _getInputDecoration(String label, IconData icon) {
+    return InputDecoration(
+      labelText: label,
+      hintStyle: TextStyle(color: Colors.grey.shade500),
+      prefixIcon: Icon(icon, color: const Color(0xFF58f0d7)),
+      filled: true,
+      fillColor: _isEditing ? Colors.grey.shade50 : Colors.grey.shade100,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade300),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF58f0d7), width: 2),
+      ),
+      disabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: Colors.grey.shade200),
+      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+    );
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    if (index == 0) {
+      context.go('/chat');
+    } else if (index == 1) {
+      context.go('/home');
     }
   }
 
   @override
-  void dispose() {
-    super.dispose();
+  Widget build(BuildContext context) {
+    // Debug log
+    print('Building form with data: $_formData');
+    print('Current birthdate value: ${_formData[birthdateField]}');
+    print('Is data loaded: $_isDataLoaded');
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profile', style: TextStyle(color: Colors.white)),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF58f0d7),
+        leading: Builder(
+          builder: (context) => IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: () {
+              Scaffold.of(context).openDrawer();
+            },
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: Icon(_isEditing ? Icons.save : Icons.edit),
+            onPressed: _isLoading
+                ? null
+                : () {
+                    if (_isEditing) {
+                      _saveProfile();
+                    } else {
+                      setState(() => _isEditing = true);
+                    }
+                  },
+          ),
+        ],
+      ),
+      drawer: const AppDrawer(),
+      body: _isLoading || !_isDataLoaded // Wait for data to be loaded
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: FormBuilder(
+                // CRITICAL: Use the _formKey directly, don't change the key
+                key: _formKey,
+                enabled: _isEditing,
+                initialValue: _formData,
+                child: Column(
+                  children: [
+                    // Profile Image
+                    CircleAvatar(
+                      radius: 50,
+                      backgroundColor: Colors.grey.shade200,
+                      backgroundImage: _currentProfileImageUrl != null
+                          ? NetworkImage(_currentProfileImageUrl!)
+                          : null,
+                      child: _currentProfileImageUrl == null
+                          ? const Icon(
+                              Icons.person,
+                              size: 50,
+                              color: Colors.grey,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(height: 24),
+
+                    // Form Fields
+                    const SizedBox(height: 16),
+                    FormBuilderTextField(
+                      name: emailField,
+                      decoration: _getInputDecoration('Email', Icons.email),
+                      enabled: _isEditing,
+                      validator: FormBuilderValidators.compose([
+                        FormBuilderValidators.required(),
+                        FormBuilderValidators.email(),
+                      ]),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: FormBuilderTextField(
+                            name: firstNameField,
+                            decoration: _getInputDecoration(
+                                'First Name', Icons.person_outline),
+                            enabled: _isEditing,
+                            validator: FormBuilderValidators.required(),
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: FormBuilderTextField(
+                            name: lastNameField,
+                            decoration: _getInputDecoration(
+                                'Last Name', Icons.person_outline),
+                            enabled: _isEditing,
+                            validator: FormBuilderValidators.required(),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    FormBuilderTextField(
+                      name: phoneField,
+                      decoration: _getInputDecoration('Phone', Icons.phone),
+                      enabled: _isEditing,
+                      keyboardType: TextInputType.phone,
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                      validator: FormBuilderValidators.compose([
+                        FormBuilderValidators.required(),
+                        FormBuilderValidators.numeric(),
+                      ]),
+                    ),
+                    const SizedBox(height: 16),
+                    FormBuilderTextField(
+                      name: addressField,
+                      decoration:
+                          _getInputDecoration('Address', Icons.location_on),
+                      enabled: _isEditing,
+                      maxLines: 2,
+                      validator: FormBuilderValidators.required(),
+                    ),
+                    const SizedBox(height: 16),
+                    FormBuilderDateTimePicker(
+                      name: birthdateField,
+                      decoration: _getInputDecoration(
+                          'Birthdate', Icons.calendar_today),
+                      enabled: _isEditing,
+                      inputType: InputType.date,
+                      format: DateFormat('MMM dd, yyyy'),
+                      initialDate: _formData[birthdateField] ?? DateTime(2000),
+                      firstDate: DateTime(1900),
+                      lastDate: DateTime.now(),
+                      validator: FormBuilderValidators.required(
+                          errorText: 'Please select your birthdate'),
+                      onChanged: (date) {
+                        print('Date changed to: $date'); // Debug log
+                        if (date != null) {
+                          // Calculate age
+                          final today = DateTime.now();
+                          int age = today.year - date.year;
+                          if (today.month < date.month ||
+                              (today.month == date.month &&
+                                  today.day < date.day)) {
+                            age--;
+                          }
+                          final currentFormState = _formKey.currentState;
+                          if (currentFormState != null) {
+                            currentFormState.patchValue({
+                              ageField: age.toString(),
+                            });
+                          }
+                        }
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    FormBuilderTextField(
+                      name: ageField,
+                      decoration: _getInputDecoration('Age', Icons.cake),
+                      enabled: false,
+                      validator: FormBuilderValidators.compose([
+                        FormBuilderValidators.required(),
+                        FormBuilderValidators.numeric(),
+                      ]),
+                    ),
+                    const SizedBox(height: 16),
+                    FormBuilderDropdown<String>(
+                      name: civilStatusField,
+                      decoration: _getInputDecoration(
+                          'Civil Status', Icons.family_restroom),
+                      enabled: _isEditing,
+                      items: _civilStatusOptions
+                          .map((status) => DropdownMenuItem(
+                                value: status,
+                                child: Text(status),
+                              ))
+                          .toList(),
+                      validator: FormBuilderValidators.required(),
+                    ),
+                    const SizedBox(height: 16),
+                    FormBuilderDropdown<String>(
+                      name: genderField,
+                      decoration:
+                          _getInputDecoration('Gender', Icons.person_outline),
+                      enabled: _isEditing,
+                      items: _genderOptions
+                          .map((gender) => DropdownMenuItem(
+                                value: gender,
+                                child: Text(gender),
+                              ))
+                          .toList(),
+                      validator: FormBuilderValidators.required(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+      bottomNavigationBar: AppBottomNavBar(
+        currentIndex: _selectedIndex,
+        onTap: _onItemTapped,
+      ),
+    );
   }
 }

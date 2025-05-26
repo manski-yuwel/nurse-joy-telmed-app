@@ -1,16 +1,16 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:nursejoyapp/features/emergency/ui/pages/emergency_page.dart';
 import 'package:nursejoyapp/features/chat/ui/pages/chat_list_page.dart';
 import 'package:nursejoyapp/features/dashboard/ui/pages/dashboard_page.dart';
 import 'package:nursejoyapp/features/map/ui/pages/viewmap.dart';
 import 'package:nursejoyapp/features/profile/ui/pages/profile_page.dart';
 import 'package:nursejoyapp/features/profile/ui/pages/profile_setup.dart';
 import 'package:nursejoyapp/features/Settings/ui/pages/settings.dart';
-import 'package:nursejoyapp/features/signing/ui/pages/loading_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/register_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/securitycheck_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/signin_page.dart';
+import 'package:nursejoyapp/features/chat/ui/pages/chat_list_page.dart';
 import 'package:nursejoyapp/main.dart';
 import 'package:flutter/foundation.dart';
 
@@ -24,9 +24,8 @@ class AppRouter {
     debugLogDiagnostics: kDebugMode,
     redirect: (context, state) async {
       final isLoggedIn = authService.user != null;
-      final isLoggingIn = state.uri.path == '/signin' ||
-          state.uri.path == '/register' ||
-          state.uri.path == '/';
+      final isLoggingIn =
+          state.uri.path == '/signin' || state.uri.path == '/register';
 
       // If not logged in and not on a login page, redirect to signin
       if (!isLoggedIn && !isLoggingIn) {
@@ -47,6 +46,10 @@ class AppRouter {
     },
     routes: [
       // Auth routes
+      GoRoute(
+        path: '/',
+        builder: (context, state) => const HomeScreen(),
+      ),
       GoRoute(
         path: '/signin',
         builder: (context, state) => const SigninPage(),
@@ -77,6 +80,10 @@ class AppRouter {
         path: '/viewmap',
         builder: (context, state) => const ViewMapPage(),
       ),
+      GoRoute(
+        path: '/chat',
+        builder: (context, state) => const ChatListPage(),
+      ),
 
       // Individual feature routes
       GoRoute(
@@ -86,6 +93,11 @@ class AppRouter {
               state.pathParameters['userId'] ?? authService.user!.uid;
           return ProfilePage(userID: userId);
         },
+      ),
+
+      GoRoute(
+        path: '/profile-setup',
+        builder: (context, state) => const ProfileSetup(),
       ),
     ],
   );

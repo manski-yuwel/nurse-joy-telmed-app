@@ -3,7 +3,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 
-
 class ProfileMigrate {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final logger = Logger();
@@ -15,27 +14,10 @@ class ProfileMigrate {
     final users = usersSnapshot.docs;
 
     for (var user in users) {
-      if (!user.data().containsKey('is_setup')) {
+      final userData = user.data();
+      if (!userData.containsKey('gender')) {
         final newUser = {
-          'is_setup': false,
-        };
-        await usersCollection.doc(user.id).update(newUser);
-      }
-      if (!user.data().containsKey("full_name_lowercase") &&
-          !user.data().containsKey("email_lowercase ")) {
-        final newUser = {
-          'full_name_lowercase': user.data()['full_name'].toLowerCase(),
-          'email_lowercase': user.data()['email'].toLowerCase(),
-        };
-        await usersCollection.doc(user.id).update(newUser);
-      }
-      if (!user.data().containsKey('search_index')) {
-        // use n-grams to create a search index
-        final List<String> searchIndex =
-            createSearchIndex(user.data()['full_name_lowercase']);
-        logger.i("searchIndex: $searchIndex for ${user.data()['full_name']}");
-        final newUser = {
-          'search_index': searchIndex,
+          'gender': '',
         };
         await usersCollection.doc(user.id).update(newUser);
       }
@@ -51,8 +33,7 @@ class ProfileMigrate {
     return nGrams;
   }
 
-  List<String> createNGrams(String part,
-      {int minGram = 1, int maxGram = 10}) {
+  List<String> createNGrams(String part, {int minGram = 1, int maxGram = 10}) {
     final List<String> nGrams = [];
     for (var j = 1; j <= maxGram; j++) {
       if (j <= part.length) {

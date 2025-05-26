@@ -85,20 +85,23 @@ class Chat {
   }
 
   // function to send a message
-  Future<void> sendMessage(String chatRoomID, String? userID,
-      String recipientID, String messageBody) async {
+  Future<void> sendMessage(
+      String chatRoomID, String? userID, String recipientID, String messageBody,
+      {bool isImportant = false}) async {
     await db.collection('chats').doc(chatRoomID).collection('messages').add({
       'senderID': userID,
       'recipientID': recipientID,
       'message_body': messageBody,
       'message_type': 'text',
       'timestamp': FieldValue.serverTimestamp(),
+      'is_important': isImportant,
     });
 
     await db.collection('chats').doc(chatRoomID).update({
       'last_message': messageBody,
       'timestamp': FieldValue.serverTimestamp(),
       'last_message_senderID': userID,
+      'last_message_is_important': isImportant,
     });
   }
 
@@ -144,17 +147,6 @@ class Chat {
     // Get all chat rooms
     final snapshot = await db.collection('chats').get();
 
-    // set timestamp for last message, update for all chat rooms
-    for (var chatDoc in snapshot.docs) {
-      String chatRoomID = chatDoc.id;
-      if (!chatDoc.data().containsKey('timestamp')) {
-        await db.collection('chats').doc(chatRoomID).update({
-          'timestamp': FieldValue.serverTimestamp(),
-          'last_message_senderID': '',
-        });
-      }
-    }
-
     for (var chatDoc in snapshot.docs) {
       String chatRoomID = chatDoc.id;
 
@@ -165,16 +157,15 @@ class Chat {
           .collection('messages')
           .get();
 
-      // Update each message that doesn't have message_type
       for (var messageDoc in messagesSnapshot.docs) {
         var messageData = messageDoc.data();
-        if (!messageData.containsKey('message_type')) {
+        if (!messageData.containsKey('is_important')) {
           await db
               .collection('chats')
               .doc(chatRoomID)
               .collection('messages')
               .doc(messageDoc.id)
-              .update({'message_type': 'text'});
+              .update({'is_important': false});
         }
       }
     }

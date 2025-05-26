@@ -79,14 +79,7 @@ Future<void> updateProfile(
     'birthdate': birthdate,
     'address': address,
     'phone_number': phoneNumber,
-  };
-
-  // Add username to the update data if it was provided
-  if (username != null) {
-    updateData['username'] = username;
-  }
-
-  return db.collection('users').doc(userID).update(updateData);
+  });
 }
 
 // function to get the user's profile details
