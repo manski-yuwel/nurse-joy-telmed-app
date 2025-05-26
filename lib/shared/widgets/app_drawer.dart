@@ -201,6 +201,12 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
                                   subtitle: 'App Preferences',
                                   onTap: () => context.go('/settings'),
                                 ),
+                                _buildModernMenuItem(
+                                  icon: Icons.exit_to_app_rounded,
+                                  title: 'Entry',
+                                  subtitle: 'Entry to the App',
+                                  onTap: () => context.go('/entry'),
+                                ),
                               ],
                             ),
 

@@ -8,6 +8,7 @@ import 'package:nursejoyapp/features/Settings/ui/pages/settings.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/register_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/securitycheck_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/signin_page.dart';
+import 'package:nursejoyapp/features/entry/ui/app_entry.dart';
 import 'package:nursejoyapp/main.dart';
 import 'package:flutter/foundation.dart';
 
@@ -26,7 +27,7 @@ class AppRouter {
 
       // If not logged in and not on a login page, redirect to signin
       if (!isLoggedIn && !isLoggingIn) {
-        return '/signin';
+        return '/entry';
       }
 
       // If logged in and on a login page, redirect to home
@@ -46,6 +47,11 @@ class AppRouter {
       GoRoute(
         path: '/',
         builder: (context, state) => const HomeScreen(),
+      ),
+
+      GoRoute(
+        path: '/entry',
+        builder: (context, state) => const AppEntry(),
       ),
       GoRoute(
         path: '/signin',

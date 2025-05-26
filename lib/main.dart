@@ -12,6 +12,7 @@ import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
 import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
+import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -139,40 +140,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF58f0d7),
-        centerTitle: true,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
-        ),
-        title: const Text(
-          'Dashboard',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(
-                color: Colors.black45,
-                offset: Offset(1, 1),
-                blurRadius: 1,
-              ),
-            ],
-          ),
-        ),
-      ),
-      drawer: const AppDrawer(),
+    return AppScaffold(
+      title: 'Dashboard',
+      selectedIndex: _selectedIndex,
+      onItemTapped: _onItemTapped,
       body: const DashboardPage(),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
     );
   }
 }

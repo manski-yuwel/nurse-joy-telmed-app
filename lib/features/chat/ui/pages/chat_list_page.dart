@@ -13,6 +13,7 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
 import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 
 final logger = Logger();
 final chatInstance = Chat();
@@ -512,38 +513,19 @@ class _ChatListPageState extends State<ChatListPage>
     final theme = Theme.of(context);
     final primaryColor = const Color(0xFF58f0d7);
 
-    return Scaffold(
-      appBar: AppBar(
+    return AppScaffold(
+      title: "Nurse Joy",
+      selectedIndex: _selectedIndex,
+      onItemTapped: _onItemTapped,
+      actions: [
+        buildCircleImage('assets/img/nursejoy.jpg', 5, 1.5),
+      ],
+      floatingActionButton: FloatingActionButton(
         backgroundColor: primaryColor,
-        centerTitle: true,
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
-        ),
-        title: Text(
-          "Nurse Joy",
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 30,
-            fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(
-                color: Colors.black45,
-                offset: Offset(1, 1),
-                blurRadius: 1,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          buildCircleImage('assets/img/nursejoy.jpg', 5, 1.5),
-        ],
+        elevation: 4,
+        child: const Icon(Icons.chat_rounded, color: Colors.black87),
+        onPressed: () => showOnlineUsers(context),
       ),
-      drawer: const AppDrawer(),
       body: SafeArea(
         child: Column(
           children: [
@@ -732,16 +714,6 @@ class _ChatListPageState extends State<ChatListPage>
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        backgroundColor: primaryColor,
-        elevation: 4,
-        child: const Icon(Icons.chat_rounded, color: Colors.black87),
-        onPressed: () => showOnlineUsers(context),
-      ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
       ),
     );
   }

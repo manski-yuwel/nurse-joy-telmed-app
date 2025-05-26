@@ -6,6 +6,7 @@ import 'package:nursejoyapp/migrations/profile/profile_migrate.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
 import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
+import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 
 class Settings extends StatefulWidget {
   const Settings({super.key});
@@ -84,21 +85,10 @@ class _SettingsState extends State<Settings> {
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthService>(context); // Access AuthService
     double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_appBarTitle, style: const TextStyle(color: Colors.white)),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF58f0d7),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
-        ),
-      ),
-      drawer: const AppDrawer(),
+    return AppScaffold(
+      title: _appBarTitle,
+      selectedIndex: _selectedIndex,
+      onItemTapped: _onItemTapped,
       body: ListView(
         children: [
           // Notifications
@@ -227,10 +217,6 @@ class _SettingsState extends State<Settings> {
               ),
             ),
         ],
-      ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
       ),
     );
   }

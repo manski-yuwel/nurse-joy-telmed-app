@@ -12,6 +12,7 @@ class AppScaffold extends StatefulWidget {
   final List<Widget>? actions;
   final bool showBackButton;
   final VoidCallback? onBackPressed;
+  final Widget? floatingActionButton;
 
   const AppScaffold({
     super.key,
@@ -22,6 +23,7 @@ class AppScaffold extends StatefulWidget {
     this.actions,
     this.showBackButton = false,
     this.onBackPressed,
+    this.floatingActionButton,
   });
 
   @override
@@ -72,7 +74,6 @@ class _AppScaffoldState extends State<AppScaffold>
     super.dispose();
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -85,6 +86,7 @@ class _AppScaffoldState extends State<AppScaffold>
         currentIndex: widget.selectedIndex,
         onTap: widget.onItemTapped,
       ),
+      floatingActionButton: widget.floatingActionButton,
     );
   }
 
@@ -229,7 +231,6 @@ class _AppScaffoldState extends State<AppScaffold>
 
   Widget _buildBody() {
     return Container(
-      margin: const EdgeInsets.only(top: 100), // Account for custom app bar
       child: ClipRRect(
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),

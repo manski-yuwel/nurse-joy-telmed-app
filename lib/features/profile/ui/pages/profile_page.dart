@@ -11,6 +11,7 @@ import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
 import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
+import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 
 // TODO:
 // - build backend api for uploading profile pic
@@ -122,7 +123,6 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() => _isLoading = false);
     }
   }
-
 
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -273,35 +273,24 @@ class _ProfilePageState extends State<ProfilePage> {
     print('Current birthdate value: ${_formData[birthdateField]}');
     print('Is data loaded: $_isDataLoaded');
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile', style: TextStyle(color: Colors.white)),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF58f0d7),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
+    return AppScaffold(
+      title: 'Profile',
+      selectedIndex: _selectedIndex,
+      onItemTapped: _onItemTapped,
+      actions: [
+        IconButton(
+          icon: Icon(_isEditing ? Icons.save : Icons.edit),
+          onPressed: _isLoading
+              ? null
+              : () {
+                  if (_isEditing) {
+                    _saveProfile();
+                  } else {
+                    setState(() => _isEditing = true);
+                  }
+                },
         ),
-        actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.save : Icons.edit),
-            onPressed: _isLoading
-                ? null
-                : () {
-                    if (_isEditing) {
-                      _saveProfile();
-                    } else {
-                      setState(() => _isEditing = true);
-                    }
-                  },
-          ),
-        ],
-      ),
-      drawer: const AppDrawer(),
+      ],
       body: _isLoading || !_isDataLoaded // Wait for data to be loaded
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -461,10 +450,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
               ),
             ),
-      bottomNavigationBar: AppBottomNavBar(
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-      ),
     );
   }
 }
