@@ -35,6 +35,7 @@ class _ChatListPageState extends State<ChatListPage>
   late AnimationController _animationController;
   late Animation<double> _animation;
   int _selectedIndex = 0;
+  late AuthService auth;
 
   @override
   void initState() {
@@ -47,6 +48,12 @@ class _ChatListPageState extends State<ChatListPage>
       parent: _animationController,
       curve: Curves.easeInOut,
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    auth = Provider.of<AuthService>(context, listen: false);
   }
 
   @override
@@ -94,7 +101,6 @@ class _ChatListPageState extends State<ChatListPage>
   }
 
   void showOnlineUsers(BuildContext context) {
-    final auth = Provider.of<AuthService>(context, listen: false);
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -497,14 +503,12 @@ class _ChatListPageState extends State<ChatListPage>
     if (index == 1) {
       context.go('/home');
     } else if (index == 2) {
-      final auth = Provider.of<AuthService>(context, listen: false);
       context.go('/profile/${auth.user!.uid}');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthService>(context, listen: false);
     final theme = Theme.of(context);
     final primaryColor = const Color(0xFF58f0d7);
 

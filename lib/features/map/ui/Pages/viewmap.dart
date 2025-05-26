@@ -14,19 +14,26 @@ class ViewMapPage extends StatefulWidget {
 
 class _ViewMapPageState extends State<ViewMapPage> {
   int _selectedIndex = -1;
+  late AuthService auth;
 
   @override
   void initState() {
     super.initState();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    auth = Provider.of<AuthService>(context, listen: false);
+  }
+
   void _onItemTapped(int index) {
     if (index == 0) {
-      context.go('/home');
+      context.go('/chat');
     } else if (index == 1) {
       context.go('/home');
     } else if (index == 2) {
-      context.go('/home');
+      context.go('/profile/${auth.user!.uid}');
     }
   }
 
