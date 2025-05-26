@@ -68,18 +68,6 @@ Future<void> updateProfile(
   if (newDisplayName != auth.currentUser!.displayName) {
     await auth.currentUser!.updateDisplayName(newDisplayName);
   }
-  // update the user's profile through firestore
-  Map<String, dynamic> updateData = {
-    'first_name': firstName,
-    'last_name': lastName,
-    'full_name': fullName,
-    'full_name_lowercase': fullNameLower,
-    'civil_status': civilStatus,
-    'age': age,
-    'birthdate': birthdate,
-    'address': address,
-    'phone_number': phoneNumber,
-  });
 }
 
 // function to get the user's profile details

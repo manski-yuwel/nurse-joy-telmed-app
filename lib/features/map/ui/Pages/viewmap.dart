@@ -4,7 +4,6 @@ import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
 import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
-import 'package:go_router/go_router.dart';
 
 class ViewMapPage extends StatefulWidget {
   const ViewMapPage({Key? key}) : super(key: key);
@@ -23,7 +22,6 @@ class _ViewMapPageState extends State<ViewMapPage> {
 
   void _onItemTapped(int index) {
     if (index == 0) {
-
       context.go('/home');
     } else if (index == 1) {
       context.go('/home');
@@ -34,9 +32,6 @@ class _ViewMapPageState extends State<ViewMapPage> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthService>(context, listen: false);
-    double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF58f0d7),
@@ -61,7 +56,6 @@ class _ViewMapPageState extends State<ViewMapPage> {
           ),
         ),
       ),
-
       drawer: const AppDrawer(),
       body: Center(
         child: Image.asset(
@@ -73,7 +67,6 @@ class _ViewMapPageState extends State<ViewMapPage> {
       ),
       bottomNavigationBar: AppBottomNavBar(
         currentIndex: _selectedIndex == -1 ? 0 : _selectedIndex,
-
         onTap: _onItemTapped,
       ),
     );
