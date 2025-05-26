@@ -1,4 +1,3 @@
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
@@ -7,7 +6,6 @@ final db = FirebaseFirestore.instance;
 final auth = FirebaseAuth.instance;
 
 // update the user's profile
-// did not include username because authentication is yet to be implemented
 Future<void> updateProfile(
     String userID,
     String profilePicURL,
@@ -20,20 +18,58 @@ Future<void> updateProfile(
     int age,
     DateTime birthdate,
     String address,
-    String phoneNumber,) async {
-  // use auth to update the user's profile with the ones built-in the user type with firebase auth
+    String phoneNumber,
+    {String? username,
+    String? currentPassword,
+    String? newPassword}) async {
+  // Check if sensitive operations (email/password change) are requested
+  bool needsReauthentication =
+      (email != auth.currentUser!.email && email.isNotEmpty) ||
+          (newPassword != null && newPassword.isNotEmpty);
+
+  // Validate current password if sensitive operations are requested
+  if (needsReauthentication) {
+    if (currentPassword == null || currentPassword.isEmpty) {
+      throw Exception(
+          'Current password is required for changing email or password');
+    }
+
+    try {
+      // Create credential for re-authentication
+      AuthCredential credential = EmailAuthProvider.credential(
+        email: auth.currentUser!.email!,
+        password: currentPassword,
+      );
+
+      // Re-authenticate user
+      await auth.currentUser!.reauthenticateWithCredential(credential);
+    } catch (e) {
+      throw Exception('Current password is incorrect');
+    }
+  }
+
+  // Now proceed with profile updates
   if (profilePicURL != auth.currentUser!.photoURL) {
     await auth.currentUser!.updatePhotoURL(profilePicURL);
   }
-  if (email != auth.currentUser!.email) {
+
+  // Update email if changed
+  if (email != auth.currentUser!.email && email.isNotEmpty) {
     await auth.currentUser!.verifyBeforeUpdateEmail(email);
   }
-  if ('$firstName $lastName' != auth.currentUser!.displayName) {
-    await auth.currentUser!.updateDisplayName('$firstName $lastName');
+
+  // Update password if provided
+  if (newPassword != null && newPassword.isNotEmpty) {
+    await auth.currentUser!.updatePassword(newPassword);
   }
 
+  // Update display name with username if provided, otherwise use full name
+  String newDisplayName = username ?? '$firstName $lastName';
+  if (newDisplayName != auth.currentUser!.displayName) {
+    await auth.currentUser!.updateDisplayName(newDisplayName);
+  }
   // update the user's profile through firestore
-  return db.collection('users').doc(userID).update({
+  Map<String, dynamic> updateData = {
     'first_name': firstName,
     'last_name': lastName,
     'full_name': fullName,
@@ -57,23 +93,21 @@ Future<void> setIsSetup(String userID, bool isSetup) async {
   });
 }
 
-
 List<String> createSearchIndex(String fullName) {
-    final List<String> parts = fullName.split(' ');
-    final List<String> nGrams = [];
-    for (String part in parts) {
-      nGrams.addAll(createNGrams(part));
-    }
-    return nGrams;
+  final List<String> parts = fullName.split(' ');
+  final List<String> nGrams = [];
+  for (String part in parts) {
+    nGrams.addAll(createNGrams(part));
   }
+  return nGrams;
+}
 
-List<String> createNGrams(String part,
-      {int minGram = 1, int maxGram = 10}) {
-    final List<String> nGrams = [];
-    for (int i = 1; i <= maxGram; i++) {
-      if (i <= part.length) {
-        nGrams.add(part.substring(0, i));
-      }
+List<String> createNGrams(String part, {int minGram = 1, int maxGram = 10}) {
+  final List<String> nGrams = [];
+  for (int i = 1; i <= maxGram; i++) {
+    if (i <= part.length) {
+      nGrams.add(part.substring(0, i));
     }
-    return nGrams;
   }
+  return nGrams;
+}

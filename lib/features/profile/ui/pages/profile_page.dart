@@ -10,6 +10,13 @@ import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
 import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
 import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
 import 'package:go_router/go_router.dart';
+import 'package:logger/logger.dart';
+
+// TODO:
+// - build backend api for uploading profile pic
+
+// Initialize logger
+final logger = Logger();
 
 class ProfilePage extends StatefulWidget {
   final String userID;
@@ -115,6 +122,7 @@ class _ProfilePageState extends State<ProfilePage> {
       setState(() => _isLoading = false);
     }
   }
+
 
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
