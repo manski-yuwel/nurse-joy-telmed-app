@@ -424,7 +424,7 @@ class _AppEntryState extends State<AppEntry> with TickerProviderStateMixin {
                             icon: Icons.person_add_rounded,
                             isPrimary: false,
                             onPressed: () =>
-                                context.go('/register?role=patient'),
+                                context.go('/register/user'),
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -434,7 +434,7 @@ class _AppEntryState extends State<AppEntry> with TickerProviderStateMixin {
                             icon: Icons.medical_services_rounded,
                             isPrimary: false,
                             onPressed: () =>
-                                context.go('/register?role=doctor'),
+                                context.go('/register/doctor'),
                           ),
                         ),
                       ],

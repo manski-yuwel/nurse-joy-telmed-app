@@ -22,7 +22,7 @@ class AuthWrapper extends StatelessWidget {
         ),
       );
     } else {
-      return FutureBuilder<bool>(
+      return FutureBuilder<Map<String, dynamic>>(
         future: authService.isUserSetup(),
         builder: (context, snapshot) {
           // While we're checking the setup status, show a loading indicator
@@ -47,7 +47,8 @@ class AuthWrapper extends StatelessWidget {
             );
           }
 
-          final isSetup = snapshot.data ?? false;
+          final isSetup = snapshot.data?['is_setup'] ?? false;
+          final isDoctor = snapshot.data?['is_doctor'] ?? false;
 
           // If user is not set up, redirect to profile setup page
           if (!isSetup) {

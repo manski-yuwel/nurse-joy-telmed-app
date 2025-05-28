@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
 
 final logger = Logger();
 
@@ -17,16 +18,27 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
       this.user = user;
       if (user == null) {
         logger.i("User is signed out!");
-      } else { // check if the user is setup
+      } else {
+        // check if the user is setup
         logger.i("User is signed in!");
       }
       notifyListeners();
     });
   }
 
-  Future<bool> isUserSetup() async {
+  Future<Map<String, dynamic>> isUserSetup() async {
     final userData = await db.collection('users').doc(user!.uid).get();
-    return userData.data()?['is_setup'] ?? false;
+    if (userData['role'] == 'user') {
+      return {
+        'is_setup': userData['is_setup'],
+        'is_doctor': false,
+      };
+    } else {
+      return {
+        'is_setup': userData['is_setup'],
+        'is_doctor': true,
+      };
+    }
   }
 
   Future<String?> signIn(String email, String password) async {
@@ -99,6 +111,99 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
     } catch (e) {
       return e.toString();
     }
+  }
+
+  Future<String?> registerDoctor({
+    required String email,
+    required String password,
+    required String firstName,
+    required String lastName,
+    required Map<String, dynamic> doctorDetails,
+  }) async {
+    try {
+      // First register the user account
+      final result = await signUp(email, password);
+
+      if (result != 'Success') {
+        return result;
+      }
+
+      // Get the current user ID
+      final userID = auth.currentUser!.uid;
+
+      // Update the user role to doctor
+      await db.collection('users').doc(userID).update({
+        'role': 'doctor',
+        'email': email,
+        'first_name': firstName,
+        'last_name': lastName,
+        'full_name': '$firstName $lastName',
+        'full_name_lowercase': '$firstName $lastName'.toLowerCase(),
+        'is_setup': false,
+        'search_index': createSearchIndex('$firstName $lastName'),
+      });
+
+      // Create doctor data document
+      await db
+          .collection('users')
+          .doc(userID)
+          .collection('doctor_information')
+          .doc('profile')
+          .set({
+        'specialization': doctorDetails['specialization'] ?? '',
+        'license_number': doctorDetails['license_number'] ?? '',
+        'years_of_experience': doctorDetails['years_of_experience'] ?? 0,
+        'education': doctorDetails['education'] != null
+            ? [doctorDetails['education']]
+            : [],
+        'hospital_affiliation': doctorDetails['hospital_affiliation'] != null
+            ? [doctorDetails['hospital_affiliation']]
+            : [],
+        'consultation_fee': doctorDetails['consultation_fee'] ?? 0,
+        'consultation_currency':
+            doctorDetails['consultation_currency'] ?? 'USD',
+        'is_verified': false,
+        'verification_status': 'pending',
+        'verification_date': null,
+        'rating': 0,
+        'num_of_ratings': 0,
+        'working_history': [],
+        'availability_schedule': [],
+        'bio': doctorDetails['bio'] ?? '',
+        'languages': doctorDetails['languages'] ?? [],
+        'services_offered': doctorDetails['services_offered'] ?? [],
+        'certificates': [],
+        'profile_visibility': true,
+        'last_active': FieldValue.serverTimestamp(),
+        'license_file_path': doctorDetails['license_file'] ?? '',
+        'education_file_path': doctorDetails['education_file'] ?? '',
+      });
+
+      logger.i('Doctor registration completed for user: $userID');
+      return 'Success';
+    } catch (e) {
+      logger.e('Error registering doctor: $e');
+      return e.toString();
+    }
+  }
+
+  List<String> createSearchIndex(String fullName) {
+    final List<String> parts = fullName.split(' ');
+    final List<String> nGrams = [];
+    for (String part in parts) {
+      nGrams.addAll(createNGrams(part));
+    }
+    return nGrams;
+  }
+
+  List<String> createNGrams(String part, {int minGram = 1, int maxGram = 10}) {
+    final List<String> nGrams = [];
+    for (int i = 1; i <= maxGram; i++) {
+      if (i <= part.length) {
+        nGrams.add(part.substring(0, i));
+      }
+    }
+    return nGrams;
   }
 
   Future<void> signOut() async {
