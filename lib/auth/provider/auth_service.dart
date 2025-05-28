@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
-import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
+import 'package:nursejoyapp/shared/utils/utils.dart';
 
 final logger = Logger();
 
@@ -187,24 +187,6 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  List<String> createSearchIndex(String fullName) {
-    final List<String> parts = fullName.split(' ');
-    final List<String> nGrams = [];
-    for (String part in parts) {
-      nGrams.addAll(createNGrams(part));
-    }
-    return nGrams;
-  }
-
-  List<String> createNGrams(String part, {int minGram = 1, int maxGram = 10}) {
-    final List<String> nGrams = [];
-    for (int i = 1; i <= maxGram; i++) {
-      if (i <= part.length) {
-        nGrams.add(part.substring(0, i));
-      }
-    }
-    return nGrams;
-  }
 
   Future<void> signOut() async {
     await auth.signOut();

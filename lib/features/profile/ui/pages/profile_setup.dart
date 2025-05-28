@@ -8,6 +8,7 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:nursejoyapp/shared/utils/utils.dart';
 
 class ProfileSetup extends StatefulWidget {
   const ProfileSetup({super.key});
@@ -136,7 +137,7 @@ class _ProfileSetupState extends State<ProfileSetup>
         'age': age,
         'civil_status': civilStatus,
         'gender': gender,
-        'search_index': _createSearchIndex(fullNameLowercase),
+        'search_index': createSearchIndex(fullNameLowercase),
       });
 
       if (mounted) {
@@ -158,17 +159,6 @@ class _ProfileSetupState extends State<ProfileSetup>
     }
   }
 
-  List<String> _createSearchIndex(String fullName) {
-    List<String> searchIndex = [];
-    String currentSubstring = '';
-
-    for (int i = 0; i < fullName.length; i++) {
-      currentSubstring += fullName[i];
-      searchIndex.add(currentSubstring);
-    }
-
-    return searchIndex;
-  }
 
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(

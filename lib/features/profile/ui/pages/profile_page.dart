@@ -7,8 +7,6 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
-import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
-import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';

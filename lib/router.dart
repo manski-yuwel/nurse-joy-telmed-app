@@ -21,7 +21,6 @@ class AppRouter {
 
   // get the user doc
 
-
   late final GoRouter router = GoRouter(
     refreshListenable: GoRouterRefreshStream(authService),
     debugLogDiagnostics: kDebugMode,
@@ -43,7 +42,8 @@ class AppRouter {
         final isSetup = await authService.isUserSetup();
         if (isSetup['is_setup'] == false && isSetup['is_doctor'] == false) {
           return '/profile-setup';
-        } else if (isSetup['is_setup'] == false && isSetup['is_doctor'] == true) {
+        } else if (isSetup['is_setup'] == false &&
+            isSetup['is_doctor'] == true) {
           return '/profile-setup/doctor';
         }
         return '/home';
@@ -89,7 +89,7 @@ class AppRouter {
         builder: (context, state) => const ProfileSetup(),
       ),
       GoRoute(
-        path: '/profile-setup/doctor',  
+        path: '/profile-setup/doctor',
         builder: (context, state) => const DoctorProfileSetup(),
       ),
       GoRoute(
