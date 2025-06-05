@@ -31,11 +31,14 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<String?> signIn(String email, String password) async {
     try {
-      await FirebaseAuth.instance
+      final credential = await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
 
-      // update the status of the user to online if the user signs in
-      updateUserStatus(user, true);
+      // Ensure local user is up to date
+      user = credential.user;
+
+      // Update the status of the user to online if the user signs in
+      await updateUserStatus(user, true);
       return 'Success';
     } on FirebaseAuthException catch (e) {
       if (e.code == 'user-not-found') {
@@ -109,16 +112,18 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   Future<void> updateUserStatus(User? user, bool status) async {
+    if (user == null) return;
     await db
         .collection('users')
-        .doc(user!.uid)
+        .doc(user.uid)
         .update({'status_online': status});
     logger.i('Updated user ${user.uid} status to $status');
   }
 
-  void appCycleChanged(AppLifecycleState state) async {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
     if (state == AppLifecycleState.detached) {
-      updateUserStatus(user, false);
+      await updateUserStatus(user, false);
       logger.i('App is in detached state and user status is set to offline');
     }
   }
