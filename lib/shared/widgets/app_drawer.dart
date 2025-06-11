@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:nursejoyapp/features/ai/joy_ai_chat.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -167,6 +168,12 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
                                   subtitle: 'Personal Information',
                                   onTap: () =>
                                       context.go('/profile/${auth.user!.uid}'),
+                                ),
+                                _buildModernMenuItem(
+                                  icon: Icons.chat_bubble_rounded,
+                                  title: 'Chat',
+                                  subtitle: 'Chat with NurseJoy',
+                                  onTap: () => context.go('/ai'),
                                 ),
                               ],
                             ),

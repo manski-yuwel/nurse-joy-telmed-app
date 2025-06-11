@@ -11,6 +11,7 @@ import 'package:nursejoyapp/features/signing/ui/pages/register_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/securitycheck_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/signin_page.dart';
 import 'package:nursejoyapp/features/entry/ui/app_entry.dart';
+import 'package:nursejoyapp/features/ai/joy_ai_chat.dart';
 import 'package:nursejoyapp/main.dart';
 import 'package:flutter/foundation.dart';
 
@@ -80,6 +81,10 @@ class AppRouter {
       ),
 
       // Main application routes
+      GoRoute(
+        path: '/ai',
+        builder: (context, state) => const JoyAIChat(),
+      ),
       GoRoute(
         path: '/home',
         builder: (context, state) => const HomeScreen(),
