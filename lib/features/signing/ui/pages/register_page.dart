@@ -102,7 +102,7 @@ class _RegisterPageState extends State<RegisterPage>
         if (context.mounted) {
           // Check if user setup is needed first
           final isSetup = await auth.isUserSetup();
-          if (!isSetup) {
+          if (isSetup['is_setup'] == false) {
             context.go('/profile-setup');
           } else {
             context.go('/home');

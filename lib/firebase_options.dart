@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -63,7 +60,18 @@ class DefaultFirebaseOptions {
     messagingSenderId: '1063839307725',
     projectId: 'nurse-joy-d34d3',
     storageBucket: 'nurse-joy-d34d3.firebasestorage.app',
+    iosClientId: '1063839307725-6mbsh8v0dtavo6vs5gprc9upakhjc9nv.apps.googleusercontent.com',
     iosBundleId: 'com.example.nursejoyapp',
+  );
+
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyArWoDun424leGH6BjbKkPgHZdbUs477fE',
+    appId: '1:1063839307725:web:8df8fcaff1c71938771684',
+    messagingSenderId: '1063839307725',
+    projectId: 'nurse-joy-d34d3',
+    authDomain: 'nurse-joy-d34d3.firebaseapp.com',
+    storageBucket: 'nurse-joy-d34d3.firebasestorage.app',
+    measurementId: 'G-2FPNSML1ML',
   );
 
 }

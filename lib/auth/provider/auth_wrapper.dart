@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:logger/logger.dart';
+
+final logger = Logger();
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -22,7 +25,7 @@ class AuthWrapper extends StatelessWidget {
         ),
       );
     } else {
-      return FutureBuilder<bool>(
+      return FutureBuilder<Map<String, dynamic>>(
         future: authService.isUserSetup(),
         builder: (context, snapshot) {
           // While we're checking the setup status, show a loading indicator
@@ -36,7 +39,7 @@ class AuthWrapper extends StatelessWidget {
 
           // If there's an error, log it and proceed to home screen as fallback
           if (snapshot.hasError) {
-            print('Error checking user setup: ${snapshot.error}');
+            logger.e('Error checking user setup: ${snapshot.error}');
             WidgetsBinding.instance.addPostFrameCallback((_) {
               context.go('/home');
             });
@@ -47,7 +50,7 @@ class AuthWrapper extends StatelessWidget {
             );
           }
 
-          final isSetup = snapshot.data ?? false;
+          final isSetup = snapshot.data?['is_setup'] ?? false;
 
           // If user is not set up, redirect to profile setup page
           if (!isSetup) {

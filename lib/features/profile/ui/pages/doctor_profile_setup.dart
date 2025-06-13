@@ -8,16 +8,15 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
-import 'package:nursejoyapp/shared/utils/utils.dart';
 
-class ProfileSetup extends StatefulWidget {
-  const ProfileSetup({super.key});
+class DoctorProfileSetup extends StatefulWidget {
+  const DoctorProfileSetup({super.key});
 
   @override
-  State<ProfileSetup> createState() => _ProfileSetupState();
+  State<DoctorProfileSetup> createState() => _DoctorProfileSetupState();
 }
 
-class _ProfileSetupState extends State<ProfileSetup>
+class _DoctorProfileSetupState extends State<DoctorProfileSetup>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormBuilderState>();
   bool _isLoading = false;
@@ -26,20 +25,41 @@ class _ProfileSetupState extends State<ProfileSetup>
   late Animation<double> _fadeAnimation;
 
   // Form field names
-  static const String firstNameField = 'first_name';
-  static const String lastNameField = 'last_name';
-  static const String phoneField = 'phone';
+  static const String bioField = 'bio';
+  static const String workingHistoryField = 'working_history';
+  static const String availabilityScheduleField = 'availability_schedule';
+  static const String languagesField = 'languages';
+  static const String servicesOfferedField = 'services_offered';
+  static const String phoneNumberField = 'phone_number';
   static const String addressField = 'address';
+  static const String genderField = 'gender';
   static const String birthdateField = 'birthdate';
   static const String civilStatusField = 'civil_status';
-  static const String genderField = 'gender';
 
-  final List<String> _civilStatusOptions = [
-    'Single',
-    'Married',
-    'Divorced',
-    'Widowed',
-    'Prefer not to say'
+  final List<String> _languageOptions = [
+    'English',
+    'Filipino',
+    'Spanish',
+    'Chinese',
+    'Japanese',
+    'Korean',
+    'French',
+    'German',
+    'Arabic',
+    'Other'
+  ];
+
+  final List<String> _servicesOptions = [
+    'General Consultation',
+    'Specialist Consultation',
+    'Follow-up Consultation',
+    'Medical Certificate',
+    'Prescription Renewal',
+    'Lab Result Interpretation',
+    'Second Opinion',
+    'Mental Health Consultation',
+    'Nutritional Counseling',
+    'Other'
   ];
 
   final List<String> _genderOptions = [
@@ -49,9 +69,40 @@ class _ProfileSetupState extends State<ProfileSetup>
     'Prefer not to say'
   ];
 
+  final List<String> _civilStatusOptions = [
+    'Single',
+    'Married',
+    'Divorced',
+    'Widowed',
+    'Prefer not to say'
+  ];
+
+  // Days of the week for availability
+  final List<String> _daysOfWeek = [
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
+    'Sunday'
+  ];
+
+  // Selected availability
+  Map<String, Map<String, bool>> _availability = {};
+
   @override
   void initState() {
     super.initState();
+
+    // Initialize availability schedule
+    for (var day in _daysOfWeek) {
+      _availability[day] = {
+        'morning': false,
+        'afternoon': false,
+        'evening': false,
+      };
+    }
 
     _fadeController = AnimationController(
       vsync: this,
@@ -85,12 +136,24 @@ class _ProfileSetupState extends State<ProfileSetup>
       formData[entry.key] = entry.value.value;
     }
 
-    final birthdate = formData[birthdateField] as DateTime?;
-    final civilStatus = formData[civilStatusField] as String?;
+    final languages = formData[languagesField] as List<String>?;
+    final services = formData[servicesOfferedField] as List<String>?;
     final gender = formData[genderField] as String?;
+    final civilStatus = formData[civilStatusField] as String?;
+    final birthdate = formData[birthdateField] as DateTime?;
 
-    if (birthdate == null) {
-      _showSnackBar('Please select your birthdate', Colors.red);
+    if (languages == null || languages.isEmpty) {
+      _showSnackBar('Please select at least one language', Colors.red);
+      return;
+    }
+
+    if (services == null || services.isEmpty) {
+      _showSnackBar('Please select at least one service', Colors.red);
+      return;
+    }
+
+    if (gender == null) {
+      _showSnackBar('Please select your gender', Colors.red);
       return;
     }
 
@@ -99,8 +162,8 @@ class _ProfileSetupState extends State<ProfileSetup>
       return;
     }
 
-    if (gender == null) {
-      _showSnackBar('Please select your gender', Colors.red);
+    if (birthdate == null) {
+      _showSnackBar('Please select your birthdate', Colors.red);
       return;
     }
 
@@ -120,24 +183,63 @@ class _ProfileSetupState extends State<ProfileSetup>
         age--;
       }
 
-      final firstName = formData[firstNameField].toString().trim();
-      final lastName = formData[lastNameField].toString().trim();
-      final fullName = '$firstName $lastName';
-      final fullNameLowercase = fullName.toLowerCase();
+      // Get existing doctor data
+      final doctorSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('doctor_information')
+          .doc('profile')
+          .get();
 
-      // Update user profile data
+      final doctorData = doctorSnapshot.data() ?? {};
+
+      // Convert availability to a format suitable for Firestore
+      List<Map<String, dynamic>> availabilitySchedule = [];
+      _availability.forEach((day, slots) {
+        slots.forEach((slot, isAvailable) {
+          if (isAvailable) {
+            availabilitySchedule.add({
+              'day': day,
+              'slot': slot,
+            });
+          }
+        });
+      });
+
+      // Parse working history into a list
+      List<String> workingHistory = [];
+      if (formData[workingHistoryField] != null &&
+          formData[workingHistoryField].toString().isNotEmpty) {
+        workingHistory = formData[workingHistoryField]
+            .toString()
+            .split('\n')
+            .where((item) => item.trim().isNotEmpty)
+            .toList();
+      }
+
+      // Update doctor profile data
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('doctor_information')
+          .doc('profile')
+          .update({
+        'bio': formData[bioField]?.toString() ?? '',
+        'working_history': workingHistory,
+        'availability_schedule': availabilitySchedule,
+        'languages': languages,
+        'services_offered': services,
+      });
+
+      // Update user basic information
       await FirebaseFirestore.instance.collection('users').doc(userId).update({
-        'first_name': firstName,
-        'last_name': lastName,
-        'full_name': fullName,
-        'full_name_lowercase': fullNameLowercase,
-        'phone_number': formData[phoneField].toString().trim(),
-        'address': formData[addressField].toString().trim(),
+        'phone_number': formData[phoneNumberField]?.toString() ?? '',
+        'address': formData[addressField]?.toString() ?? '',
+        'gender': gender,
+        'civil_status': civilStatus,
         'birthdate': Timestamp.fromDate(birthdate),
         'age': age,
-        'civil_status': civilStatus,
-        'gender': gender,
-        'search_index': createSearchIndex(fullNameLowercase),
+        'is_setup': true,
       });
 
       if (mounted) {
@@ -158,7 +260,6 @@ class _ProfileSetupState extends State<ProfileSetup>
       }
     }
   }
-
 
   void _showSnackBar(String message, Color color) {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -239,6 +340,135 @@ class _ProfileSetupState extends State<ProfileSetup>
     );
   }
 
+  Widget _buildAvailabilitySchedule() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            "Availability Schedule",
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.grey.shade300),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const SizedBox(width: 100),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          "Morning",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          "Afternoon",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Center(
+                        child: Text(
+                          "Evening",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade700,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const Divider(height: 24),
+                ..._daysOfWeek.map((day) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Row(
+                      children: [
+                        SizedBox(
+                          width: 100,
+                          child: Text(
+                            day,
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Center(
+                            child: Checkbox(
+                              value: _availability[day]!['morning'],
+                              onChanged: (value) {
+                                setState(() {
+                                  _availability[day]!['morning'] = value!;
+                                });
+                              },
+                              activeColor: const Color(0xFF58f0d7),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Center(
+                            child: Checkbox(
+                              value: _availability[day]!['afternoon'],
+                              onChanged: (value) {
+                                setState(() {
+                                  _availability[day]!['afternoon'] = value!;
+                                });
+                              },
+                              activeColor: const Color(0xFF58f0d7),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: Center(
+                            child: Checkbox(
+                              value: _availability[day]!['evening'],
+                              onChanged: (value) {
+                                setState(() {
+                                  _availability[day]!['evening'] = value!;
+                                });
+                              },
+                              activeColor: const Color(0xFF58f0d7),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -271,14 +501,14 @@ class _ProfileSetupState extends State<ProfileSetup>
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
-                          Icons.person_outline,
+                          Icons.medical_services_outlined,
                           size: 40,
                           color: Colors.white,
                         ),
                       ),
                       const SizedBox(height: 16),
                       const Text(
-                        "Complete Your Profile",
+                        "Complete Your Doctor Profile",
                         style: TextStyle(
                           fontSize: 28,
                           fontWeight: FontWeight.bold,
@@ -287,7 +517,7 @@ class _ProfileSetupState extends State<ProfileSetup>
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        "Tell us more about yourself",
+                        "Tell us more about your practice",
                         style: TextStyle(
                           fontSize: 16,
                           color: Colors.white.withOpacity(0.9),
@@ -321,35 +551,22 @@ class _ProfileSetupState extends State<ProfileSetup>
                                 child: FadeInAnimation(child: widget),
                               ),
                               children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: _buildFormField(
-                                        name: firstNameField,
-                                        label: "First Name",
-                                        hint: "Enter your first name",
-                                        icon: Icons.person_outline,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: _buildFormField(
-                                        name: lastNameField,
-                                        label: "Last Name",
-                                        hint: "Enter your last name",
-                                        icon: Icons.person_outline,
-                                      ),
-                                    ),
-                                  ],
+                                // Personal Information Section
+                                const Text(
+                                  "Personal Information",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
                                 ),
+                                const SizedBox(height: 16),
                                 _buildFormField(
-                                  name: phoneField,
+                                  name: phoneNumberField,
                                   label: "Phone Number",
                                   hint: "Enter your phone number",
                                   icon: Icons.phone_outlined,
                                   keyboardType: TextInputType.phone,
-                                  inputFormatter:
-                                      FilteringTextInputFormatter.digitsOnly,
                                 ),
                                 _buildFormField(
                                   name: addressField,
@@ -377,7 +594,7 @@ class _ProfileSetupState extends State<ProfileSetup>
                                         name: birthdateField,
                                         inputType: InputType.date,
                                         format: DateFormat('MMM dd, yyyy'),
-                                        initialDate: DateTime(2000),
+                                        initialDate: DateTime(1980),
                                         firstDate: DateTime(1900),
                                         lastDate: DateTime.now(),
                                         decoration: InputDecoration(
@@ -386,6 +603,62 @@ class _ProfileSetupState extends State<ProfileSetup>
                                               color: Colors.grey.shade500),
                                           prefixIcon: const Icon(
                                               Icons.calendar_today_outlined,
+                                              color: Color(0xFF58f0d7)),
+                                          filled: true,
+                                          fillColor: Colors.grey.shade50,
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                                color: Colors.grey.shade300),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                                color: Colors.grey.shade300),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: const BorderSide(
+                                                color: Color(0xFF58f0d7),
+                                                width: 2),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 20),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Gender",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      FormBuilderDropdown<String>(
+                                        name: genderField,
+                                        items: _genderOptions
+                                            .map((gender) => DropdownMenuItem(
+                                                  value: gender,
+                                                  child: Text(gender),
+                                                ))
+                                            .toList(),
+                                        decoration: InputDecoration(
+                                          hintText: "Select your gender",
+                                          hintStyle: TextStyle(
+                                              color: Colors.grey.shade500),
+                                          prefixIcon: const Icon(
+                                              Icons.person_outline,
                                               color: Color(0xFF58f0d7)),
                                           filled: true,
                                           fillColor: Colors.grey.shade50,
@@ -469,6 +742,38 @@ class _ProfileSetupState extends State<ProfileSetup>
                                     ],
                                   ),
                                 ),
+
+                                const SizedBox(height: 16),
+                                const Divider(),
+                                const SizedBox(height: 16),
+
+                                // Professional Information Section
+                                const Text(
+                                  "Professional Information",
+                                  style: TextStyle(
+                                    fontSize: 20,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                _buildFormField(
+                                  name: bioField,
+                                  label: "Professional Bio",
+                                  hint:
+                                      "Tell us about your professional background and expertise",
+                                  icon: Icons.description_outlined,
+                                  maxLines: 4,
+                                ),
+                                _buildFormField(
+                                  name: workingHistoryField,
+                                  label: "Working History",
+                                  hint:
+                                      "Enter your previous work experience (one per line)",
+                                  icon: Icons.work_outline,
+                                  maxLines: 4,
+                                ),
+                                _buildAvailabilitySchedule(),
                                 Container(
                                   margin: const EdgeInsets.only(bottom: 20),
                                   child: Column(
@@ -476,7 +781,7 @@ class _ProfileSetupState extends State<ProfileSetup>
                                         CrossAxisAlignment.start,
                                     children: [
                                       const Text(
-                                        "Gender",
+                                        "Languages Spoken",
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
@@ -484,21 +789,74 @@ class _ProfileSetupState extends State<ProfileSetup>
                                         ),
                                       ),
                                       const SizedBox(height: 8),
-                                      FormBuilderDropdown<String>(
-                                        name: genderField,
-                                        items: _genderOptions
-                                            .map((gender) => DropdownMenuItem(
-                                                  value: gender,
-                                                  child: Text(gender),
+                                      FormBuilderCheckboxGroup<String>(
+                                        name: languagesField,
+                                        options: _languageOptions
+                                            .map((language) =>
+                                                FormBuilderFieldOption(
+                                                  value: language,
+                                                  child: Text(language),
                                                 ))
                                             .toList(),
                                         decoration: InputDecoration(
-                                          hintText: "Select your gender",
+                                          hintText:
+                                              "Select languages you speak",
                                           hintStyle: TextStyle(
                                               color: Colors.grey.shade500),
-                                          prefixIcon: const Icon(
-                                              Icons.person_outline,
-                                              color: Color(0xFF58f0d7)),
+                                          filled: true,
+                                          fillColor: Colors.grey.shade50,
+                                          border: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                                color: Colors.grey.shade300),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                                color: Colors.grey.shade300),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(12),
+                                            borderSide: const BorderSide(
+                                                color: Color(0xFF58f0d7),
+                                                width: 2),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                Container(
+                                  margin: const EdgeInsets.only(bottom: 20),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        "Services Offered",
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.black87,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      FormBuilderCheckboxGroup<String>(
+                                        name: servicesOfferedField,
+                                        options: _servicesOptions
+                                            .map((service) =>
+                                                FormBuilderFieldOption(
+                                                  value: service,
+                                                  child: Text(service),
+                                                ))
+                                            .toList(),
+                                        decoration: InputDecoration(
+                                          hintText: "Select services you offer",
+                                          hintStyle: TextStyle(
+                                              color: Colors.grey.shade500),
                                           filled: true,
                                           fillColor: Colors.grey.shade50,
                                           border: OutlineInputBorder(
