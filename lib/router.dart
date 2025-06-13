@@ -35,29 +35,23 @@ class AppRouter {
         '/signin',
         '/register/user',
         '/register/doctor',
-      ].contains(state.uri.path);
-
+        '/securitycheck',
+      ].contains(state.uri.toString());
       if (!isLoggedIn && !isOnAuthPage) return '/entry';
 
-      // 2. Once logged-in fetch the profile flags only once
       if (isLoggedIn) {
         final setup = await authService.isUserSetup();
 
-        // – normal users who haven’t finished onboarding
-        if (!setup['is_setup'] && !setup['is_doctor']) return '/profile-setup';
-
-        // – doctors who haven’t finished the profile form
-        if (!setup['is_setup'] && setup['is_doctor']) return '/profile-setup/doctor';
-
-        // – doctors waiting for admin approval
-        if (setup['is_doctor'] && !setup['is_verified']) {
-          // stay on /wait-verification if we’re already there to avoid a loop
-          if (state.uri.path != '/wait-verification') return '/wait-verification';
+        if (setup['is_doctor'] == true) {
+          if (setup['doc_info_is_setup'] == false) return '/profile-setup/doctor';
+          if (setup['is_verified'] == false) return '/wait-verification';
         }
 
-        // Everything OK → let them in
-        if (state.uri.path == '/signin') return '/home';
+        if (setup['is_setup'] == false) {
+          return '/profile-setup';
+        }
       }
+
     },
     routes: [
       // Auth routes
@@ -132,10 +126,6 @@ class AppRouter {
         },
       ),
 
-      GoRoute(
-        path: '/profile-setup',
-        builder: (context, state) => const ProfileSetup(),
-      ),
     ],
   );
 }

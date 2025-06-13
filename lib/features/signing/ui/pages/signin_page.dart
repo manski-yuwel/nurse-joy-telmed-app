@@ -137,7 +137,7 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
 
       if (res == 'Success') {
         if (context.mounted) {
-          context.go('/home');
+          context.go('/');
         }
       } else {
         if (context.mounted) {

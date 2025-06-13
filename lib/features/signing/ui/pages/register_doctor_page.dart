@@ -205,7 +205,7 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
       if (res == 'Success') {
         _showSnackBar("Registration submitted for approval!", Colors.green);
         if (context.mounted) {
-          context.go('/signin');
+          context.go('/home');
         }
       } else {
         _showSnackBar(
@@ -214,9 +214,11 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
     } catch (e) {
       _showSnackBar("An error occurred. Please try again. $e", Colors.red);
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
