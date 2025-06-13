@@ -42,6 +42,8 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
           .doc('profile')
           .get();
 
+      logger.i(doctorInformation.data()!['is_verified']);
+
       return {
         'is_setup': userData['is_setup'],
         'is_doctor': true,

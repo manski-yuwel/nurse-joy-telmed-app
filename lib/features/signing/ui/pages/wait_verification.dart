@@ -1,10 +1,17 @@
 import 'package:flutter/material.dart';
 import '../widgets/base_page.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:nursejoyapp/auth/provider/auth_service.dart';
 
-class WaitVerificationPage extends StatelessWidget {
+class WaitVerificationPage extends StatefulWidget {
   const WaitVerificationPage({Key? key}) : super(key: key);
 
+  @override
+  State<WaitVerificationPage> createState() => _WaitVerificationPageState();
+}
+
+class _WaitVerificationPageState extends State<WaitVerificationPage> {
   @override
   Widget build(BuildContext context) {
     return BasePage(
@@ -27,9 +34,16 @@ class WaitVerificationPage extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => context.go('/signin'),
+              // sign out
+              onPressed: () async {
+                final authService = Provider.of<AuthService>(context, listen: false);
+                await authService.signOut();
+                if (mounted) {
+                  context.go('/entry');
+                }
+              },
               icon: const Icon(Icons.login),
-              label: const Text('Back to Sign In'),
+              label: const Text('Sign Out'),
             ),
           ),
         ],

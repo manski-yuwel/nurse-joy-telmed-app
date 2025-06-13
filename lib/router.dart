@@ -28,33 +28,36 @@ class AppRouter {
     debugLogDiagnostics: kDebugMode,
     initialLocation: '/entry',
     redirect: (context, state) async {
-      final isSetup = await authService.isUserSetup();
       final isLoggedIn = authService.user != null;
-      final isLoggingIn = state.uri.path == '/signin' ||
-          state.uri.path == '/register/user' ||
-          state.uri.path == '/register/doctor';
 
-      // If not logged in and not on a login page, redirect to signin
-      if (!isLoggedIn && !isLoggingIn) {
-        return '/entry';
-      }
+      // 1. If the user isn’t logged-in go to /entry (unless they’re already on an auth page)
+      final isOnAuthPage = [
+        '/signin',
+        '/register/user',
+        '/register/doctor',
+      ].contains(state.uri.path);
 
-      // If logged in and on a login page, redirect to home
-      if (isLoggedIn && isLoggingIn) {
-        // Check if user setup is completed
-        if (isSetup['is_setup'] == false && isSetup['is_doctor'] == false) {
-          return '/profile-setup';
-        } else if (isSetup['is_setup'] == false &&
-            isSetup['is_doctor'] == true) {
-          return '/profile-setup/doctor';
+      if (!isLoggedIn && !isOnAuthPage) return '/entry';
+
+      // 2. Once logged-in fetch the profile flags only once
+      if (isLoggedIn) {
+        final setup = await authService.isUserSetup();
+
+        // – normal users who haven’t finished onboarding
+        if (!setup['is_setup'] && !setup['is_doctor']) return '/profile-setup';
+
+        // – doctors who haven’t finished the profile form
+        if (!setup['is_setup'] && setup['is_doctor']) return '/profile-setup/doctor';
+
+        // – doctors waiting for admin approval
+        if (setup['is_doctor'] && !setup['is_verified']) {
+          // stay on /wait-verification if we’re already there to avoid a loop
+          if (state.uri.path != '/wait-verification') return '/wait-verification';
         }
-      }
-      // if user is doctor and not verified, redirect to wait verification
-      if (isSetup['is_doctor'] == true && isSetup['is_verified'] == false) {
-        return '/wait-verification';
-      }
 
-      return null;
+        // Everything OK → let them in
+        if (state.uri.path == '/signin') return '/home';
+      }
     },
     routes: [
       // Auth routes
