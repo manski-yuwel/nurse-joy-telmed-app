@@ -28,6 +28,7 @@ class AppRouter {
     debugLogDiagnostics: kDebugMode,
     initialLocation: '/entry',
     redirect: (context, state) async {
+      final isSetup = await authService.isUserSetup();
       final isLoggedIn = authService.user != null;
       final isLoggingIn = state.uri.path == '/signin' ||
           state.uri.path == '/register/user' ||
@@ -41,17 +42,16 @@ class AppRouter {
       // If logged in and on a login page, redirect to home
       if (isLoggedIn && isLoggingIn) {
         // Check if user setup is completed
-        final isSetup = await authService.isUserSetup();
         if (isSetup['is_setup'] == false && isSetup['is_doctor'] == false) {
           return '/profile-setup';
         } else if (isSetup['is_setup'] == false &&
             isSetup['is_doctor'] == true) {
           return '/profile-setup/doctor';
         }
-        if (isSetup['is_doctor'] == true && isSetup['is_verified'] == false) {
-          return '/wait-verification';
-        }
-        return '/home';
+      }
+      // if user is doctor and not verified, redirect to wait verification
+      if (isSetup['is_doctor'] == true && isSetup['is_verified'] == false) {
+        return '/wait-verification';
       }
 
       return null;

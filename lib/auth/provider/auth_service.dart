@@ -34,9 +34,18 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'is_doctor': false,
       };
     } else {
+      // get the doctor information
+      final doctorInformation = await db
+          .collection('users')
+          .doc(user!.uid)
+          .collection('doctor_information')
+          .doc('profile')
+          .get();
+
       return {
         'is_setup': userData['is_setup'],
         'is_doctor': true,
+        'is_verified': doctorInformation.data()!['is_verified'],
       };
     }
   }
