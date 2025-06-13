@@ -522,8 +522,8 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
         const SizedBox(height: 32),
         _buildFormField(
           name: specializationField,
-          label: "Specialization",
-          hint: "E.g., Cardiology, Pediatrics",
+          label: "Profession",
+          hint: "E.g., Psychiatrist, Pediatrist, Cardiologist, etc.",
           icon: Icons.medical_services_outlined,
           validator: FormBuilderValidators.required(),
         ),
@@ -576,7 +576,7 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
         _buildFormField(
           name: consultationFeeField,
           label: "Consultation Fee",
-          hint: "Enter your fee in USD",
+          hint: "Enter your fee in PHP",
           icon: Icons.attach_money_outlined,
           keyboardType: TextInputType.number,
           validator: FormBuilderValidators.compose([

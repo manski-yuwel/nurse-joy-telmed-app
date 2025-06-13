@@ -10,6 +10,7 @@ import 'package:nursejoyapp/features/signing/ui/pages/register_doctor_page.dart'
 import 'package:nursejoyapp/features/signing/ui/pages/register_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/securitycheck_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/signin_page.dart';
+import 'package:nursejoyapp/features/signing/ui/pages/wait_verification.dart';
 import 'package:nursejoyapp/features/entry/ui/app_entry.dart';
 import 'package:nursejoyapp/features/ai/joy_ai_chat.dart';
 import 'package:nursejoyapp/main.dart';
@@ -47,6 +48,9 @@ class AppRouter {
             isSetup['is_doctor'] == true) {
           return '/profile-setup/doctor';
         }
+        if (isSetup['is_doctor'] == true && isSetup['is_verified'] == false) {
+          return '/wait-verification';
+        }
         return '/home';
       }
 
@@ -57,6 +61,11 @@ class AppRouter {
       GoRoute(
         path: '/',
         builder: (context, state) => const HomeScreen(),
+      ),
+
+      GoRoute(
+        path: '/wait-verification',
+        builder: (context, state) => const WaitVerificationPage(),
       ),
 
       GoRoute(

@@ -138,6 +138,7 @@ class _ProfileSetupState extends State<ProfileSetup>
         'civil_status': civilStatus,
         'gender': gender,
         'search_index': createSearchIndex(fullNameLowercase),
+        'is_setup': true,
       });
 
       if (mounted) {

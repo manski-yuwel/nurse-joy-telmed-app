@@ -10,8 +10,6 @@ import 'package:nursejoyapp/router.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
-import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
-import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 
 void main() async {
