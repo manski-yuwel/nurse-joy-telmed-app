@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
 
@@ -139,10 +140,8 @@ class _DoctorListState extends State<DoctorList> {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
                     onTap: () {
-                      // Navigate to doctor details
-                      // Navigator.push(context, MaterialPageRoute(
-                      //   builder: (context) => DoctorDetailsScreen(doctorId: doctor.id),
-                      // ));
+                      final doctorDetails = docSnapshot.data!;
+                      context.go('/doctor/${doctor.id}', extra: doctorDetails);
                     },
                     child: Padding(
                       padding: const EdgeInsets.all(12.0),

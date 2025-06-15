@@ -1,0 +1,419 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_rating_bar/flutter_rating_bar.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:go_router/go_router.dart';
+import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
+import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
+
+class DoctorPage extends StatefulWidget {
+  const DoctorPage({
+    super.key, 
+    required this.doctorId, 
+    required this.userDetails,
+    required this.doctorDetails
+  });
+
+  final String doctorId;
+  final DocumentSnapshot userDetails;
+  final DocumentSnapshot doctorDetails;
+
+  @override
+  State<DoctorPage> createState() => _DoctorPageState();
+}
+
+class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  bool _isFavorite = false;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _bookAppointment() async {
+    // we would still need to implement this.
+    setState(() => _isLoading = true);
+    await Future.delayed(const Duration(seconds: 1));
+    setState(() => _isLoading = false);
+    if (!mounted) return;
+    
+    // Show success dialog
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Appointment Booked'),
+        content: const Text('Your appointment has been scheduled successfully!'),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildSection(String title, List<String> items) {
+    return [
+      Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      const SizedBox(height: 8),
+      ...items.map((item) => Padding(
+        padding: const EdgeInsets.only(bottom: 8.0, left: 8.0),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('• '),
+            Expanded(child: Text(item)),
+          ],
+        ),
+      )).toList(),
+      const SizedBox(height: 16),
+    ];
+  }
+
+  Widget _buildContactItem(IconData icon, String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 20, color: Colors.blue),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildWorkingHours() {
+    final workingHours = {
+      'Monday - Friday': '8:00 AM - 5:00 PM',
+      'Saturday': '9:00 AM - 2:00 PM',
+      'Sunday': 'Closed',
+    };
+
+    return Column(
+      children: workingHours.entries.map((entry) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                entry.key,
+                style: const TextStyle(color: Colors.grey),
+              ),
+              Text(
+                entry.value,
+                style: const TextStyle(fontWeight: FontWeight.w500),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final doctorData = widget.doctorDetails.data() as Map<String, dynamic>? ?? {};
+    final userData = widget.userDetails.data() as Map<String, dynamic>? ?? {};
+    final name = '${userData['first_name']} ${userData['last_name']}';
+    final specialty = doctorData['specialization'] ?? 'General Practitioner';
+    final rating = (doctorData['rating'] ?? 0.0).toDouble();
+    final reviewCount = doctorData['num_of_ratings'] ?? 0;
+    final consultationFee = doctorData['consultation_fee'] ?? 0;
+    final currency = doctorData['consultation_currency'] ?? 'PHP';
+    final bio = doctorData['bio'] ?? '';
+    final experience = doctorData['years_of_experience'] ?? 0;
+    final languages = (doctorData['languages'] as List<dynamic>?)?.cast<String>() ?? [];
+    final education = (doctorData['education'] as List<dynamic>?)?.cast<String>() ?? [];
+    final services = (doctorData['services_offered'] as List<dynamic>?)?.cast<String>() ?? [];
+    
+    final isOnline = userData['status_online'] ?? false;
+    final imageUrl = userData['profile_pic'] ?? '';
+
+    return AppScaffold(
+      title: 'Doctor Details',
+      selectedIndex: 0,
+      onItemTapped: (index) {},
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Doctor Header Section
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.white,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Doctor Avatar
+                  Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey[200],
+                      image: imageUrl.isNotEmpty
+                          ? DecorationImage(
+                              image: NetworkImage(imageUrl),
+                              fit: BoxFit.cover,
+                            )
+                          : null,
+                    ),
+                    child: imageUrl.isEmpty
+                        ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                        : null,
+                  ),
+                  const SizedBox(width: 16),
+                  // Doctor Info
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                name,
+                                style: const TextStyle(
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(
+                                _isFavorite ? Icons.favorite : Icons.favorite_border,
+                                color: _isFavorite ? Colors.red : null,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _isFavorite = !_isFavorite;
+                                });
+                              },
+                            ),
+                          ],
+                        ),
+                        Text(
+                          specialty,
+                          style: TextStyle(
+                            color: Colors.blue[700],
+                            fontSize: 16,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(Icons.star, color: Colors.amber, size: 20),
+                            const SizedBox(width: 4),
+                            Text(
+                              rating.toStringAsFixed(1),
+                              style: const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              '($reviewCount reviews)',
+                              style: TextStyle(color: Colors.grey[600]),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isOnline ? Colors.green[50] : Colors.grey[200],
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isOnline ? Colors.green : Colors.grey,
+                                ),
+                              ),
+                              child: Text(
+                                isOnline ? 'Online' : 'Offline',
+                                style: TextStyle(
+                                  color: isOnline ? Colors.green : Colors.grey[700],
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '$consultationFee $currency',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.green,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Action Buttons
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: _isLoading ? null : _bookAppointment,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Theme.of(context).primaryColor,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: _isLoading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              ),
+                            )
+                          : const Icon(Icons.calendar_today, size: 20),
+                      label: Text(_isLoading ? 'Booking...' : 'Book Appointment'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Container(
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Theme.of(context).primaryColor),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: IconButton(
+                      onPressed: () {
+                        // TODO: Implement chat functionality
+                      },
+                      icon: const Icon(Icons.chat, color: Colors.blue),
+                      style: IconButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Tab Bar
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.symmetric(
+                  horizontal: BorderSide(color: Colors.grey[200]!),
+                ),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                labelColor: Theme.of(context).primaryColor,
+                unselectedLabelColor: Colors.grey,
+                indicatorColor: Theme.of(context).primaryColor,
+                indicatorWeight: 3,
+                tabs: const [
+                  Tab(text: 'About'),
+                  Tab(text: 'Reviews'),
+                  Tab(text: 'Contact'),
+                ],
+              ),
+            ),
+
+            // Tab Bar View
+            SizedBox(
+              height: 300, // Fixed height for demo
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  // About Tab
+                  SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (bio.isNotEmpty) ..._buildSection('Biography', [bio]),
+                        if (experience > 0) ..._buildSection('Experience', ['$experience years of experience']),
+                        if (languages.isNotEmpty) ..._buildSection('Languages', languages),
+                        if (education.isNotEmpty) ..._buildSection('Education', education),
+                        if (services.isNotEmpty) ..._buildSection('Services', services),
+                      ],
+                    ),
+                  ),
+                  // Reviews Tab
+                  const Center(child: Text('No reviews yet')),
+                  // Contact Tab
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildContactItem(Icons.email, 'Email', '${userData['email']}'),
+                        const SizedBox(height: 12),
+                        _buildContactItem(Icons.phone, 'Phone', userData['phone_number'] ?? 'Not provided'),
+                        const SizedBox(height: 12),
+                        _buildContactItem(Icons.location_on, 'Location', 'Hospital or Clinic Address'),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Clinic Hours',
+                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        const SizedBox(height: 8),
+                        _buildWorkingHours(),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

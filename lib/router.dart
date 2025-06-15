@@ -1,7 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/chat/ui/pages/chat_list_page.dart';
 import 'package:nursejoyapp/features/doctor/ui/doctor_list.dart';
+import 'package:nursejoyapp/features/doctor/ui/doctor_page.dart';
 import 'package:nursejoyapp/features/map/ui/pages/viewmap.dart';
 import 'package:nursejoyapp/features/profile/ui/pages/profile_page.dart';
 import 'package:nursejoyapp/features/profile/ui/pages/profile_setup.dart';
@@ -105,7 +107,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/settings',
-        builder: (context, state) => const Settings(),
+        builder: (context, state) => const SettingsPage(),
       ),
       GoRoute(
         path: '/viewmap',
@@ -118,6 +120,14 @@ class AppRouter {
       GoRoute(
         path: '/doctor-list',
         builder: (context, state) => const DoctorList(),
+      ),
+      GoRoute(
+        path: '/doctor/:doctorId',
+        builder: (context, state) => DoctorPage(
+          doctorId: state.pathParameters['doctorId']!,
+          doctorDetails: state.extra as DocumentSnapshot,
+          userDetails: state.extra as DocumentSnapshot,
+        ),
       ),
 
       // Individual feature routes
