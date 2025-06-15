@@ -77,8 +77,11 @@ class _AppScaffoldState extends State<AppScaffold>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
-      extendBodyBehindAppBar: true,
-      appBar: _buildAppBar(),
+      extendBodyBehindAppBar: false, // Changed to false to prevent body from going behind app bar
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(kToolbarHeight + 24), // Account for custom app bar height
+        child: _buildAppBar(),
+      ),
       drawer: const AppDrawer(),
       body: _buildBody(),
       bottomNavigationBar: AppBottomNavBar(
@@ -230,21 +233,18 @@ class _AppScaffoldState extends State<AppScaffold>
 
   Widget _buildBody() {
     return Container(
-      child: ClipRRect(
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
         ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade50,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-            ),
-          ),
-          child: widget.body,
-        ),
+      ),
+      // Let the Scaffold handle the padding with SafeArea
+      child: SafeArea(
+        top: true,
+        bottom: false,
+        child: widget.body,
       ),
     );
   }

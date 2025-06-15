@@ -166,241 +166,238 @@ class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateM
       title: 'Doctor Details',
       selectedIndex: 0,
       onItemTapped: (index) {},
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Doctor Header Section
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.white,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Doctor Avatar
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: Colors.grey[200],
-                      image: imageUrl.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(imageUrl),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                    ),
-                    child: imageUrl.isEmpty
-                        ? const Icon(Icons.person, size: 40, color: Colors.grey)
+      body: Column(
+        children: [
+          // Doctor Header Section
+          Container(
+            padding: const EdgeInsets.all(16),
+            color: Colors.white,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Doctor Avatar
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey[200],
+                    image: imageUrl.isNotEmpty
+                        ? DecorationImage(
+                            image: NetworkImage(imageUrl),
+                            fit: BoxFit.cover,
+                          )
                         : null,
                   ),
-                  const SizedBox(width: 16),
-                  // Doctor Info
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                name,
-                                style: const TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                _isFavorite ? Icons.favorite : Icons.favorite_border,
-                                color: _isFavorite ? Colors.red : null,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _isFavorite = !_isFavorite;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-                        Text(
-                          specialty,
-                          style: TextStyle(
-                            color: Colors.blue[700],
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Icon(Icons.star, color: Colors.amber, size: 20),
-                            const SizedBox(width: 4),
-                            Text(
-                              rating.toStringAsFixed(1),
-                              style: const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '($reviewCount reviews)',
-                              style: TextStyle(color: Colors.grey[600]),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 4,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isOnline ? Colors.green[50] : Colors.grey[200],
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isOnline ? Colors.green : Colors.grey,
-                                ),
-                              ),
-                              child: Text(
-                                isOnline ? 'Online' : 'Offline',
-                                style: TextStyle(
-                                  color: isOnline ? Colors.green : Colors.grey[700],
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            const Spacer(),
-                            Text(
-                              '$consultationFee $currency',
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Action Buttons
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      onPressed: _isLoading ? null : _bookAppointment,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Theme.of(context).primaryColor,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      icon: _isLoading
-                          ? const SizedBox(
-                              width: 20,
-                              height: 20,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                              ),
-                            )
-                          : const Icon(Icons.calendar_today, size: 20),
-                      label: Text(_isLoading ? 'Booking...' : 'Book Appointment'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Theme.of(context).primaryColor),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: IconButton(
-                      onPressed: () {
-                        // TODO: Implement chat functionality
-                      },
-                      icon: const Icon(Icons.chat, color: Colors.blue),
-                      style: IconButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Tab Bar
-            Container(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border.symmetric(
-                  horizontal: BorderSide(color: Colors.grey[200]!),
+                  child: imageUrl.isEmpty
+                      ? const Icon(Icons.person, size: 40, color: Colors.grey)
+                      : null,
                 ),
-              ),
-              child: TabBar(
-                controller: _tabController,
-                labelColor: Theme.of(context).primaryColor,
-                unselectedLabelColor: Colors.grey,
-                indicatorColor: Theme.of(context).primaryColor,
-                indicatorWeight: 3,
-                tabs: const [
-                  Tab(text: 'About'),
-                  Tab(text: 'Reviews'),
-                  Tab(text: 'Contact'),
-                ],
-              ),
+                const SizedBox(width: 16),
+                // Doctor Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              name,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              _isFavorite ? Icons.favorite : Icons.favorite_border,
+                              color: _isFavorite ? Colors.red : null,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _isFavorite = !_isFavorite;
+                              });
+                            },
+                          ),
+                        ],
+                      ),
+                      Text(
+                        specialty,
+                        style: TextStyle(
+                          color: Colors.blue[700],
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Icon(Icons.star, color: Colors.amber, size: 20),
+                          const SizedBox(width: 4),
+                          Text(
+                            rating.toStringAsFixed(1),
+                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '($reviewCount reviews)',
+                            style: TextStyle(color: Colors.grey[600]),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isOnline ? Colors.green[50] : Colors.grey[200],
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isOnline ? Colors.green : Colors.grey,
+                              ),
+                            ),
+                            child: Text(
+                              isOnline ? 'Online' : 'Offline',
+                              style: TextStyle(
+                                color: isOnline ? Colors.green : Colors.grey[700],
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          const Spacer(),
+                          Text(
+                            '$consultationFee $currency',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
+          ),
 
-            // Tab Bar View
-            SizedBox(
-              height: 300, // Fixed height for demo
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  // About Tab
-                  SingleChildScrollView(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (bio.isNotEmpty) ..._buildSection('Biography', [bio]),
-                        if (experience > 0) ..._buildSection('Experience', ['$experience years of experience']),
-                        if (languages.isNotEmpty) ..._buildSection('Languages', languages),
-                        if (education.isNotEmpty) ..._buildSection('Education', education),
-                        if (services.isNotEmpty) ..._buildSection('Services', services),
-                      ],
+          // Action Buttons
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _bookAppointment,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).primaryColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.calendar_today, size: 20),
+                    label: Text(_isLoading ? 'Booking...' : 'Book Appointment'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Theme.of(context).primaryColor),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: IconButton(
+                    onPressed: () {
+                      // TODO: Implement chat functionality
+                    },
+                    icon: const Icon(Icons.chat, color: Colors.blue),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                     ),
                   ),
-                  // Reviews Tab
-                  const Center(child: Text('No reviews yet')),
-                  // Contact Tab
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildContactItem(Icons.email, 'Email', '${userData['email']}'),
-                        const SizedBox(height: 12),
-                        _buildContactItem(Icons.phone, 'Phone', userData['phone_number'] ?? 'Not provided'),
-                        const SizedBox(height: 12),
-                        _buildContactItem(Icons.location_on, 'Location', 'Hospital or Clinic Address'),
-                        const SizedBox(height: 16),
-                        const Text(
-                          'Clinic Hours',
+                ),
+              ],
+            ),
+          ),
+
+          // Tab Bar
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.symmetric(
+                horizontal: BorderSide(color: Colors.grey[200]!),
+              ),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              labelColor: Theme.of(context).primaryColor,
+              unselectedLabelColor: Colors.grey,
+              indicatorColor: Theme.of(context).primaryColor,
+              indicatorWeight: 3,
+              tabs: const [
+                Tab(text: 'About'),
+                Tab(text: 'Reviews'),
+                Tab(text: 'Contact'),
+              ],
+            ),
+          ),
+
+          // Tab Bar View
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                // About Tab
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (bio.isNotEmpty) ..._buildSection('Biography', [bio]),
+                      if (experience > 0) ..._buildSection('Experience', ['$experience years of experience']),
+                      if (languages.isNotEmpty) ..._buildSection('Languages', languages),
+                      if (education.isNotEmpty) ..._buildSection('Education', education),
+                      if (services.isNotEmpty) ..._buildSection('Services', services),
+                      const SizedBox(height: 16),
+                    ],
+                  ),
+                ),
+                // Reviews Tab
+                const Center(child: Text('No reviews yet')),
+                // Contact Tab
+                SingleChildScrollView(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildContactItem(Icons.email, 'Email', '${userData['email']}'),
+                      const SizedBox(height: 12),
+                      _buildContactItem(Icons.phone, 'Phone', userData['phone_number'] ?? 'Not provided'),
+                      const SizedBox(height: 12),
+                      _buildContactItem(Icons.location_on, 'Location', 'Hospital or Clinic Address'),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Clinic Hours',
                           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                         const SizedBox(height: 8),
@@ -413,7 +410,6 @@ class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateM
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }

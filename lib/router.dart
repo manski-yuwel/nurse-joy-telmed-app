@@ -123,11 +123,17 @@ class AppRouter {
       ),
       GoRoute(
         path: '/doctor/:doctorId',
-        builder: (context, state) => DoctorPage(
-          doctorId: state.pathParameters['doctorId']!,
-          doctorDetails: state.extra as DocumentSnapshot,
-          userDetails: state.extra as DocumentSnapshot,
-        ),
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra != null) {
+            return DoctorPage(
+              doctorId: state.pathParameters['doctorId']!,
+              doctorDetails: extra['doctorDetails'] as DocumentSnapshot,
+              userDetails: extra['userDetails'] as DocumentSnapshot,
+            );
+          }
+          throw Exception('No extra data found');
+        },
       ),
 
       // Individual feature routes
