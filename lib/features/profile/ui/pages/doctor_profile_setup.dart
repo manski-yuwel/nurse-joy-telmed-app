@@ -30,11 +30,6 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
   static const String availabilityScheduleField = 'availability_schedule';
   static const String languagesField = 'languages';
   static const String servicesOfferedField = 'services_offered';
-  static const String phoneNumberField = 'phone_number';
-  static const String addressField = 'address';
-  static const String genderField = 'gender';
-  static const String birthdateField = 'birthdate';
-  static const String civilStatusField = 'civil_status';
 
   final List<String> _languageOptions = [
     'English',
@@ -138,9 +133,6 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
 
     final languages = formData[languagesField] as List<String>?;
     final services = formData[servicesOfferedField] as List<String>?;
-    final gender = formData[genderField] as String?;
-    final civilStatus = formData[civilStatusField] as String?;
-    final birthdate = formData[birthdateField] as DateTime?;
 
     if (languages == null || languages.isEmpty) {
       _showSnackBar('Please select at least one language', Colors.red);
@@ -152,21 +144,6 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
       return;
     }
 
-    if (gender == null) {
-      _showSnackBar('Please select your gender', Colors.red);
-      return;
-    }
-
-    if (civilStatus == null) {
-      _showSnackBar('Please select your civil status', Colors.red);
-      return;
-    }
-
-    if (birthdate == null) {
-      _showSnackBar('Please select your birthdate', Colors.red);
-      return;
-    }
-
     setState(() {
       _isLoading = true;
     });
@@ -175,13 +152,6 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
       final authService = Provider.of<AuthService>(context, listen: false);
       final userId = authService.user!.uid;
 
-      // Calculate age from birthdate
-      final today = DateTime.now();
-      int age = today.year - birthdate.year;
-      if (today.month < birthdate.month ||
-          (today.month == birthdate.month && today.day < birthdate.day)) {
-        age--;
-      }
 
       // Get existing doctor data
       final doctorSnapshot = await FirebaseFirestore.instance
@@ -229,23 +199,15 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
         'availability_schedule': availabilitySchedule,
         'languages': languages,
         'services_offered': services,
+        'doc_info_is_setup': true,
       });
 
-      // Update user basic information
-      await FirebaseFirestore.instance.collection('users').doc(userId).update({
-        'phone_number': formData[phoneNumberField]?.toString() ?? '',
-        'address': formData[addressField]?.toString() ?? '',
-        'gender': gender,
-        'civil_status': civilStatus,
-        'birthdate': Timestamp.fromDate(birthdate),
-        'age': age,
-        'is_setup': true,
-      });
 
       if (mounted) {
         _showSnackBar('Profile saved successfully!', Colors.green);
         // Add a small delay to show the success message
         await Future.delayed(const Duration(seconds: 1));
+        logger.i('Navigating to /home');
         context.go('/home');
       }
     } catch (error) {
@@ -551,198 +513,6 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
                                 child: FadeInAnimation(child: widget),
                               ),
                               children: [
-                                // Personal Information Section
-                                const Text(
-                                  "Personal Information",
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                _buildFormField(
-                                  name: phoneNumberField,
-                                  label: "Phone Number",
-                                  hint: "Enter your phone number",
-                                  icon: Icons.phone_outlined,
-                                  keyboardType: TextInputType.phone,
-                                ),
-                                _buildFormField(
-                                  name: addressField,
-                                  label: "Address",
-                                  hint: "Enter your address",
-                                  icon: Icons.location_on_outlined,
-                                  maxLines: 2,
-                                ),
-                                Container(
-                                  margin: const EdgeInsets.only(bottom: 20),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        "Birthdate",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      FormBuilderDateTimePicker(
-                                        name: birthdateField,
-                                        inputType: InputType.date,
-                                        format: DateFormat('MMM dd, yyyy'),
-                                        initialDate: DateTime(1980),
-                                        firstDate: DateTime(1900),
-                                        lastDate: DateTime.now(),
-                                        decoration: InputDecoration(
-                                          hintText: "Select your birthdate",
-                                          hintStyle: TextStyle(
-                                              color: Colors.grey.shade500),
-                                          prefixIcon: const Icon(
-                                              Icons.calendar_today_outlined,
-                                              color: Color(0xFF58f0d7)),
-                                          filled: true,
-                                          fillColor: Colors.grey.shade50,
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            borderSide: BorderSide(
-                                                color: Colors.grey.shade300),
-                                          ),
-                                          enabledBorder: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            borderSide: BorderSide(
-                                                color: Colors.grey.shade300),
-                                          ),
-                                          focusedBorder: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            borderSide: const BorderSide(
-                                                color: Color(0xFF58f0d7),
-                                                width: 2),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  margin: const EdgeInsets.only(bottom: 20),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        "Gender",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      FormBuilderDropdown<String>(
-                                        name: genderField,
-                                        items: _genderOptions
-                                            .map((gender) => DropdownMenuItem(
-                                                  value: gender,
-                                                  child: Text(gender),
-                                                ))
-                                            .toList(),
-                                        decoration: InputDecoration(
-                                          hintText: "Select your gender",
-                                          hintStyle: TextStyle(
-                                              color: Colors.grey.shade500),
-                                          prefixIcon: const Icon(
-                                              Icons.person_outline,
-                                              color: Color(0xFF58f0d7)),
-                                          filled: true,
-                                          fillColor: Colors.grey.shade50,
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            borderSide: BorderSide(
-                                                color: Colors.grey.shade300),
-                                          ),
-                                          enabledBorder: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            borderSide: BorderSide(
-                                                color: Colors.grey.shade300),
-                                          ),
-                                          focusedBorder: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            borderSide: const BorderSide(
-                                                color: Color(0xFF58f0d7),
-                                                width: 2),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                Container(
-                                  margin: const EdgeInsets.only(bottom: 20),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        "Civil Status",
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.black87,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      FormBuilderDropdown<String>(
-                                        name: civilStatusField,
-                                        items: _civilStatusOptions
-                                            .map((status) => DropdownMenuItem(
-                                                  value: status,
-                                                  child: Text(status),
-                                                ))
-                                            .toList(),
-                                        decoration: InputDecoration(
-                                          hintText: "Select your civil status",
-                                          hintStyle: TextStyle(
-                                              color: Colors.grey.shade500),
-                                          prefixIcon: const Icon(
-                                              Icons.family_restroom_outlined,
-                                              color: Color(0xFF58f0d7)),
-                                          filled: true,
-                                          fillColor: Colors.grey.shade50,
-                                          border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            borderSide: BorderSide(
-                                                color: Colors.grey.shade300),
-                                          ),
-                                          enabledBorder: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            borderSide: BorderSide(
-                                                color: Colors.grey.shade300),
-                                          ),
-                                          focusedBorder: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(12),
-                                            borderSide: const BorderSide(
-                                                color: Color(0xFF58f0d7),
-                                                width: 2),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-
                                 const SizedBox(height: 16),
                                 const Divider(),
                                 const SizedBox(height: 16),

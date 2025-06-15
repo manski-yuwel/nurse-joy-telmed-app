@@ -10,6 +10,7 @@ import 'package:nursejoyapp/features/signing/ui/pages/register_doctor_page.dart'
 import 'package:nursejoyapp/features/signing/ui/pages/register_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/securitycheck_page.dart';
 import 'package:nursejoyapp/features/signing/ui/pages/signin_page.dart';
+import 'package:nursejoyapp/features/signing/ui/pages/wait_verification.dart';
 import 'package:nursejoyapp/features/entry/ui/app_entry.dart';
 import 'package:nursejoyapp/features/ai/joy_ai_chat.dart';
 import 'package:nursejoyapp/main.dart';
@@ -28,35 +29,40 @@ class AppRouter {
     initialLocation: '/entry',
     redirect: (context, state) async {
       final isLoggedIn = authService.user != null;
-      final isLoggingIn = state.uri.path == '/signin' ||
-          state.uri.path == '/register/user' ||
-          state.uri.path == '/register/doctor';
 
-      // If not logged in and not on a login page, redirect to signin
-      if (!isLoggedIn && !isLoggingIn) {
-        return '/entry';
-      }
+      // 1. If the user isn’t logged-in go to /entry (unless they’re already on an auth page)
+      final isOnAuthPage = [
+        '/signin',
+        '/register/user',
+        '/register/doctor',
+        '/securitycheck',
+      ].contains(state.uri.toString());
+      if (!isLoggedIn && !isOnAuthPage) return '/entry';
 
-      // If logged in and on a login page, redirect to home
-      if (isLoggedIn && isLoggingIn) {
-        // Check if user setup is completed
-        final isSetup = await authService.isUserSetup();
-        if (isSetup['is_setup'] == false && isSetup['is_doctor'] == false) {
-          return '/profile-setup';
-        } else if (isSetup['is_setup'] == false &&
-            isSetup['is_doctor'] == true) {
-          return '/profile-setup/doctor';
+      if (isLoggedIn) {
+        final setup = await authService.isUserSetup();
+
+        if (setup['is_doctor'] == true) {
+          if (setup['doc_info_is_setup'] == false) return '/profile-setup/doctor';
+          if (setup['is_verified'] == false) return '/wait-verification';
         }
-        return '/home';
+
+        if (setup['is_setup'] == false) {
+          return '/profile-setup';
+        }
       }
 
-      return null;
     },
     routes: [
       // Auth routes
       GoRoute(
         path: '/',
         builder: (context, state) => const HomeScreen(),
+      ),
+
+      GoRoute(
+        path: '/wait-verification',
+        builder: (context, state) => const WaitVerificationPage(),
       ),
 
       GoRoute(
@@ -120,10 +126,6 @@ class AppRouter {
         },
       ),
 
-      GoRoute(
-        path: '/profile-setup',
-        builder: (context, state) => const ProfileSetup(),
-      ),
     ],
   );
 }

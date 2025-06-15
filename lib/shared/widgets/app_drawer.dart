@@ -175,6 +175,7 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
                                   subtitle: 'Chat with NurseJoy',
                                   onTap: () => context.go('/ai'),
                                 ),
+                              
                               ],
                             ),
 
@@ -213,6 +214,12 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
                                   title: 'Entry',
                                   subtitle: 'Entry to the App',
                                   onTap: () => context.go('/entry'),
+                                ),
+                                _buildModernMenuItem(
+                                  icon: Icons.warning_amber_rounded,
+                                  title: 'Wait Verification',
+                                  subtitle: 'Wait for verification',
+                                  onTap: () => context.go('/wait-verification'),
                                 ),
                               ],
                             ),

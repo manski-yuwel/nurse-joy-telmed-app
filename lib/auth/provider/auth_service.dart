@@ -34,9 +34,20 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'is_doctor': false,
       };
     } else {
+      // get the doctor information
+      final doctorInformation = await db
+          .collection('users')
+          .doc(user!.uid)
+          .collection('doctor_information')
+          .doc('profile')
+          .get();
+
+
       return {
         'is_setup': userData['is_setup'],
         'is_doctor': true,
+        'is_verified': doctorInformation.data()?['is_verified'] ?? false,
+        'doc_info_is_setup': doctorInformation.data()?['doc_info_is_setup'] ?? false,
       };
     }
   }
@@ -84,6 +95,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'role': 'user',
         'status_online': false,
         'is_setup': false,
+        'created_at': FieldValue.serverTimestamp(),
       });
 
       await db
@@ -122,17 +134,17 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   }) async {
     try {
       // First register the user account
-      final result = await signUp(email, password);
+      final result = await FirebaseAuth.instance.createUserWithEmailAndPassword(email: email, password: password);
 
-      if (result != 'Success') {
-        return result;
+      if (result.user == null) {
+        return 'Failed to create user';
       }
 
       // Get the current user ID
-      final userID = auth.currentUser!.uid;
+      final userID = result.user!.uid;
 
       // Update the user role to doctor
-      await db.collection('users').doc(userID).update({
+      await db.collection('users').doc(userID).set({
         'role': 'doctor',
         'email': email,
         'first_name': firstName,
@@ -141,6 +153,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'full_name_lowercase': '$firstName $lastName'.toLowerCase(),
         'is_setup': false,
         'search_index': createSearchIndex('$firstName $lastName'),
+        'created_at': FieldValue.serverTimestamp(),
       });
 
       // Create doctor data document
@@ -163,6 +176,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'consultation_currency':
             doctorDetails['consultation_currency'] ?? 'USD',
         'is_verified': false,
+        'doc_info_is_setup': false,
         'verification_status': 'pending',
         'verification_date': null,
         'rating': 0,
@@ -189,16 +203,17 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
 
 
   Future<void> signOut() async {
-    await auth.signOut();
-
     // update the status to offline if the user signs out
     updateUserStatus(user, false);
+    await auth.signOut();
+
   }
 
   Future<void> updateUserStatus(User? user, bool status) async {
+    if (user == null) return;
     await db
         .collection('users')
-        .doc(user!.uid)
+        .doc(user.uid)
         .update({'status_online': status});
     logger.i('Updated user ${user.uid} status to $status');
   }

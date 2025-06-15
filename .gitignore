@@ -56,3 +56,10 @@ app.*.map.json
 *.cc
 *.h
 *.swift
+
+# Firebase
+*firebase_options.dart
+firebase.json
+
+# Google Services
+google-services.json

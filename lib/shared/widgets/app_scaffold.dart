@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
