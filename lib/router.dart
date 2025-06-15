@@ -1,6 +1,9 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/chat/ui/pages/chat_list_page.dart';
+import 'package:nursejoyapp/features/doctor/ui/doctor_list.dart';
+import 'package:nursejoyapp/features/doctor/ui/doctor_page.dart';
 import 'package:nursejoyapp/features/map/ui/pages/viewmap.dart';
 import 'package:nursejoyapp/features/profile/ui/pages/profile_page.dart';
 import 'package:nursejoyapp/features/profile/ui/pages/profile_setup.dart';
@@ -26,7 +29,6 @@ class AppRouter {
   late final GoRouter router = GoRouter(
     refreshListenable: GoRouterRefreshStream(authService),
     debugLogDiagnostics: kDebugMode,
-    initialLocation: '/entry',
     redirect: (context, state) async {
       final isLoggedIn = authService.user != null;
 
@@ -105,7 +107,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/settings',
-        builder: (context, state) => const Settings(),
+        builder: (context, state) => const SettingsPage(),
       ),
       GoRoute(
         path: '/viewmap',
@@ -114,6 +116,24 @@ class AppRouter {
       GoRoute(
         path: '/chat',
         builder: (context, state) => const ChatListPage(),
+      ),
+      GoRoute(
+        path: '/doctor-list',
+        builder: (context, state) => const DoctorList(),
+      ),
+      GoRoute(
+        path: '/doctor/:doctorId',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra != null) {
+            return DoctorPage(
+              doctorId: state.pathParameters['doctorId']!,
+              doctorDetails: extra['doctorDetails'] as DocumentSnapshot,
+              userDetails: extra['userDetails'] as DocumentSnapshot,
+            );
+          }
+          throw Exception('No extra data found');
+        },
       ),
 
       // Individual feature routes
