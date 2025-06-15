@@ -63,3 +63,6 @@ firebase.json
 
 # Google Services
 google-services.json
+
+# Windsurf
+.windsurf

@@ -175,7 +175,13 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
                                   subtitle: 'Chat with NurseJoy',
                                   onTap: () => context.go('/ai'),
                                 ),
-                              
+                                _buildModernMenuItem(
+                                  icon: Icons.person_rounded,
+                                  title: 'Doctors',
+                                  subtitle: 'Doctors List',
+                                  onTap: () => context.go('/doctor-list'),
+                                ),
+
                               ],
                             ),
 
