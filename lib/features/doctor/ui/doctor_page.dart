@@ -50,12 +50,6 @@ class _DoctorPageState extends State<DoctorPage>
   }
 
   Future<void> _bookAppointment() async {
-    // we would still need to implement this.
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1));
-    setState(() => _isLoading = false);
-    if (!mounted) return;
-
     // show a dialog to confirm the appointment date and time and the doctor
     showDialog(
       context: context,
@@ -81,33 +75,50 @@ class _DoctorPageState extends State<DoctorPage>
           TextButton(
             onPressed: () async {
               if (_selectedDateTime == null) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Please select a date and time')),
+                // show error dialog
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Error'),
+                    content: const Text('Please select a date and time'),
+                  ),
                 );
                 return;
               }
-              await registerAppointment(
-                  widget.doctorId, auth.user!.uid, _selectedDateTime!);
+              setState(() => _isLoading = true);
+              try {
+                await registerAppointment(
+                    widget.doctorId, auth.user!.uid, _selectedDateTime!);
+              } catch (e) {
+                // show error dialog
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Error'),
+                    content: Text('Error: $e'),
+                  ),
+                );
+                return;
+              }
               if (!context.mounted) return;
               context.pop();
+              // if success, show success dialog
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Appointment Booked'),
+                  content: const Text('Your appointment has been scheduled successfully!'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => context.pop(),
+                      child: const Text('OK'),
+                    ),
+                  ],
+                ),
+              );
+              setState(() => _isLoading = false);
             },
             child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-
-    // Show success dialog
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Appointment Booked'),
-        content:
-            const Text('Your appointment has been scheduled successfully!'),
-        actions: [
-          TextButton(
-            onPressed: () => context.pop(),
-            child: const Text('OK'),
           ),
         ],
       ),
