@@ -146,7 +146,7 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
               onTap: () {
                 HapticFeedback.lightImpact();
                 // navigate to doctor page with doctorDetails and userDetails
-                context.go('/doctor/${doctor.id}', extra: {
+                context.go('/doctor/${userDetails.id}', extra: {
                   'userDetails': userDetails,
                   'doctorDetails': doctor,
                 });
