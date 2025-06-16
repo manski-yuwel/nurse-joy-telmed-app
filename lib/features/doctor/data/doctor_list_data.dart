@@ -12,3 +12,29 @@ Future<DocumentSnapshot> getDoctorDetails(String doctorId) async {
 
   return doctorDetails;
 }
+
+
+// get appointment list
+Future<QuerySnapshot> getAppointmentList(String doctorId) async {
+  final appointmentList = await FirebaseFirestore.instance.collection('appointments').where('doctorId', isEqualTo: doctorId).get();
+
+  return appointmentList;
+}
+
+
+// get user details
+Future<DocumentSnapshot> getUserDetails(String userId) async {
+  final userDetails = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+
+  return userDetails;
+}
+
+
+// register appointment
+Future<void> registerAppointment(String doctorId, String patientId, DateTime appointmentDateTime) async {
+  await FirebaseFirestore.instance.collection('appointments').add({
+    'doctorId': doctorId,
+    'patientId': patientId,
+    'appointmentDateTime': appointmentDateTime,
+  });
+}
