@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
 import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 class ViewMapPage extends StatefulWidget {
   const ViewMapPage({Key? key}) : super(key: key);
@@ -45,11 +46,15 @@ class _ViewMapPageState extends State<ViewMapPage> {
       selectedIndex: _selectedIndex == -1 ? 0 : _selectedIndex,
       onItemTapped: _onItemTapped,
       body: Center(
-        child: Image.asset(
-          'assets/img/map_placeholder.png',
-          fit: BoxFit.fill,
-          width: double.infinity,
-          height: double.infinity,
+        child: SizedBox(
+          width: 300,
+          height: 300,
+          child: GoogleMap(
+            initialCameraPosition: CameraPosition(
+              target: LatLng(37.7749, -122.4194), // San Francisco
+              zoom: 12,
+            ),
+          ),
         ),
       ),
     );

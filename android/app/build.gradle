@@ -8,6 +8,8 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+// def MAPS_API_KEY = project.hasProperty('MAPS_API_KEY') ? project.MAPS_API_KEY : ""
+
 android {
     namespace = "com.example.nursejoyapp"
     compileSdk = flutter.compileSdkVersion
@@ -31,6 +33,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // resValue "string", "google_maps_key", MAPS_API_KEY
     }
 
     buildTypes {

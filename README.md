@@ -14,3 +14,14 @@ A few resources to get you started if this is your first Flutter project:
 For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
+
+## Google Maps API Key Setup
+
+1. Ask the project admin for the Google Maps API key.
+2. Open (or create) `android/local.properties` in the project root.
+3. Add this line (replace with the actual key):
+   ```
+   MAPS_API_KEY=your_real_api_key_here
+   ```
+4. Do **not** commit `local.properties` to Git. make sure nasa gitignore local.properties (which should already be in there)
+5. Run the app as usual!
