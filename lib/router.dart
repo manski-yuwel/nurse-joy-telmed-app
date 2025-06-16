@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/chat/ui/pages/chat_list_page.dart';
+import 'package:nursejoyapp/features/doctor/ui/appointment_list.dart';
 import 'package:nursejoyapp/features/doctor/ui/doctor_list.dart';
 import 'package:nursejoyapp/features/doctor/ui/doctor_page.dart';
 import 'package:nursejoyapp/features/map/ui/pages/viewmap.dart';
@@ -134,6 +135,10 @@ class AppRouter {
           }
           throw Exception('No extra data found');
         },
+      ),
+      GoRoute(
+        path: '/appointment-list',
+        builder: (context, state) => const AppointmentList(),
       ),
 
       // Individual feature routes

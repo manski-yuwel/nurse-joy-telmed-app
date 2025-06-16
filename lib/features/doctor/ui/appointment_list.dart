@@ -42,9 +42,29 @@ class _AppointmentListState extends State<AppointmentList> {
               itemCount: snapshot.data!.docs.length,
               itemBuilder: (context, index) {
                 // render the patient name and the appointment date and time
-                return ListTile(
-                  title: Text(snapshot.data!.docs[index]['patientId']),
-                  subtitle: Text(snapshot.data!.docs[index]['appointmentDateTime']),
+                final appointment = snapshot.data!.docs[index];
+
+                return FutureBuilder(
+                  future: getUserDetails(appointment['patientId']),
+                  builder: (context, patientDetails) {
+                    if (patientDetails.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else if (patientDetails.hasError) {
+                      return Center(child: Text('Error: ${patientDetails.error}'));
+                    } else if (patientDetails.hasData) {
+                      if (patientDetails.data != null) {
+                        final patientData = patientDetails.data!;
+                        final patientName = '${patientData['first_name']} ${patientData['last_name']}';
+                        return ListTile(
+                          title: Text(patientName),
+                          subtitle: Text(appointment['appointmentDateTime'].toDate().toString()),
+                        );
+                      }
+                      return const Center(child: Text('No patient details found'));
+                    } else {
+                      return const Center(child: Text('No appointments found'));
+                    }
+                  },
                 );
               },
             );
