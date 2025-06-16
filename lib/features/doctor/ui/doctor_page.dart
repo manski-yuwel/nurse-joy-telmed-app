@@ -2,16 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
 
 class DoctorPage extends StatefulWidget {
-  const DoctorPage({
-    super.key, 
-    required this.doctorId, 
-    required this.userDetails,
-    required this.doctorDetails
-  });
+  const DoctorPage(
+      {super.key,
+      required this.doctorId,
+      required this.userDetails,
+      required this.doctorDetails});
 
   final String doctorId;
   final DocumentSnapshot userDetails;
@@ -21,10 +22,14 @@ class DoctorPage extends StatefulWidget {
   State<DoctorPage> createState() => _DoctorPageState();
 }
 
-class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateMixin {
+class _DoctorPageState extends State<DoctorPage>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   bool _isFavorite = false;
   bool _isLoading = false;
+  late AuthService auth;
+  final TextEditingController _dateController = TextEditingController();
+  final TextEditingController _timeController = TextEditingController();
 
   @override
   void initState() {
@@ -33,8 +38,16 @@ class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateM
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    auth = Provider.of<AuthService>(context, listen: false);
+  }
+
+  @override
   void dispose() {
     _tabController.dispose();
+    _dateController.dispose();
+    _timeController.dispose();
     super.dispose();
   }
 
@@ -44,13 +57,51 @@ class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateM
     await Future.delayed(const Duration(seconds: 1));
     setState(() => _isLoading = false);
     if (!mounted) return;
-    
+
+    // show a dialog to confirm the appointment date and time and the doctor
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Confirm Appointment'),
+        // fields for date and time picker
+        content: Column(
+          children: [
+            DatePicker(
+              initialDate: DateTime.now(),
+              firstDate: DateTime.now(),
+              lastDate: DateTime.now().add(const Duration(days: 365)),
+              onDateChanged: (date) {
+                setState(() {
+                  _dateController.text = date.toString();
+                });
+              },
+            ),            
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await registerAppointment(
+                  widget.doctorId, auth.user!.uid, DateTime.now());
+              context.pop();
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
+
     // Show success dialog
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Appointment Booked'),
-        content: const Text('Your appointment has been scheduled successfully!'),
+        content:
+            const Text('Your appointment has been scheduled successfully!'),
         actions: [
           TextButton(
             onPressed: () => context.pop(),
@@ -71,16 +122,18 @@ class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateM
         ),
       ),
       const SizedBox(height: 8),
-      ...items.map((item) => Padding(
-        padding: const EdgeInsets.only(bottom: 8.0, left: 8.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('• '),
-            Expanded(child: Text(item)),
-          ],
-        ),
-      )).toList(),
+      ...items
+          .map((item) => Padding(
+                padding: const EdgeInsets.only(bottom: 8.0, left: 8.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('• '),
+                    Expanded(child: Text(item)),
+                  ],
+                ),
+              ))
+          .toList(),
       const SizedBox(height: 16),
     ];
   }
@@ -145,7 +198,8 @@ class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
-    final doctorData = widget.doctorDetails.data() as Map<String, dynamic>? ?? {};
+    final doctorData =
+        widget.doctorDetails.data() as Map<String, dynamic>? ?? {};
     final userData = widget.userDetails.data() as Map<String, dynamic>? ?? {};
     final name = '${userData['first_name']} ${userData['last_name']}';
     final specialty = doctorData['specialization'] ?? 'General Practitioner';
@@ -155,10 +209,14 @@ class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateM
     final currency = doctorData['consultation_currency'] ?? 'PHP';
     final bio = doctorData['bio'] ?? '';
     final experience = doctorData['years_of_experience'] ?? 0;
-    final languages = (doctorData['languages'] as List<dynamic>?)?.cast<String>() ?? [];
-    final education = (doctorData['education'] as List<dynamic>?)?.cast<String>() ?? [];
-    final services = (doctorData['services_offered'] as List<dynamic>?)?.cast<String>() ?? [];
-    
+    final languages =
+        (doctorData['languages'] as List<dynamic>?)?.cast<String>() ?? [];
+    final education =
+        (doctorData['education'] as List<dynamic>?)?.cast<String>() ?? [];
+    final services =
+        (doctorData['services_offered'] as List<dynamic>?)?.cast<String>() ??
+            [];
+
     final isOnline = userData['status_online'] ?? false;
     final imageUrl = userData['profile_pic'] ?? '';
 
@@ -212,7 +270,9 @@ class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateM
                           ),
                           IconButton(
                             icon: Icon(
-                              _isFavorite ? Icons.favorite : Icons.favorite_border,
+                              _isFavorite
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
                               color: _isFavorite ? Colors.red : null,
                             ),
                             onPressed: () {
@@ -255,7 +315,9 @@ class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateM
                               vertical: 4,
                             ),
                             decoration: BoxDecoration(
-                              color: isOnline ? Colors.green[50] : Colors.grey[200],
+                              color: isOnline
+                                  ? Colors.green[50]
+                                  : Colors.grey[200],
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(
                                 color: isOnline ? Colors.green : Colors.grey,
@@ -264,7 +326,8 @@ class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateM
                             child: Text(
                               isOnline ? 'Online' : 'Offline',
                               style: TextStyle(
-                                color: isOnline ? Colors.green : Colors.grey[700],
+                                color:
+                                    isOnline ? Colors.green : Colors.grey[700],
                                 fontSize: 12,
                                 fontWeight: FontWeight.w500,
                               ),
@@ -310,7 +373,8 @@ class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateM
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
                             ),
                           )
                         : const Icon(Icons.calendar_today, size: 20),
@@ -374,10 +438,15 @@ class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateM
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       if (bio.isNotEmpty) ..._buildSection('Biography', [bio]),
-                      if (experience > 0) ..._buildSection('Experience', ['$experience years of experience']),
-                      if (languages.isNotEmpty) ..._buildSection('Languages', languages),
-                      if (education.isNotEmpty) ..._buildSection('Education', education),
-                      if (services.isNotEmpty) ..._buildSection('Services', services),
+                      if (experience > 0)
+                        ..._buildSection(
+                            'Experience', ['$experience years of experience']),
+                      if (languages.isNotEmpty)
+                        ..._buildSection('Languages', languages),
+                      if (education.isNotEmpty)
+                        ..._buildSection('Education', education),
+                      if (services.isNotEmpty)
+                        ..._buildSection('Services', services),
                       const SizedBox(height: 16),
                     ],
                   ),
@@ -390,26 +459,30 @@ class _DoctorPageState extends State<DoctorPage> with SingleTickerProviderStateM
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildContactItem(Icons.email, 'Email', '${userData['email']}'),
+                      _buildContactItem(
+                          Icons.email, 'Email', '${userData['email']}'),
                       const SizedBox(height: 12),
-                      _buildContactItem(Icons.phone, 'Phone', userData['phone_number'] ?? 'Not provided'),
+                      _buildContactItem(Icons.phone, 'Phone',
+                          userData['phone_number'] ?? 'Not provided'),
                       const SizedBox(height: 12),
-                      _buildContactItem(Icons.location_on, 'Location', 'Hospital or Clinic Address'),
+                      _buildContactItem(Icons.location_on, 'Location',
+                          'Hospital or Clinic Address'),
                       const SizedBox(height: 16),
                       const Text(
                         'Clinic Hours',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                        ),
-                        const SizedBox(height: 8),
-                        _buildWorkingHours(),
-                      ],
-                    ),
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      const SizedBox(height: 8),
+                      _buildWorkingHours(),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
+          ),
+        ],
+      ),
+    );
   }
 }
