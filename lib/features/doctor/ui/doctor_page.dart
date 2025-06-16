@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
+import 'package:nursejoyapp/features/doctor/ui/widgets/date_time_picker.dart';
 
 class DoctorPage extends StatefulWidget {
   const DoctorPage(
@@ -28,8 +29,7 @@ class _DoctorPageState extends State<DoctorPage>
   bool _isFavorite = false;
   bool _isLoading = false;
   late AuthService auth;
-  final TextEditingController _dateController = TextEditingController();
-  final TextEditingController _timeController = TextEditingController();
+  DateTime? _selectedDateTime;
 
   @override
   void initState() {
@@ -46,8 +46,6 @@ class _DoctorPageState extends State<DoctorPage>
   @override
   void dispose() {
     _tabController.dispose();
-    _dateController.dispose();
-    _timeController.dispose();
     super.dispose();
   }
 
@@ -66,16 +64,13 @@ class _DoctorPageState extends State<DoctorPage>
         // fields for date and time picker
         content: Column(
           children: [
-            DatePicker(
-              initialDate: DateTime.now(),
-              firstDate: DateTime.now(),
-              lastDate: DateTime.now().add(const Duration(days: 365)),
-              onDateChanged: (date) {
+            DateTimePickerField(
+              onDateTimeSelected: (dateTime) {
                 setState(() {
-                  _dateController.text = date.toString();
+                  _selectedDateTime = dateTime;
                 });
               },
-            ),            
+            ),
           ],
         ),
         actions: [
@@ -85,8 +80,15 @@ class _DoctorPageState extends State<DoctorPage>
           ),
           TextButton(
             onPressed: () async {
+              if (_selectedDateTime == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please select a date and time')),
+                );
+                return;
+              }
               await registerAppointment(
-                  widget.doctorId, auth.user!.uid, DateTime.now());
+                  widget.doctorId, auth.user!.uid, _selectedDateTime!);
+              if (!context.mounted) return;
               context.pop();
             },
             child: const Text('Confirm'),
