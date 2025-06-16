@@ -15,13 +15,26 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
-## Google Maps API Key Setup
+## 🗺️ Setting Up Google Maps API Key for Local Development
 
-1. Ask the project admin for the Google Maps API key.
-2. Open (or create) `android/local.properties` in the project root.
-3. Add this line (replace with the actual key):
-   ```
-   MAPS_API_KEY=your_real_api_key_here
-   ```
-4. Do **not** commit `local.properties` to Git. make sure nasa gitignore local.properties (which should already be in there)
-5. Run the app as usual!
+This project uses the [secrets-gradle-plugin](https://github.com/google/secrets-gradle-plugin) to securely manage your Google Maps API key.
+
+### 1. Obtain a Google Maps API Key
+
+You have two options:
+
+- **Option 1: Request the API key from a teammate or project admin**  
+  Ask a team member who already has a working `secrets.properties` file to share the Google Maps API key with you (privately).
+
+- **Option 2: Generate your own Google Maps API key**  
+  1. Go to the [Google Cloud Console](https://console.cloud.google.com/).
+  2. Select or create your project.
+  3. Enable the **Maps SDK for Android**.
+  4. Go to **APIs & Services > Credentials**.
+  5. Click **Create Credentials > API key**.
+  6. (Recommended) Restrict your API key to your app’s package name and SHA-1.
+  7. Copy the generated API key.
+
+### 2. Create `secrets.properties`
+
+In the `android/` directory, create a file named `secrets.properties` (if it does not already exist):
