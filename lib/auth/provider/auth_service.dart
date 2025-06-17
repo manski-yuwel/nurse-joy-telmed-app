@@ -61,6 +61,11 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
       // get fcm token
       final fcmToken = await FirebaseMessaging.instance.getToken();
 
+      // save the fcm token in firestore
+      if (fcmToken != null) {
+        await db.collection('fcm_tokens').doc(user!.uid).set({'fcm_token': fcmToken}, SetOptions(merge: true));
+      }
+
       // update the status of the user to online if the user signs in
       updateUserStatus(user, true);
       return 'Success';
@@ -115,6 +120,14 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'medications': [],
         'other_information': '',
       });
+
+      // get fcm token
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+
+      // save the fcm token in firestore
+      if (fcmToken != null) {
+        await db.collection('fcm_tokens').doc(userID).set({'fcm_token': fcmToken}, SetOptions(merge: true));
+      }
       return 'Success';
     } on FirebaseAuthException catch (e) {
       if (e.code == 'weak-password') {
@@ -146,6 +159,14 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
 
       // Get the current user ID
       final userID = result.user!.uid;
+
+      // get fcm token
+      final fcmToken = await FirebaseMessaging.instance.getToken();
+
+      // save the fcm token in firestore
+      if (fcmToken != null) {
+        await db.collection('fcm_tokens').doc(userID).set({'fcm_token': fcmToken}, SetOptions(merge: true));
+      }
 
       // Update the user role to doctor
       await db.collection('users').doc(userID).set({
@@ -203,6 +224,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
       logger.e('Error registering doctor: $e');
       return e.toString();
     }
+    
   }
 
 
