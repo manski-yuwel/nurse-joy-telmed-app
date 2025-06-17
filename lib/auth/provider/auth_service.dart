@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:nursejoyapp/shared/utils/utils.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 final logger = Logger();
 
@@ -56,6 +57,9 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
     try {
       await FirebaseAuth.instance
           .signInWithEmailAndPassword(email: email, password: password);
+
+      // get fcm token
+      final fcmToken = await FirebaseMessaging.instance.getToken();
 
       // update the status of the user to online if the user signs in
       updateUserStatus(user, true);
