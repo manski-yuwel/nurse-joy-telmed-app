@@ -28,8 +28,9 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
 
         // save the fcm token in firestore
         if (fcmToken != null) {
-          await db.collection('fcm_tokens').doc(user!.uid).set({'fcm_token': fcmToken}, SetOptions(merge: true));
+          await db.collection('fcm_tokens').doc(user.uid).set({'fcm_token': fcmToken}, SetOptions(merge: true));
         }
+        setUpMessagingListeners();
       }
       notifyListeners();
     });
@@ -234,5 +235,22 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
       updateUserStatus(user, false);
       logger.i('App is in detached state and user status is set to offline');
     }
+  }
+
+  void setUpMessagingListeners() async {
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      logger.i('Message received in foreground: ${message.notification}');
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      logger.i('Message received in background: ${message.notification}');
+    });
+
+    fcm.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+        logger.i('Message received in initial message: ${message.notification}');
+      }
+    });
+    
   }
 }
