@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:dio/dio.dart';
 // define functions to fetch doctor list from Firestore
 Future<QuerySnapshot> getDoctorList() async {
   final doctorList = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'doctor').get();
@@ -32,9 +32,22 @@ Future<DocumentSnapshot> getUserDetails(String userId) async {
 
 // register appointment
 Future<void> registerAppointment(String doctorId, String patientId, DateTime appointmentDateTime) async {
+
+
+  // register appointment in Firestore
   await FirebaseFirestore.instance.collection('appointments').add({
     'doctorId': doctorId,
     'patientId': patientId,
     'appointmentDateTime': appointmentDateTime,
   });
+
+  // register appointment in FCM using dio
+  final dio = Dio();
+  await dio.post('https://nurse-joy-api.vercel.app/api/appointments/', data: {
+    'doctorId': doctorId,
+    'patientId': patientId,
+    'appointmentDateTime': appointmentDateTime,
+  });
 }
+
+
