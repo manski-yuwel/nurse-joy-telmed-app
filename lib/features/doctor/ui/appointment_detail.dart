@@ -12,7 +12,7 @@ class AppointmentDetail extends StatefulWidget {
   late AuthService authService;
 
   final String appointmentId;
-  final Map<String, dynamic> patientData;
+  final DocumentSnapshot patientData;
 
   @override
   State<AppointmentDetail> createState() => _AppointmentDetailState();
@@ -37,10 +37,10 @@ class _AppointmentDetailState extends State<AppointmentDetail> {
           icon: Icon(Icons.chat),
           onPressed: () {
             final chat = Chat();
-            final chatRoomID = chat.generateChatRoomID(widget.authService.currentUser!.uid, widget.patientData['id']);
-            chat.generateChatRoom(chatRoomID, widget.authService.currentUser!.uid, widget.patientData['id']);
-            context.go('/chat/${widget.patientData['id']}', extra: {
-              'recipientID': widget.patientData['id'],
+            final chatRoomID = chat.generateChatRoomID(widget.authService.currentUser!.uid, widget.patientData.id);
+            chat.generateChatRoom(chatRoomID, widget.authService.currentUser!.uid, widget.patientData.id);
+            context.go('/chat/$chatRoomID', extra: {
+              'recipientID': widget.patientData.id,
               'recipientFullName': '${widget.patientData['first_name']} ${widget.patientData['last_name']}',
             });
           },

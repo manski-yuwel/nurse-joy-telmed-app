@@ -121,18 +121,22 @@ class AppRouter {
         builder: (context, state) => const ChatListPage(),
       ),
       GoRoute(
-        path: 'chat/:chatRoomId',
+        path: '/chat/:chatRoomID',
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
           if (extra != null) {
             return ChatRoomPage(
-              chatRoomID: state.pathParameters['chatRoomId']!,
+              chatRoomID: state.pathParameters['chatRoomID']!,
               recipientID: extra['recipientID'] as String,
               recipientFullName: extra['recipientFullName'] as String,
             );
           }
           throw Exception('No extra data found');
         },
+      ),
+      GoRoute(
+        path: '/appointment-list',
+        builder: (context, state) => const AppointmentList(),
       ),
 
       GoRoute(
@@ -142,7 +146,7 @@ class AppRouter {
           if (extra != null) {
             return AppointmentDetail(
               appointmentId: state.pathParameters['appointmentId']!,
-              patientData: extra['patientData'] as Map<String, dynamic>,
+              patientData: extra['patientData'] as DocumentSnapshot,
             );
           }
           throw Exception('No extra data found');
@@ -165,10 +169,6 @@ class AppRouter {
           }
           throw Exception('No extra data found');
         },
-      ),
-      GoRoute(
-        path: '/appointment-list',
-        builder: (context, state) => const AppointmentList(),
       ),
 
       // Individual feature routes

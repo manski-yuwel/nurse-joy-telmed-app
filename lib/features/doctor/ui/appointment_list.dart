@@ -59,8 +59,7 @@ class _AppointmentListState extends State<AppointmentList> {
                           title: Text(patientName),
                           subtitle: Text(appointment['appointmentDateTime'].toDate().toString()),
                           onTap: () {
-                            context.go('/appointment-detail', extra: {
-                              'appointmentId': appointment.id,
+                            context.go('/appointment-detail/${appointment.id}', extra: {
                               'patientData': patientData,
                             });
                           },
