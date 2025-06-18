@@ -4,7 +4,6 @@ import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
-
 class AppointmentList extends StatefulWidget {
   const AppointmentList({super.key});
   @override

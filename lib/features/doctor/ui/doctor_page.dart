@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
 import 'package:nursejoyapp/features/doctor/ui/widgets/date_time_picker.dart';
-
 class DoctorPage extends StatefulWidget {
   const DoctorPage(
       {super.key,
@@ -90,6 +89,7 @@ class _DoctorPageState extends State<DoctorPage>
                 await registerAppointment(
                     widget.doctorId, auth.user!.uid, _selectedDateTime!);
               } catch (e) {
+                print(e);
                 // show error dialog
                 showDialog(
                   context: context,
@@ -402,7 +402,10 @@ class _DoctorPageState extends State<DoctorPage>
                   ),
                   child: IconButton(
                     onPressed: () {
-                      // TODO: Implement chat functionality
+                      final chat = Chat();
+                      chat.generateChatRoom(
+                          widget.doctorId, auth.user!.uid, widget.doctorId);
+                      context.go('/chat');
                     },
                     icon: const Icon(Icons.chat, color: Colors.blue),
                     style: IconButton.styleFrom(
