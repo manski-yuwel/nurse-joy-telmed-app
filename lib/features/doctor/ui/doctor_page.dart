@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
@@ -401,7 +402,10 @@ class _DoctorPageState extends State<DoctorPage>
                   ),
                   child: IconButton(
                     onPressed: () {
-                      // TODO: Implement chat functionality
+                      final chat = Chat();
+                      chat.generateChatRoom(
+                          widget.doctorId, auth.user!.uid, widget.doctorId);
+                      context.go('/chat');
                     },
                     icon: const Icon(Icons.chat, color: Colors.blue),
                     style: IconButton.styleFrom(
