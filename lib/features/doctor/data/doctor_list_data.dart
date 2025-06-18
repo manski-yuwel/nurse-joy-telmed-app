@@ -36,18 +36,25 @@ Future<void> registerAppointment(String doctorId, String patientId, DateTime app
 
   // register appointment in Firestore
   await FirebaseFirestore.instance.collection('appointments').add({
-    'doctorId': doctorId,
-    'patientId': patientId,
+    'userID': patientId,
+    'doctorID': doctorId,
     'appointmentDateTime': appointmentDateTime,
   });
 
   // register appointment in FCM using dio
   final dio = Dio();
-  await dio.post('https://nurse-joy-api.vercel.app/api/appointments/', data: {
-    'doctorId': doctorId,
-    'patientId': patientId,
-    'appointmentDateTime': appointmentDateTime,
-  });
+  await dio.post('https://nurse-joy-api.vercel.app/api/notifications/appointments', data: {
+    'userID': patientId,
+    'doctorID': doctorId,
+    'appointmentDateTime': appointmentDateTime.toIso8601String(),
+  },
+  options: Options(headers: {
+    'Content-Type': 'application/json',
+  },
+  validateStatus: (status) {
+    return status! < 500;
+  },
+  ),
+  );
 }
-
 

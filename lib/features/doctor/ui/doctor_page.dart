@@ -88,6 +88,7 @@ class _DoctorPageState extends State<DoctorPage>
                 await registerAppointment(
                     widget.doctorId, auth.user!.uid, _selectedDateTime!);
               } catch (e) {
+                print(e);
                 // show error dialog
                 showDialog(
                   context: context,

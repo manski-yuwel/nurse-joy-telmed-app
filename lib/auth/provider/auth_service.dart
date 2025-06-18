@@ -29,6 +29,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         // save the fcm token in firestore
         if (fcmToken != null) {
           await db.collection('fcm_tokens').doc(user.uid).set({'fcm_token': fcmToken}, SetOptions(merge: true));
+          logger.i('FCM token saved in firestore: $fcmToken');
         }
         setUpMessagingListeners();
       }
