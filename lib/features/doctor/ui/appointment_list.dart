@@ -4,6 +4,7 @@ import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
+import 'package:go_router/go_router.dart';
 class AppointmentList extends StatefulWidget {
   const AppointmentList({super.key});
   @override
@@ -57,6 +58,12 @@ class _AppointmentListState extends State<AppointmentList> {
                         return ListTile(
                           title: Text(patientName),
                           subtitle: Text(appointment['appointmentDateTime'].toDate().toString()),
+                          onTap: () {
+                            context.go('/appointment-detail', extra: {
+                              'appointmentId': appointment.id,
+                              'patientData': patientData,
+                            });
+                          },
                         );
                       }
                       return const Center(child: Text('No patient details found'));

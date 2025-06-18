@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/chat/ui/pages/chat_list_page.dart';
+import 'package:nursejoyapp/features/chat/ui/pages/chat_room_page.dart';
+import 'package:nursejoyapp/features/doctor/ui/appointment_detail.dart';
 import 'package:nursejoyapp/features/doctor/ui/appointment_list.dart';
 import 'package:nursejoyapp/features/doctor/ui/doctor_list.dart';
 import 'package:nursejoyapp/features/doctor/ui/doctor_page.dart';
@@ -117,6 +119,34 @@ class AppRouter {
       GoRoute(
         path: '/chat',
         builder: (context, state) => const ChatListPage(),
+      ),
+      GoRoute(
+        path: 'chat/:chatRoomId',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra != null) {
+            return ChatRoomPage(
+              chatRoomID: state.pathParameters['chatRoomId']!,
+              recipientID: extra['recipientID'] as String,
+              recipientFullName: extra['recipientFullName'] as String,
+            );
+          }
+          throw Exception('No extra data found');
+        },
+      ),
+
+      GoRoute(
+        path: '/appointment-detail/:appointmentId',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra != null) {
+            return AppointmentDetail(
+              appointmentId: state.pathParameters['appointmentId']!,
+              patientData: extra['patientData'] as Map<String, dynamic>,
+            );
+          }
+          throw Exception('No extra data found');
+        },
       ),
       GoRoute(
         path: '/doctor-list',

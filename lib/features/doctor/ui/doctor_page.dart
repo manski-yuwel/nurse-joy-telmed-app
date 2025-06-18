@@ -392,9 +392,13 @@ Future<void> _bookAppointment() async {
                   child: IconButton(
                     onPressed: () {
                       final chat = Chat();
-                      chat.generateChatRoom(
-                          widget.doctorId, auth.user!.uid, widget.doctorId);
-                      context.go('/chat');
+                      final chatRoomID = chat.generateChatRoomID(auth.user!.uid, widget.doctorId);
+                      chat.generateChatRoom(chatRoomID, auth.user!.uid, widget.doctorId);
+                      context.go('/chat', extra: {
+                        'chatRoomID': chatRoomID,
+                        'recipientID': widget.doctorId,
+                        'recipientFullName': '${widget.doctorDetails['first_name']} ${widget.doctorDetails['last_name']}',
+                      });
                     },
                     icon: const Icon(Icons.chat, color: Colors.blue),
                     style: IconButton.styleFrom(
