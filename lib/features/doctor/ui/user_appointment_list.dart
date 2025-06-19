@@ -6,13 +6,13 @@ import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
 import 'package:go_router/go_router.dart';
 
-class AppointmentList extends StatefulWidget {
-  const AppointmentList({super.key});
+class UserAppointmentList extends StatefulWidget {
+  const UserAppointmentList({super.key});
   @override
-  State<AppointmentList> createState() => _AppointmentListState();
+  State<UserAppointmentList> createState() => _UserAppointmentListState();
 }
 
-class _AppointmentListState extends State<AppointmentList> {
+class _UserAppointmentListState extends State<UserAppointmentList> {
   late AuthService auth;
 
   @override
@@ -52,7 +52,7 @@ class _AppointmentListState extends State<AppointmentList> {
       selectedIndex: 1,
       onItemTapped: _handleNavigation,
       body: FutureBuilder(
-        future: getAppointmentList(auth.user!.uid),
+        future: getUserAppointmentList(auth.user!.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -95,25 +95,26 @@ class _AppointmentListState extends State<AppointmentList> {
                                 IconButton(
                                   icon: const Icon(Icons.chat_bubble_outline),
                                   onPressed: () {
-                                    final chatRoomID = Chat().generateChatRoomID(
+                                    final chatInstance = Chat();
+                                    final chatRoomID = chatInstance.generateChatRoomID(
                                       auth.user!.uid,
-                                      appointment['userID'],
+                                      appointment['doctorID'],
                                     );
                                     context.go('/chat/$chatRoomID', extra: {
-                                      'recipientID': appointment['userID'],
+                                      'recipientID': appointment['doctorID'],
                                       'recipientFullName': patientName,
                                     });
                                   },
-                                  tooltip: 'Chat with patient',
+                                  tooltip: 'Chat with doctor',
                                 ),
                                 // Profile button for patient
                                 IconButton(
                                   icon: const Icon(Icons.person_outline),
                                   onPressed: () {
                                     context.go(
-                                        '/profile/${appointment['userID']}');
+                                        '/doctor/${appointment['doctorID']}');
                                   },
-                                  tooltip: 'View patient profile',
+                                  tooltip: 'View doctor profile',
                                 ),
                               ],
                             ),
@@ -143,4 +144,5 @@ class _AppointmentListState extends State<AppointmentList> {
       ),
     );
   }
+
 }
