@@ -102,6 +102,56 @@ Future<void> _bookAppointment() async {
                 TextButton(
                   onPressed: () => context.pop(),
                   child: const Text('OK'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              if (_selectedDateTime == null) {
+                // show error dialog
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Error'),
+                    content: const Text('Please select a date and time'),
+                  ),
+                );
+                return;
+              }
+              setState(() => _isLoading = true);
+              try {
+                await registerAppointment(
+                    widget.doctorId, auth.user!.uid, _selectedDateTime!);
+              } catch (e) {
+                print(e);
+                // show error dialog
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Error'),
+                    content: Text('Error: $e'),
+                  ),
+                );
+                return;
+              }
+              if (!context.mounted) return;
+              context.pop();
+              // if success, show success dialog
+              showDialog(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Appointment Booked'),
+                  content: const Text('Your appointment has been scheduled successfully!'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => context.pop(),
+                      child: const Text('OK'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -398,7 +448,6 @@ Future<void> _bookAppointment() async {
                         'recipientID': widget.doctorId,
                         'recipientFullName': '${widget.doctorDetails['first_name']} ${widget.doctorDetails['last_name']}',
                       });
-                    },
                     icon: const Icon(Icons.chat, color: Colors.blue),
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.white,
