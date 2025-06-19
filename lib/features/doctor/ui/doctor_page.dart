@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_rating_bar/flutter_rating_bar.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
 import 'package:nursejoyapp/features/doctor/ui/widgets/date_time_picker.dart';
-
 class DoctorPage extends StatefulWidget {
   const DoctorPage(
       {super.key,
@@ -49,81 +48,71 @@ class _DoctorPageState extends State<DoctorPage>
     super.dispose();
   }
 
-  Future<void> _bookAppointment() async {
-    // show a dialog to confirm the appointment date and time and the doctor
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Appointment'),
-        // fields for date and time picker
-        content: Column(
-          children: [
-            DateTimePickerField(
-              onDateTimeSelected: (dateTime) {
-                setState(() {
-                  _selectedDateTime = dateTime;
-                });
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => context.pop(),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () async {
-              if (_selectedDateTime == null) {
-                // show error dialog
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Error'),
-                    content: const Text('Please select a date and time'),
-                  ),
-                );
-                return;
-              }
-              setState(() => _isLoading = true);
-              try {
-                await registerAppointment(
-                    widget.doctorId, auth.user!.uid, _selectedDateTime!);
-              } catch (e) {
-                // show error dialog
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: const Text('Error'),
-                    content: Text('Error: $e'),
-                  ),
-                );
-                return;
-              }
-              if (!context.mounted) return;
-              context.pop();
-              // if success, show success dialog
-              showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Appointment Booked'),
-                  content: const Text('Your appointment has been scheduled successfully!'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => context.pop(),
-                      child: const Text('OK'),
-                    ),
-                  ],
+Future<void> _bookAppointment() async {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => AppointmentBookingDialog(
+      doctorId: widget.doctorId,
+      onBookingComplete: (AppointmentBooking booking) async {
+        context.pop();
+        setState(() => _isLoading = true);
+        
+        try {
+          await registerEnhancedAppointment(
+            widget.doctorId,
+            auth.user!.uid, // Your actual user ID
+            booking,
+          );
+          
+          if (!context.mounted) return;
+          
+          // Success dialog
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Appointment Booked'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Your appointment has been scheduled!'),
+                  const SizedBox(height: 8),
+                  Text('Date: ${booking.selectedDay.displayDate}'),
+                  Text('Time: ${booking.selectedTimeSlot.displayTime}'),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => context.pop(),
+                  child: const Text('OK'),
                 ),
-              );
-              setState(() => _isLoading = false);
-            },
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-  }
+              ],
+            ),
+          );
+        } catch (e) {
+          // Error handling
+          if (!context.mounted) return;
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Error'),
+              content: Text('Failed to book appointment: $e'),
+              actions: [
+                TextButton(
+                  onPressed: () => context.pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        } finally {
+          setState(() => _isLoading = false);
+        }
+      },
+    ),
+  );
+}
 
   List<Widget> _buildSection(String title, List<String> items) {
     return [
@@ -402,7 +391,13 @@ class _DoctorPageState extends State<DoctorPage>
                   ),
                   child: IconButton(
                     onPressed: () {
-                      // TODO: Implement chat functionality
+                      final chat = Chat();
+                      final chatRoomID = chat.generateChatRoomID(auth.user!.uid, widget.doctorId);
+                      chat.generateChatRoom(chatRoomID, auth.user!.uid, widget.doctorId);
+                      context.go('/chat/$chatRoomID', extra: {
+                        'recipientID': widget.doctorId,
+                        'recipientFullName': '${widget.doctorDetails['first_name']} ${widget.doctorDetails['last_name']}',
+                      });
                     },
                     icon: const Icon(Icons.chat, color: Colors.blue),
                     style: IconButton.styleFrom(

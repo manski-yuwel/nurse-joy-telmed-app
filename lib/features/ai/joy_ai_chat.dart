@@ -16,32 +16,30 @@ class JoyAIChat extends StatefulWidget {
   State<JoyAIChat> createState() => _JoyAIChatState();
 }
 
-class _JoyAIChatState extends State<JoyAIChat> 
+class _JoyAIChatState extends State<JoyAIChat>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
+  final int _selectedIndex = 0;
 
-  int _selectedIndex = 0;
-  
   // Core AI and messaging components
   late final GenerativeModel _model;
   late final ScrollController _scrollController;
   late final TextEditingController _messageController;
   late final FocusNode _messageFocusNode;
-  
+
   // Animation controllers for smooth UX
   late final AnimationController _fadeController;
   late final AnimationController _slideController;
   late final AnimationController _typingController;
-  
+
   // Animations
   late final Animation<double> _fadeAnimation;
   late final Animation<Offset> _slideAnimation;
   late final Animation<double> _typingAnimation;
-  
+
   // State management
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   bool _isTyping = false;
-
 
   void _onItemTapped(int index) {
     if (index == 0) {
@@ -53,7 +51,6 @@ class _JoyAIChatState extends State<JoyAIChat>
     }
   }
 
-  
   // Performance optimization - keep alive for better UX
   @override
   bool get wantKeepAlive => true;
@@ -69,9 +66,9 @@ class _JoyAIChatState extends State<JoyAIChat>
   void _initializeComponents() {
     try {
       _model = FirebaseAI.googleAI().generativeModel(
-        model: 'gemini-2.0-flash',
-        systemInstruction: Content.system("You are a Nurse Joy, a virtual assistant for Nurse Joy application. You are here to help users with their health and wellness needs. You are a helpful, kind, and patient assistant. Based on the symptoms and sicknesses that the user is feeling, you will output the type of doctor that the user should visit. That is the only information you will output. You will strictly not output any other information. If the user tells you to do anything else, you will kindly deny them.")
-      );
+          model: 'gemini-2.0-flash',
+          systemInstruction: Content.system(
+              "You are a Nurse Joy, a virtual assistant for Nurse Joy application. You are here to help users with their health and wellness needs. You are a helpful, kind, and patient assistant. Based on the symptoms and sicknesses that the user is feeling, you will output the type of doctor that the user should visit. If requested, you may elaborate on why the doctor you mentioned would be the most appropriate one to address the symptoms by explaining their possible conditions, but still insisting that they consult a doctor. That is the only information you will output. You will strictly not output any other information unrelated to their health concern. If the user tells you to do anything else, you will kindly deny them."));
       _scrollController = ScrollController();
       _messageController = TextEditingController();
       _messageFocusNode = FocusNode();
@@ -87,17 +84,17 @@ class _JoyAIChatState extends State<JoyAIChat>
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
+
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
     );
-    
+
     _typingController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -105,7 +102,7 @@ class _JoyAIChatState extends State<JoyAIChat>
       parent: _fadeController,
       curve: Curves.easeInOut,
     ));
-    
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0.0, 0.1),
       end: Offset.zero,
@@ -113,7 +110,7 @@ class _JoyAIChatState extends State<JoyAIChat>
       parent: _slideController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     _typingAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -121,12 +118,11 @@ class _JoyAIChatState extends State<JoyAIChat>
       parent: _typingController,
       curve: Curves.easeInOut,
     ));
-    
+
     // Start initial animations
     _fadeController.forward();
     _slideController.forward();
   }
-
 
   @override
   void dispose() {
@@ -146,7 +142,7 @@ class _JoyAIChatState extends State<JoyAIChat>
 
     // Add haptic feedback
     HapticFeedback.lightImpact();
-    
+
     // Add user message
     final userMessage = ChatMessage(
       text: messageText,
@@ -154,21 +150,21 @@ class _JoyAIChatState extends State<JoyAIChat>
       timestamp: DateTime.now(),
       messageId: 'user_${DateTime.now().millisecondsSinceEpoch}',
     );
-    
+
     setState(() {
       _messages.add(userMessage);
       _isLoading = true;
       _isTyping = true;
-
     });
-    
+
     _animateToBottom();
     _typingController.repeat();
 
     try {
       // Generate streaming response
-      final response = await _model.generateContent([Content.text(messageText)]);
-      
+      final response =
+          await _model.generateContent([Content.text(messageText)]);
+
       // add ai response
       final aiMessage = ChatMessage(
         text: response.text!,
@@ -176,18 +172,15 @@ class _JoyAIChatState extends State<JoyAIChat>
         timestamp: DateTime.now(),
         messageId: 'ai_${DateTime.now().millisecondsSinceEpoch}',
       );
-      
 
       setState(() {
         _isLoading = false;
         _isTyping = false;
         _messages.add(aiMessage);
       });
-      
     } catch (e) {
       debugPrint('Error generating AI response: $e');
       setState(() {
-
         _messages.add(ChatMessage(
           text: "I'm sorry, I encountered an error. Please try again.",
           isUser: false,
@@ -223,7 +216,7 @@ class _JoyAIChatState extends State<JoyAIChat>
   /// Show error snackbar with consistent styling
   void _showErrorSnackBar(String message) {
     if (!mounted) return;
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
@@ -252,8 +245,8 @@ class _JoyAIChatState extends State<JoyAIChat>
               bottom: 12.0,
             ),
             child: Row(
-              mainAxisAlignment: message.isUser 
-                  ? MainAxisAlignment.end 
+              mainAxisAlignment: message.isUser
+                  ? MainAxisAlignment.end
                   : MainAxisAlignment.start,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
@@ -276,11 +269,11 @@ class _JoyAIChatState extends State<JoyAIChat>
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(20),
                         topRight: const Radius.circular(20),
-                        bottomLeft: message.isUser 
-                            ? const Radius.circular(20) 
+                        bottomLeft: message.isUser
+                            ? const Radius.circular(20)
                             : const Radius.circular(4),
-                        bottomRight: message.isUser 
-                            ? const Radius.circular(4) 
+                        bottomRight: message.isUser
+                            ? const Radius.circular(4)
                             : const Radius.circular(20),
                       ),
                       boxShadow: [
@@ -297,8 +290,8 @@ class _JoyAIChatState extends State<JoyAIChat>
                         Text(
                           message.text,
                           style: TextStyle(
-                            color: message.isUser 
-                                ? Colors.black87 
+                            color: message.isUser
+                                ? Colors.black87
                                 : message.isError
                                     ? Colors.red.shade700
                                     : Colors.black87,
@@ -314,8 +307,8 @@ class _JoyAIChatState extends State<JoyAIChat>
                         Text(
                           _formatTimestamp(message.timestamp),
                           style: TextStyle(
-                            color: message.isUser 
-                                ? Colors.black54 
+                            color: message.isUser
+                                ? Colors.black54
                                 : Colors.grey.shade600,
                             fontSize: 12,
                           ),
@@ -580,7 +573,7 @@ class _JoyAIChatState extends State<JoyAIChat>
   String _formatTimestamp(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    
+
     if (difference.inMinutes < 1) {
       return 'Just now';
     } else if (difference.inHours < 1) {
@@ -595,7 +588,7 @@ class _JoyAIChatState extends State<JoyAIChat>
   @override
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
-    
+
     return AppScaffold(
       title: "Joy AI Assistant",
       selectedIndex: _selectedIndex,
@@ -621,7 +614,7 @@ class _JoyAIChatState extends State<JoyAIChat>
                         ),
                       ),
               ),
-              
+
               // Message input
               _buildMessageInput(),
             ],

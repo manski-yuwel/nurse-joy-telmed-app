@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
+import 'package:dio/dio.dart';
 
 final db = FirebaseFirestore.instance;
 
 class Chat {
   final logger = Logger();
+  final dio = Dio();
   // ghet the chatlist by checking if the userID is included in the users pair in the chat doc
   Stream<QuerySnapshot> getChatList(String userID) {
     return db
@@ -96,6 +98,20 @@ class Chat {
       'timestamp': FieldValue.serverTimestamp(),
       'is_important': isImportant,
     });
+
+    await dio.post('https://nurse-joy-api.vercel.app/api/notifications/messages', data: {
+      'userID': recipientID,
+      'messageBody': messageBody,
+      'chatRoomID': chatRoomID,
+    },
+    options: Options(headers: {
+      'Content-Type': 'application/json',
+    },
+    validateStatus: (status) {
+      return status! < 500;
+    },
+    ),
+    );
 
     await db.collection('chats').doc(chatRoomID).update({
       'last_message': messageBody,

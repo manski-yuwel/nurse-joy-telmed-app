@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/chat/ui/pages/chat_list_page.dart';
+import 'package:nursejoyapp/features/chat/ui/pages/chat_room_page.dart';
+import 'package:nursejoyapp/features/doctor/ui/appointment_detail.dart';
 import 'package:nursejoyapp/features/doctor/ui/appointment_list.dart';
 import 'package:nursejoyapp/features/doctor/ui/doctor_list.dart';
 import 'package:nursejoyapp/features/doctor/ui/doctor_page.dart';
@@ -46,7 +48,8 @@ class AppRouter {
         final setup = await authService.isUserSetup();
 
         if (setup['is_doctor'] == true) {
-          if (setup['doc_info_is_setup'] == false) return '/profile-setup/doctor';
+          if (setup['doc_info_is_setup'] == false)
+            return '/profile-setup/doctor';
           if (setup['is_verified'] == false) return '/wait-verification';
         }
 
@@ -54,7 +57,6 @@ class AppRouter {
           return '/profile-setup';
         }
       }
-
     },
     routes: [
       // Auth routes
@@ -119,6 +121,38 @@ class AppRouter {
         builder: (context, state) => const ChatListPage(),
       ),
       GoRoute(
+        path: '/chat/:chatRoomID',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra != null) {
+            return ChatRoomPage(
+              chatRoomID: state.pathParameters['chatRoomID']!,
+              recipientID: extra['recipientID'] as String,
+              recipientFullName: extra['recipientFullName'] as String,
+            );
+          }
+          throw Exception('No extra data found');
+        },
+      ),
+      GoRoute(
+        path: '/appointment-list',
+        builder: (context, state) => const AppointmentList(),
+      ),
+
+      GoRoute(
+        path: '/appointment-detail/:appointmentId',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra != null) {
+            return AppointmentDetail(
+              appointmentId: state.pathParameters['appointmentId']!,
+              patientData: extra['patientData'] as DocumentSnapshot,
+            );
+          }
+          throw Exception('No extra data found');
+        },
+      ),
+      GoRoute(
         path: '/doctor-list',
         builder: (context, state) => const DoctorList(),
       ),
@@ -136,10 +170,6 @@ class AppRouter {
           throw Exception('No extra data found');
         },
       ),
-      GoRoute(
-        path: '/appointment-list',
-        builder: (context, state) => const AppointmentList(),
-      ),
 
       // Individual feature routes
       GoRoute(
@@ -150,7 +180,6 @@ class AppRouter {
           return ProfilePage(userID: userId);
         },
       ),
-
     ],
   );
 }

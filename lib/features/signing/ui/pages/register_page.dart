@@ -7,7 +7,7 @@ import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:go_router/go_router.dart';
 
 class RegisterPage extends StatefulWidget {
-  const RegisterPage({Key? key}) : super(key: key);
+  const RegisterPage({super.key});
 
   @override
   _RegisterPageState createState() => _RegisterPageState();

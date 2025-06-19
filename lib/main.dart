@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'features/chat/ui/pages/chat_list_page.dart';
@@ -12,8 +13,22 @@ import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 
+Future<void> backgroundMessageHandler(RemoteMessage message) async {
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  debugPrint('Background message received: ${message.notification}');
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // initialize firebase and load env variables
+  await dotenv.load(fileName: '.env');
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // set up background message handler
+  FirebaseMessaging.onBackgroundMessage(backgroundMessageHandler);
 
   runApp(
     const StartUpApp(),
@@ -24,10 +39,6 @@ class StartUpApp extends StatelessWidget {
   const StartUpApp({super.key});
 
   Future<Map<String, dynamic>> _initialize() async {
-    await dotenv.load(fileName: '.env');
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
     final authService = AuthService();
     return {
       'authService': authService,
@@ -176,3 +187,5 @@ Widget buildPage(int index, User? user) {
       return const SizedBox.shrink();
   }
 }
+
+
