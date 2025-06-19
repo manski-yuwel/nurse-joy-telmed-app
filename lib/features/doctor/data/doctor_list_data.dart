@@ -38,13 +38,6 @@ Future<DocumentSnapshot> getAppointmentDetails(String appointmentId) async {
 }
 
 
-// get appointment details
-Future<DocumentSnapshot> getAppointmentDetails(String appointmentId) async {
-  final appointmentDetails = await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).get();
-
-  return appointmentDetails;
-}
-
 // register appointment
 Future<void> registerAppointment(String doctorId, String patientId, DateTime appointmentDateTime) async {
 

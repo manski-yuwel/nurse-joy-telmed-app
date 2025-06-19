@@ -362,16 +362,6 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
       }
     
 
-  Future<DocumentSnapshot> _getCachedDoctorDetails(String doctorId) async {
-    if (_doctorDetailsCache.containsKey(doctorId)) {
-      return _doctorDetailsCache[doctorId]!;
-    }
-    
-    final details = await getDoctorDetails(doctorId);
-    _doctorDetailsCache[doctorId] = details;
-    return details;
-  }
-
   Widget _buildDoctorCardSkeleton() {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
