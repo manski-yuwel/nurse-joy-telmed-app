@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
@@ -65,26 +66,26 @@ class _UserAppointmentListState extends State<UserAppointmentList> {
                 final appointment = snapshot.data!.docs[index];
 
                 return FutureBuilder(
-                  future: getUserDetails(appointment['userID']),
-                  builder: (context, patientDetails) {
-                    if (patientDetails.connectionState ==
+                  future: getUserDetails(appointment['doctorID']),
+                  builder: (context, doctorProfile) {
+                    if (doctorProfile.connectionState ==
                         ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
-                    } else if (patientDetails.hasError) {
+                    } else if (doctorProfile.hasError) {
                       return Center(
-                          child: Text('Error: ${patientDetails.error}'));
-                    } else if (patientDetails.hasData) {
-                      if (patientDetails.data != null) {
-                        final patientData = patientDetails.data!;
-                        final patientName =
-                            '${patientData['first_name']} ${patientData['last_name']}';
+                          child: Text('Error: ${doctorProfile.error}'));
+                    } else if (doctorProfile.hasData) {
+                      if (doctorProfile.data != null) {
+                        final doctorData = doctorProfile.data!;
+                        final doctorName =
+                            '${doctorData['first_name']} ${doctorData['last_name']}';
                         return Card(
                           margin: const EdgeInsets.symmetric(
                             horizontal: 16.0,
                             vertical: 8.0,
                           ),
                           child: ListTile(
-                            title: Text(patientName),
+                            title: Text(doctorName),
                             subtitle: Text(appointment['appointmentDateTime']
                                 .toDate()
                                 .toString()),
@@ -102,7 +103,7 @@ class _UserAppointmentListState extends State<UserAppointmentList> {
                                     );
                                     context.go('/chat/$chatRoomID', extra: {
                                       'recipientID': appointment['doctorID'],
-                                      'recipientFullName': patientName,
+                                      'recipientFullName': doctorName,
                                     });
                                   },
                                   tooltip: 'Chat with doctor',
@@ -110,9 +111,13 @@ class _UserAppointmentListState extends State<UserAppointmentList> {
                                 // Profile button for patient
                                 IconButton(
                                   icon: const Icon(Icons.person_outline),
-                                  onPressed: () {
+                                  onPressed: () async {
+                                    final doctorDetails = await getDoctorDetails(appointment['doctorID']);
                                     context.go(
-                                        '/doctor/${appointment['doctorID']}');
+                                        '/doctor/${appointment['doctorID']}', extra: {
+                                      'doctorDetails': doctorDetails,
+                                      'userDetails': doctorData,
+                                    });
                                   },
                                   tooltip: 'View doctor profile',
                                 ),
@@ -120,9 +125,9 @@ class _UserAppointmentListState extends State<UserAppointmentList> {
                             ),
                             onTap: () {
                               context.go(
-                                  '/appointment-detail/${appointment.id}',
+                                  '/user-appointment-detail/${appointment.id}',
                                   extra: {
-                                    'patientData': patientData,
+                                    'doctorData': doctorData,
                                   });
                             },
                           ),

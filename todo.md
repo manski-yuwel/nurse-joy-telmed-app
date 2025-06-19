@@ -12,7 +12,7 @@ TODO
 
 
 
-6/20/2025
+6/20/2025 - PUTAN
 - USER CURRENT APPOINTMENT LIST
 - REMOVED _generateChatRoomID and instead use the generateChatRoomID method from ChatListDB
 - FIXED THE CHATROOM GENERATION WHEN USER SENDS MSG
