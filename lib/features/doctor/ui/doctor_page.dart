@@ -48,22 +48,60 @@ class _DoctorPageState extends State<DoctorPage>
     super.dispose();
   }
 
-  Future<void> _bookAppointment() async {
-    // show a dialog to confirm the appointment date and time and the doctor
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Confirm Appointment'),
-        // fields for date and time picker
-        content: Column(
-          children: [
-            DateTimePickerField(
-              onDateTimeSelected: (dateTime) {
-                setState(() {
-                  _selectedDateTime = dateTime;
-                });
-              },
+Future<void> _bookAppointment() async {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => AppointmentBookingDialog(
+      doctorId: widget.doctorId,
+      onBookingComplete: (AppointmentBooking booking) async {
+        context.pop();
+        setState(() => _isLoading = true);
+        
+        try {
+          await registerEnhancedAppointment(
+            widget.doctorId,
+            auth.user!.uid, // Your actual user ID
+            booking,
+          );
+          
+          if (!context.mounted) return;
+          
+          // Success dialog
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Appointment Booked'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Your appointment has been scheduled!'),
+                  const SizedBox(height: 8),
+                  Text('Date: ${booking.selectedDay.displayDate}'),
+                  Text('Time: ${booking.selectedTimeSlot.displayTime}'),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => context.pop(),
+                  child: const Text('OK'),
+                ),
+              ],
             ),
+          );
+        } catch (e) {
+          // Error handling
+          if (!context.mounted) return;
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Error'),
+              content: Text('Failed to book appointment: $e'),
+              actions: [
+                TextButton(
+                  onPressed: () => context.pop(),
+                  child: const Text('OK'),
           ],
         ),
         actions: [
@@ -115,15 +153,16 @@ class _DoctorPageState extends State<DoctorPage>
                     ),
                   ],
                 ),
-              );
-              setState(() => _isLoading = false);
-            },
-            child: const Text('Confirm'),
-          ),
-        ],
-      ),
-    );
-  }
+              ],
+            ),
+          );
+        } finally {
+          setState(() => _isLoading = false);
+        }
+      },
+    ),
+  );
+}
 
   List<Widget> _buildSection(String title, List<String> items) {
     return [
@@ -403,10 +442,12 @@ class _DoctorPageState extends State<DoctorPage>
                   child: IconButton(
                     onPressed: () {
                       final chat = Chat();
-                      chat.generateChatRoom(
-                          widget.doctorId, auth.user!.uid, widget.doctorId);
-                      context.go('/chat');
-                    },
+                      final chatRoomID = chat.generateChatRoomID(auth.user!.uid, widget.doctorId);
+                      chat.generateChatRoom(chatRoomID, auth.user!.uid, widget.doctorId);
+                      context.go('/chat/$chatRoomID', extra: {
+                        'recipientID': widget.doctorId,
+                        'recipientFullName': '${widget.doctorDetails['first_name']} ${widget.doctorDetails['last_name']}',
+                      });
                     icon: const Icon(Icons.chat, color: Colors.blue),
                     style: IconButton.styleFrom(
                       backgroundColor: Colors.white,

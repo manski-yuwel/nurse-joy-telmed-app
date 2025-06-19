@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
+
 // define functions to fetch doctor list from Firestore
 Future<QuerySnapshot> getDoctorList() async {
   final doctorList = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'doctor').get();
@@ -29,7 +30,12 @@ Future<DocumentSnapshot> getUserDetails(String userId) async {
   return userDetails;
 }
 
+// get appointment details
+Future<DocumentSnapshot> getAppointmentDetails(String appointmentId) async {
+  final appointmentDetails = await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).get();
 
+  return appointmentDetails;
+  
 // register appointment
 Future<void> registerAppointment(String doctorId, String patientId, DateTime appointmentDateTime) async {
 

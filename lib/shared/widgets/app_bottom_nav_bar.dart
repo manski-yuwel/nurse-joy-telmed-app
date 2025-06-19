@@ -285,7 +285,7 @@ class _AppBottomNavBarFloatingState extends State<AppBottomNavBarFloating>
     return Expanded(
       child: GestureDetector(
         onTap: () => widget.onTap(index),
-        child: Container(
+        child: SizedBox(
           height: 70,
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -159,6 +159,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
       await db.collection('users').doc(userID).set({
         'role': 'doctor',
         'email': email,
+        'profile_pic': '',
         'first_name': firstName,
         'last_name': lastName,
         'full_name': '$firstName $lastName',
