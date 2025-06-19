@@ -184,6 +184,12 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
                                   subtitle: 'Appointments List',
                                   onTap: () => context.go('/appointment-list'),
                                 ),
+                                _buildModernMenuItem(
+                                  icon: Icons.person_rounded,
+                                  title: 'User Appointments',
+                                  subtitle: 'User Appointments List',
+                                  onTap: () => context.go('/user-appointment-list'),
+                                ),
                               ],
                             ),
 

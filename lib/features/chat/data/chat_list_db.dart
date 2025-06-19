@@ -58,7 +58,7 @@ class Chat {
       return;
     }
 
-    await db.collection('chats').doc(chatRoomID).update({
+    await db.collection('chats').doc(chatRoomID).set({
       'users': [userID, recipientID],
       'last_message': '',
       'timestamp': FieldValue.serverTimestamp(),
@@ -99,19 +99,6 @@ class Chat {
       'is_important': isImportant,
     });
 
-    await dio.post('https://nurse-joy-api.vercel.app/api/notifications/messages', data: {
-      'userID': recipientID,
-      'messageBody': messageBody,
-      'chatRoomID': chatRoomID,
-    },
-    options: Options(headers: {
-      'Content-Type': 'application/json',
-    },
-    validateStatus: (status) {
-      return status! < 500;
-    },
-    ),
-    );
 
     await db.collection('chats').doc(chatRoomID).update({
       'last_message': messageBody,
