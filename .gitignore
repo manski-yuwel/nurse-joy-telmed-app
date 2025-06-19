@@ -11,6 +11,7 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+*.env
 
 # IntelliJ related
 *.iml
@@ -55,3 +56,13 @@ app.*.map.json
 *.cc
 *.h
 *.swift
+
+# Firebase
+*firebase_options.dart
+firebase.json
+
+# Google Services
+google-services.json
+
+# Windsurf
+.windsurf

@@ -1,6 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:provider/provider.dart';
+import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'dart:async';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:geolocator/geolocator.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'dart:math';
 
 class ViewMapPage extends StatefulWidget {
   const ViewMapPage({Key? key}) : super(key: key);
@@ -11,144 +20,217 @@ class ViewMapPage extends StatefulWidget {
 
 class _ViewMapPageState extends State<ViewMapPage> {
   int _selectedIndex = -1;
+  bool? _permissionGranted;
+  late AuthService auth;
+  late GoogleMapController mapController;
+  final LatLng _center = const LatLng(14.5613, 121.0215);
+  Set<Marker> _hospitalMarkers = {};
+  bool _isLoadingHospitals = false;
+
+  void _onMapCreated(GoogleMapController controller) {
+    mapController = controller;
+  }
 
   @override
   void initState() {
     super.initState();
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-    if (index == 0) {
-      Navigator.pushNamed(context, '/home');
-    } else if (index == 1) {
-      Navigator.pushNamed(context, '/home');
-    } else if (index == 2) {
-      Navigator.pushNamed(context, '/home');
-    }
+    _requestPermission();
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    auth = Provider.of<AuthService>(context, listen: false);
+  }
+
+  void _onItemTapped(int index) {
+    if (index == 0) {
+      context.go('/chat');
+    } else if (index == 1) {
+      context.go('/home');
+    } else if (index == 2) {
+      context.go('/profile/${auth.user!.uid}');
+    }
+  }
+
+  
+  @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthService>(context, listen: false); // Use listen: false
-    double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: const Color(0xFF58f0d7),
-        centerTitle: true, // Center the title
-        title: const Text(
-          "Map",
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 30, // Consistent font size
-            fontWeight: FontWeight.bold,
-            shadows: [
-              Shadow(color: Colors.black45, offset: Offset(1, 1), blurRadius: 1)
-            ],
-          ),
-        ),
-        leading: Builder(
-          builder: (context) => IconButton(
-            icon: const Icon(Icons.menu), // Add const
-            onPressed: () {
-              Scaffold.of(context).openDrawer();
-            },
-          ),
-        ),
-      ),
-      drawer: Drawer(
-        child: Column(
-          children: [
-            Container(
-              height: appBarHeight,
-              width: double.infinity,
-              color: const Color(0xFF58f0d7),
+    return AppScaffold(
+      title: "Map",
+      selectedIndex: _selectedIndex == -1 ? 0 : _selectedIndex,
+      onItemTapped: _onItemTapped,
+      body: Stack(
+        children: [
+          GoogleMap(
+            onMapCreated: _onMapCreated,
+            myLocationEnabled: _permissionGranted ?? false,
+            myLocationButtonEnabled: false, // We'll use our own button
+            zoomControlsEnabled: false,
+            initialCameraPosition: CameraPosition(
+              target: _center,
+              zoom: 11.0,
             ),
-            Expanded(
-              child: ListView(
-                padding: EdgeInsets.zero,
-                children: [
-                  ListTile(
-                    leading: const Icon(Icons.home_outlined),
-                    title: const Text('Home'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushReplacementNamed(context, '/home');
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.emergency_outlined),
-                    title: const Text('Activate Emergency Mode'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/emergency');
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.settings_outlined),
-                    title: const Text('Settings'),
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.pushNamed(context, '/settings');
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.map_outlined),
-                    title: const Text('View Map'),
-                    onTap: () {
-                      Navigator.pop(context);
-                    },
-                  ),
-                  ListTile(
-                    leading: const Icon(Icons.logout_outlined),
-                    title: const Text('Logout'),
-                    onTap: () async {
-                      try {
-                        await auth.signOut();
-                        Navigator.pushNamedAndRemoveUntil(context, '/signin', (route) => false); // Use pushNamedAndRemoveUntil
-                      } catch (e) {
-                        // Handle error
-                        ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text("Error during logout: $e")));
-                      }
-                    },
-                  ),
-                ],
-              ),
+            markers: _hospitalMarkers,
+          ),
+          Positioned(
+            bottom: 16,
+            right: 16,
+            child: FloatingActionButton(
+              backgroundColor: const Color(0xFF5BF0D7),
+              child: const Icon(Icons.my_location, color: Colors.white),
+              onPressed: _checkAndRequestLocationService,
+            ),
+          ),
+          // Hospital button (bottom left)
+          Positioned(
+            bottom: 16,
+            left: 16,
+            child: FloatingActionButton(
+              backgroundColor: Colors.red,
+              child: const Icon(Icons.local_hospital, color: Colors.black),
+              onPressed: _showNearbyHospitals,
+              tooltip: 'Show Nearby Hospitals',
+            ),
+          ),
+          if (_isLoadingHospitals)
+            const Center(child: CircularProgressIndicator()),
+        ],
+      ),
+    );
+  }
+
+  //asks for location permission then asks to turn on gps(once "locate me" button is pressed)
+  Future<void> _checkAndRequestLocationService() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      // Show a dialog before redirecting to device settings
+      bool? result = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Enable GPS'),
+          content: const Text('Your device\'s GPS is turned off. Would you like to turn it on?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('No'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Yes'),
             ),
           ],
         ),
-      ),
-      body: Center(
-        child: Image.asset(
-          'assets/img/map_placeholder.png', //Actual Map will be next phase
-          fit: BoxFit.fill,
-          width: double.infinity,
-          height: double.infinity,
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.messenger),
-            label: 'Chat',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.monitor_heart),
-            label: 'Dashboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-        currentIndex: _selectedIndex == -1 ? 0 : _selectedIndex, // Handle initial state
-        selectedItemColor: Colors.amber[800],
-        onTap: _onItemTapped,
-        backgroundColor: const Color(0xFF58f0d7),
-      ),
+      );
+      if (result == true) {
+        await Geolocator.openLocationSettings();
+      }
+      return;
+    }
+    Position position = await Geolocator.getCurrentPosition();
+    mapController.animateCamera(
+      CameraUpdate.newLatLng(LatLng(position.latitude, position.longitude)),
     );
+  }
+
+  //dialog box for user location permission
+  Future<void> _requestPermission() async {
+    final status = await Permission.location.request();
+
+    if (!mounted) return;
+
+    setState(() {
+      _permissionGranted = status.isGranted;
+    });
+  }
+
+  // Fetch hospitals from Overpass API (OpenStreetMap)
+  Future<void> _showNearbyHospitals() async {
+    setState(() {
+      _isLoadingHospitals = true;
+    });
+
+    Position position = await Geolocator.getCurrentPosition();
+    final double lat = position.latitude;
+    final double lng = position.longitude;
+    const double radius = 10000; // 5km radius
+
+    // Calculate bounding box for Overpass API (approximate)
+    double latDiff = radius / 111320; // meters per degree latitude
+    double lonDiff = radius / (111320 * (cos(lat * pi / 180)));
+
+    double south = lat - latDiff;
+    double north = lat + latDiff;
+    double west = lng - lonDiff;
+    double east = lng + lonDiff;
+
+    final query = '''
+      [out:json];
+      (
+        node["amenity"="hospital"]($south,$west,$north,$east);
+        way["amenity"="hospital"]($south,$west,$north,$east);
+        relation["amenity"="hospital"]($south,$west,$north,$east);
+      );
+      out center;
+    ''';
+
+    print('Querying Overpass with: center=($lat, $lng), bbox=($south, $west, $north, $east)');
+    final url = Uri.parse('https://overpass-api.de/api/interpreter');
+    final response = await http.post(url, body: {'data': query});
+
+    setState(() {
+      _isLoadingHospitals = false;
+    });
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      print(data);
+      if (data['elements'] != null && data['elements'].isNotEmpty) {
+        Set<Marker> markers = {};
+        for (var element in data['elements']) {
+          double? lat, lon;
+          if (element['lat'] != null && element['lon'] != null) {
+            lat = element['lat'];
+            lon = element['lon'];
+          } else if (element['center'] != null) {
+            lat = element['center']['lat'];
+            lon = element['center']['lon'];
+          }
+          if (lat != null && lon != null) {
+            markers.add(
+              Marker(
+                markerId: MarkerId(element['id'].toString()),
+                position: LatLng(lat, lon),
+                infoWindow: InfoWindow(
+                  title: element['tags']?['name'] ?? 'Hospital',
+                ),
+                icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueRed),
+              ),
+            );
+          }
+        }
+        setState(() {
+          _hospitalMarkers = markers;
+        });
+        // Zoom to fit all markers (same as before)
+        if (markers.isNotEmpty && mapController != null) {
+          final lats = markers.map((m) => m.position.latitude);
+          final lngs = markers.map((m) => m.position.longitude);
+          final sw = LatLng(lats.reduce(min), lngs.reduce(min));
+          final ne = LatLng(lats.reduce(max), lngs.reduce(max));
+          mapController.animateCamera(
+            CameraUpdate.newLatLngBounds(LatLngBounds(southwest: sw, northeast: ne), 80),
+          );
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No hospitals found nearby.')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to fetch hospitals (HTTP ${response.statusCode})')),
+      );
+    }
   }
 }

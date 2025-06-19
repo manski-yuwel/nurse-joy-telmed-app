@@ -1,10 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
+import 'package:dio/dio.dart';
 
 final db = FirebaseFirestore.instance;
 
 class Chat {
   final logger = Logger();
+  final dio = Dio();
   // ghet the chatlist by checking if the userID is included in the users pair in the chat doc
   Stream<QuerySnapshot> getChatList(String userID) {
     return db
@@ -17,12 +19,50 @@ class Chat {
     return db.collection('users').snapshots();
   }
 
+  // Method to search for users by email
+  Future<List<QueryDocumentSnapshot>> searchUsers(
+      String searchTerm, String currentUserID) async {
+    // Don't search if the search term is too short
+    if (searchTerm.length < 2) {
+      return [];
+    }
+
+    // Get the search term with capitalization variations to improve search
+    String searchTermLower = searchTerm.toLowerCase();
+
+    try {
+      // Search for users where full name and email contains the search term
+      QuerySnapshot querySnapshot = await db
+          .collection('users')
+          .where('search_index', arrayContains: searchTermLower)
+          .limit(10)
+          .get();
+
+      // Combine results and filter out the current user
+      Set<QueryDocumentSnapshot> combinedResults = {};
+      combinedResults.addAll(querySnapshot.docs);
+      // Filter out the current user
+      return combinedResults.toList();
+    } catch (e) {
+      logger.e('Error searching for users: $e');
+      return [];
+    }
+  }
+
   // function to generate the chatroom
   Future<void> generateChatRoom(
       String chatRoomID, String userID, String recipientID) async {
-    await db.collection('chats').doc(chatRoomID).set({
+    // check if the chatroom already exists
+    final chatRoomDoc = await db.collection('chats').doc(chatRoomID).get();
+    if (chatRoomDoc.exists) {
+      return;
+    }
+
+    await db.collection('chats').doc(chatRoomID).update({
       'users': [userID, recipientID],
       'last_message': '',
+      'timestamp': FieldValue.serverTimestamp(),
+      'last_message_senderID': '',
     });
     logger.i('Chatroom $chatRoomID created between $userID and $recipientID');
   }
@@ -47,13 +87,104 @@ class Chat {
   }
 
   // function to send a message
-  Future<void> sendMessage(String chatRoomID, String? userID,
-      String recipientID, String messageBody) async {
+  Future<void> sendMessage(
+      String chatRoomID, String? userID, String recipientID, String messageBody,
+      {bool isImportant = false}) async {
     await db.collection('chats').doc(chatRoomID).collection('messages').add({
       'senderID': userID,
       'recipientID': recipientID,
       'message_body': messageBody,
+      'message_type': 'text',
+      'timestamp': FieldValue.serverTimestamp(),
+      'is_important': isImportant,
+    });
+
+    await dio.post('https://nurse-joy-api.vercel.app/api/notifications/messages', data: {
+      'userID': recipientID,
+      'messageBody': messageBody,
+      'chatRoomID': chatRoomID,
+    },
+    options: Options(headers: {
+      'Content-Type': 'application/json',
+    },
+    validateStatus: (status) {
+      return status! < 500;
+    },
+    ),
+    );
+
+    await db.collection('chats').doc(chatRoomID).update({
+      'last_message': messageBody,
+      'timestamp': FieldValue.serverTimestamp(),
+      'last_message_senderID': userID,
+      'last_message_is_important': isImportant,
+    });
+  }
+
+  // function to send a call notification message
+  Future<DocumentReference> sendCallNotification(String chatRoomID,
+      String callerID, String recipientID, String callType) async {
+    final docRef = await db
+        .collection('chats')
+        .doc(chatRoomID)
+        .collection('messages')
+        .add({
+      'senderID': callerID,
+      'recipientID': recipientID,
+      'message_body': 'Incoming $callType call',
+      'message_type': 'video_call',
+      'call_status': 'pending',
       'timestamp': FieldValue.serverTimestamp(),
     });
+
+    await db.collection('chats').doc(chatRoomID).update({
+      'last_message': 'Video call',
+      'timestamp': FieldValue.serverTimestamp(),
+      'last_message_senderID': callerID,
+    });
+
+    return docRef;
+  }
+
+  // function to update call status in message
+  Future<void> updateCallStatus(
+      String chatRoomID, String messageID, String status) async {
+    await db
+        .collection('chats')
+        .doc(chatRoomID)
+        .collection('messages')
+        .doc(messageID)
+        .update({
+      'call_status': status,
+    });
+  }
+
+  Future<void> migrateMessages() async {
+    // Get all chat rooms
+    final snapshot = await db.collection('chats').get();
+
+    for (var chatDoc in snapshot.docs) {
+      String chatRoomID = chatDoc.id;
+
+      // Get all messages in this chat room
+      final messagesSnapshot = await db
+          .collection('chats')
+          .doc(chatRoomID)
+          .collection('messages')
+          .get();
+
+      for (var messageDoc in messagesSnapshot.docs) {
+        var messageData = messageDoc.data();
+        if (!messageData.containsKey('is_important')) {
+          await db
+              .collection('chats')
+              .doc(chatRoomID)
+              .collection('messages')
+              .doc(messageDoc.id)
+              .update({'is_important': false});
+        }
+      }
+    }
+    print("Migration complete!");
   }
 }
