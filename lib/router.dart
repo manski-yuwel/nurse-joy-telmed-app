@@ -7,6 +7,7 @@ import 'package:nursejoyapp/features/doctor/ui/appointment_detail.dart';
 import 'package:nursejoyapp/features/doctor/ui/appointment_list.dart';
 import 'package:nursejoyapp/features/doctor/ui/doctor_list.dart';
 import 'package:nursejoyapp/features/doctor/ui/doctor_page.dart';
+import 'package:nursejoyapp/features/doctor/ui/user_appointment_detail.dart';
 import 'package:nursejoyapp/features/doctor/ui/user_appointment_list.dart';
 import 'package:nursejoyapp/features/map/ui/pages/viewmap.dart';
 import 'package:nursejoyapp/features/profile/ui/pages/profile_page.dart';
@@ -158,6 +159,20 @@ class AppRouter {
         path: '/user-appointment-list',
         builder: (context, state) => const UserAppointmentList(),
       ),
+
+      GoRoute(
+        path: '/user-appointment-detail/:appointmentId',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra != null) {
+            return UserAppointmentDetail(
+              appointmentId: state.pathParameters['appointmentId']!,
+              doctorData: extra['doctorData'] as DocumentSnapshot,
+            );
+          }
+          throw Exception('No extra data found');
+        },
+      ),  
       GoRoute(
         path: '/doctor-list',
         builder: (context, state) => const DoctorList(),
