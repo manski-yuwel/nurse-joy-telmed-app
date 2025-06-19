@@ -10,8 +10,6 @@ import 'package:intl/intl.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
-import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 

@@ -3,7 +3,6 @@ import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:nursejoyapp/features/ai/joy_ai_chat.dart';
 
 class AppDrawer extends StatefulWidget {
   const AppDrawer({super.key});
@@ -131,8 +130,6 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
                         ),
 
                         SizedBox(height: isSmallScreen ? 8 : 16),
-
-
                       ],
                     ),
                   ),

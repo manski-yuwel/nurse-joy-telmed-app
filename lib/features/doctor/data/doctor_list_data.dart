@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dio/dio.dart';
+
 // define functions to fetch doctor list from Firestore
 Future<QuerySnapshot> getDoctorList() async {
   final doctorList = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'doctor').get();
@@ -28,6 +30,13 @@ Future<DocumentSnapshot> getUserDetails(String userId) async {
   return userDetails;
 }
 
+// get appointment details
+Future<DocumentSnapshot> getAppointmentDetails(String appointmentId) async {
+  final appointmentDetails = await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).get();
+
+  return appointmentDetails;
+}
+
 
 // get appointment details
 Future<DocumentSnapshot> getAppointmentDetails(String appointmentId) async {
@@ -35,3 +44,32 @@ Future<DocumentSnapshot> getAppointmentDetails(String appointmentId) async {
 
   return appointmentDetails;
 }
+
+// register appointment
+Future<void> registerAppointment(String doctorId, String patientId, DateTime appointmentDateTime) async {
+
+
+  // register appointment in Firestore
+  await FirebaseFirestore.instance.collection('appointments').add({
+    'userID': patientId,
+    'doctorID': doctorId,
+    'appointmentDateTime': appointmentDateTime,
+  });
+
+  // register appointment in FCM using dio
+  final dio = Dio();
+  await dio.post('https://nurse-joy-api.vercel.app/api/notifications/appointments', data: {
+    'userID': patientId,
+    'doctorID': doctorId,
+    'appointmentDateTime': appointmentDateTime.toIso8601String(),
+  },
+  options: Options(headers: {
+    'Content-Type': 'application/json',
+  },
+  validateStatus: (status) {
+    return status! < 500;
+  },
+  ),
+  );
+}
+

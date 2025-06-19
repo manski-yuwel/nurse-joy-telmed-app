@@ -48,7 +48,8 @@ class AppRouter {
         final setup = await authService.isUserSetup();
 
         if (setup['is_doctor'] == true) {
-          if (setup['doc_info_is_setup'] == false) return '/profile-setup/doctor';
+          if (setup['doc_info_is_setup'] == false)
+            return '/profile-setup/doctor';
           if (setup['is_verified'] == false) return '/wait-verification';
         }
 
@@ -56,7 +57,6 @@ class AppRouter {
           return '/profile-setup';
         }
       }
-
     },
     routes: [
       // Auth routes
@@ -180,7 +180,6 @@ class AppRouter {
           return ProfilePage(userID: userId);
         },
       ),
-
     ],
   );
 }
