@@ -152,8 +152,12 @@ class _DashboardPageState extends State<DashboardPage> {
                                     color: Colors.green,
                                   ),
                                 ),
+                                // include the messagebody
                                 title: Text(activity['title'] ?? 'New Activity'),
                                 subtitle: Text(
+                                  body['messageBody'] ?? '',
+                                ),
+                                trailing: Text(
                                   _formatTimestamp(activity['timestamp']),
                                   style: TextStyle(fontSize: 12),
                                 ),
