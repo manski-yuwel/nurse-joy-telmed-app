@@ -8,6 +8,7 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:nursejoyapp/features/profile/ui/widgets/schedule_picker.dart';
 
 class DoctorProfileSetup extends StatefulWidget {
   const DoctorProfileSetup({super.key});
@@ -84,20 +85,28 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
   ];
 
   // Selected availability
-  Map<String, Map<String, bool>> _availability = {};
+  List<ScheduleDay> _availabilitySchedule = [];
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize availability schedule
-    for (var day in _daysOfWeek) {
-      _availability[day] = {
-        'morning': false,
-        'afternoon': false,
-        'evening': false,
-      };
-    }
+    // Initialize availability schedule with all days of the week
+    _availabilitySchedule = _daysOfWeek
+        .asMap()
+        .map((index, day) => MapEntry(
+              index,
+              ScheduleDay(
+                id: '${day.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}',
+                day: day,
+                timeSlots: [],
+              ),
+            ))
+        .values
+        .toList();
+
+    // Load existing schedule if available
+    _loadExistingSchedule();
 
     _fadeController = AnimationController(
       vsync: this,
@@ -163,18 +172,35 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
 
       final doctorData = doctorSnapshot.data() ?? {};
 
-      // Convert availability to a format suitable for Firestore
       List<Map<String, dynamic>> availabilitySchedule = [];
-      _availability.forEach((day, slots) {
-        slots.forEach((slot, isAvailable) {
-          if (isAvailable) {
-            availabilitySchedule.add({
-              'day': day,
-              'slot': slot,
-            });
-          }
-        });
-      });
+      
+      final now = DateTime.now();
+      
+      for (var day in _availabilitySchedule) {
+        for (var slot in day.timeSlots) {
+          final startDateTime = DateTime(
+            now.year,
+            now.month,
+            now.day,
+            slot.startTime.hour,
+            slot.startTime.minute,
+          );
+          
+          final endDateTime = DateTime(
+            now.year,
+            now.month,
+            now.day,
+            slot.endTime.hour,
+            slot.endTime.minute,
+          );
+          
+          availabilitySchedule.add({
+            'day': day.day,
+            'startTime': startDateTime,
+            'endTime': endDateTime,
+          });
+        }
+      }
 
       // Parse working history into a list
       List<String> workingHistory = [];
@@ -302,6 +328,72 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
     );
   }
 
+  // Load existing schedule from Firestore
+  Future<void> _loadExistingSchedule() async {
+    try {
+      final authService = Provider.of<AuthService>(context, listen: false);
+      final userId = authService.user!.uid;
+
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('doctor_information')
+          .doc('profile')
+          .get();
+
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null && data['availability_schedule'] != null) {
+          final List<dynamic> scheduleData = data['availability_schedule'];
+          
+          // Convert Firestore data to ScheduleDay objects
+          final Map<String, List<ScheduleTimeSlot>> scheduleMap = {};
+          
+          for (var day in _daysOfWeek) {
+            scheduleMap[day] = [];
+          }
+          
+          for (var slot in scheduleData) {
+            final day = slot['day'] as String;
+            Timestamp? startTimestamp = slot['startTime'] as Timestamp?;
+            Timestamp? endTimestamp = slot['endTime'] as Timestamp?;
+            
+            if (startTimestamp != null && endTimestamp != null) {
+              final startDateTime = startTimestamp.toDate();
+              final endDateTime = endTimestamp.toDate();
+              
+              final start = TimeOfDay.fromDateTime(startDateTime);
+              final end = TimeOfDay.fromDateTime(endDateTime);
+              
+              scheduleMap[day]!.add(ScheduleTimeSlot(
+                id: DateTime.now().millisecondsSinceEpoch.toString(),
+                startTime: start,
+                endTime: end,
+              ));
+            }
+          }
+          
+          // Update the schedule
+          setState(() {
+            _availabilitySchedule = _daysOfWeek.asMap().map((index, day) => MapEntry(
+              index,
+              ScheduleDay(
+                id: '${day.toLowerCase()}_${DateTime.now().millisecondsSinceEpoch}_$index',
+                day: day,
+                timeSlots: scheduleMap[day] ?? [],
+              ),
+            )).values.toList();
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar('Error loading schedule: $e', Colors.red);
+      }
+    }
+  }
+
+  // Build the availability schedule section
   Widget _buildAvailabilitySchedule() {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -324,106 +416,13 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
               border: Border.all(color: Colors.grey.shade300),
             ),
             padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Row(
-                  children: [
-                    const SizedBox(width: 100),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          "Morning",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          "Afternoon",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Expanded(
-                      child: Center(
-                        child: Text(
-                          "Evening",
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey.shade700,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const Divider(height: 24),
-                ..._daysOfWeek.map((day) {
-                  return Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8.0),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 100,
-                          child: Text(
-                            day,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Center(
-                            child: Checkbox(
-                              value: _availability[day]!['morning'],
-                              onChanged: (value) {
-                                setState(() {
-                                  _availability[day]!['morning'] = value!;
-                                });
-                              },
-                              activeColor: const Color(0xFF58f0d7),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Center(
-                            child: Checkbox(
-                              value: _availability[day]!['afternoon'],
-                              onChanged: (value) {
-                                setState(() {
-                                  _availability[day]!['afternoon'] = value!;
-                                });
-                              },
-                              activeColor: const Color(0xFF58f0d7),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Center(
-                            child: Checkbox(
-                              value: _availability[day]!['evening'],
-                              onChanged: (value) {
-                                setState(() {
-                                  _availability[day]!['evening'] = value!;
-                                });
-                              },
-                              activeColor: const Color(0xFF58f0d7),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ],
+            child: SchedulePicker(
+              initialSchedule: _availabilitySchedule,
+              onScheduleChanged: (updatedSchedule) {
+                setState(() {
+                  _availabilitySchedule = updatedSchedule;
+                });
+              },
             ),
           ),
         ],
