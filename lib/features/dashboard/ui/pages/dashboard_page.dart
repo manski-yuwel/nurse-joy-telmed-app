@@ -29,7 +29,6 @@ class _DashboardPageState extends State<DashboardPage> {
         padding: EdgeInsets.all(16.0),
         child: ListView(
           children: [
-            // ... (existing widgets until the end of the prescriptions card)
 
             // NurseJoy AI Chat Card
             Card(
@@ -40,7 +39,7 @@ class _DashboardPageState extends State<DashboardPage> {
               child: InkWell(
                 onTap: () {
                   // Navigate to NurseJoy AI chat
-                  context.go('/nursejoy-ai');
+                  context.go('/ai');
                 },
                 borderRadius: BorderRadius.circular(15),
                 child: Padding(

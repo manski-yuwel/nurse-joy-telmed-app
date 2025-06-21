@@ -26,7 +26,7 @@ class NotificationService {
 
 
   Stream<QuerySnapshot> getActivities(String userID) {
-    return _firestore.collection('activity_log').where('userID', isEqualTo: userID).limit(5).snapshots();
+    return _firestore.collection('activity_log').where('userID', isEqualTo: userID).orderBy('timestamp', descending: true).limit(5).snapshots();
   }
 
 
