@@ -112,6 +112,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
       await chatInstance.sendMessage(
         widget.chatRoomID,
         userID,
+        widget.recipientFullName,
         widget.recipientID,
         messageText,
         isImportant: _isImportantToggled,
