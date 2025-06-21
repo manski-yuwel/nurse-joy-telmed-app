@@ -200,6 +200,35 @@ class _DashboardPageState extends State<DashboardPage> {
     return 'Recent';
   }
 
+  ListTile _buildActivityItem(Map<String, dynamic> activity) {
+    final body = notificationService.resolveActivityBody(activity['type'], activity['body']);
+    return ListTile(
+      leading: CircleAvatar(
+        backgroundColor: Colors.green[100],
+        child: Icon(
+          _getActivityIcon(activity['type']),
+          color: Colors.green,
+        ),
+      ),
+      title: Text(activity['title'] ?? 'New Activity'),
+      subtitle: _getActivitySubtitle(activity['type'], body),
+      trailing: Text(_formatTimestamp(activity['timestamp'])),
+      onTap: () {
+        _handleActivityTap(body, activity['type'], context);
+      },
+    );
+  }
+
+
+  Widget? _getActivitySubtitle(String type, Map<String, dynamic> body) {
+    if (type == 'appointment') {
+      return Text("Appointment Time: ${body['appointmentDateTime']}" ?? 'New Activity');
+    } else if (type == 'message') {
+      return Text(body['messageBody'] ?? 'New Activity');
+    }
+    return null;
+  }
+
   void _handleActivityTap(Map<String, dynamic> body, String type, BuildContext context) async {
     if (type == 'appointment' && body['appointmentID'] != null) {
       final doctorUserDetails = await getUserDetails(body['doctorID']);
