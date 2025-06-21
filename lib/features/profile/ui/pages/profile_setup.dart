@@ -33,6 +33,9 @@ class _ProfileSetupState extends State<ProfileSetup>
   static const String birthdateField = 'birthdate';
   static const String civilStatusField = 'civil_status';
   static const String genderField = 'gender';
+  static const String minFeeField = 'min_fee';
+  static const String maxFeeField = 'max_fee';
+  static const String medicalHistoryField = 'medical_history';
 
   final List<String> _civilStatusOptions = [
     'Single',
@@ -75,8 +78,19 @@ class _ProfileSetupState extends State<ProfileSetup>
     super.dispose();
   }
 
+  bool _validateFeeRange() {
+    final minFee = int.tryParse(_formKey.currentState!.fields[minFeeField]?.value.toString() ?? '0') ?? 0;
+    final maxFee = int.tryParse(_formKey.currentState!.fields[maxFeeField]?.value.toString() ?? '0') ?? 0;
+    
+    if (minFee > maxFee) {
+      _showSnackBar('Maximum fee must be greater than or equal to minimum fee', Colors.red);
+      return false;
+    }
+    return true;
+  }
+
   Future<void> _saveProfile() async {
-    if (!_formKey.currentState!.validate()) {
+    if (!_formKey.currentState!.validate() || !_validateFeeRange()) {
       return;
     }
 
@@ -137,6 +151,9 @@ class _ProfileSetupState extends State<ProfileSetup>
         'age': age,
         'civil_status': civilStatus,
         'gender': gender,
+        'min_consultation_fee': formData[minFeeField] ?? 0,
+        'max_consultation_fee': formData[maxFeeField] ?? 0,
+        'medical_history': formData[medicalHistoryField]?.toString().trim() ?? '',
         'search_index': createSearchIndex(fullNameLowercase),
         'is_setup': true,
       });
@@ -183,7 +200,7 @@ class _ProfileSetupState extends State<ProfileSetup>
     TextInputType keyboardType = TextInputType.text,
     List<String? Function(String?)>? validators,
     int? maxLines,
-    TextInputFormatter? inputFormatter,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
@@ -203,7 +220,7 @@ class _ProfileSetupState extends State<ProfileSetup>
             name: name,
             keyboardType: keyboardType,
             maxLines: maxLines ?? 1,
-            inputFormatters: inputFormatter != null ? [inputFormatter] : null,
+            inputFormatters: inputFormatters,
             validator: FormBuilderValidators.compose([
               FormBuilderValidators.required(errorText: "$label is required"),
               ...?validators,
@@ -343,14 +360,81 @@ class _ProfileSetupState extends State<ProfileSetup>
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 16),
                                 _buildFormField(
                                   name: phoneField,
                                   label: "Phone Number",
                                   hint: "Enter your phone number",
                                   icon: Icons.phone_outlined,
                                   keyboardType: TextInputType.phone,
-                                  inputFormatter:
-                                      FilteringTextInputFormatter.digitsOnly,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Consultation Fee Range',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildFormField(
+                                        name: minFeeField,
+                                        label: 'Minimum Fee (₱)',
+                                        hint: 'e.g. 500',
+                                        icon: Icons.attach_money,
+                                        keyboardType: TextInputType.number,
+                                        validators: [
+                                          FormBuilderValidators.numeric(errorText: 'Enter a valid number'),
+                                          (value) {
+                                            if (value == null || value.isEmpty) {
+                                              return 'Please enter minimum fee';
+                                            }
+                                            final fee = num.tryParse(value);
+                                            if (fee == null || fee < 0) {
+                                              return 'Fee must be a positive number';
+                                            }
+                                            return null;
+                                          },
+                                        ],
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.digitsOnly,
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: _buildFormField(
+                                        name: maxFeeField,
+                                        label: 'Maximum Fee (₱)',
+                                        hint: 'e.g. 2000',
+                                        icon: Icons.attach_money,
+                                        keyboardType: TextInputType.number,
+                                        validators: [
+                                          FormBuilderValidators.numeric(errorText: 'Enter a valid number'),
+                                          (value) {
+                                            if (value == null || value.isEmpty) {
+                                              return 'Please enter maximum fee';
+                                            }
+                                            final fee = num.tryParse(value);
+                                            if (fee == null || fee < 0) {
+                                              return 'Fee must be a positive number';
+                                            }
+                                            return null;
+                                          },
+                                        ],
+                                        inputFormatters: [
+                                          FilteringTextInputFormatter.digitsOnly,
+                                        ],
+                                      ),
+                                    ),
+                                  ],
                                 ),
                                 _buildFormField(
                                   name: addressField,
@@ -358,6 +442,14 @@ class _ProfileSetupState extends State<ProfileSetup>
                                   hint: "Enter your address",
                                   icon: Icons.location_on_outlined,
                                   maxLines: 2,
+                                ),
+                                const SizedBox(height: 16),
+                                _buildFormField(
+                                  name: medicalHistoryField,
+                                  label: "Medical History",
+                                  hint: "Enter any existing medical conditions, allergies, or relevant health information",
+                                  icon: Icons.medical_services_outlined,
+                                  maxLines: 5,
                                 ),
                                 Container(
                                   margin: const EdgeInsets.only(bottom: 20),
