@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
+import 'package:nursejoyapp/notifications/notification_service.dart';
 
 // define functions to fetch doctor list from Firestore
 Future<QuerySnapshot> getDoctorList() async {
@@ -51,7 +52,7 @@ Future<void> registerAppointment(String doctorId, String patientId, DateTime app
 
 
   // register appointment in Firestore
-  await FirebaseFirestore.instance.collection('appointments').add({
+  DocumentReference appointmentRef = await FirebaseFirestore.instance.collection('appointments').add({
     'userID': patientId,
     'doctorID': doctorId,
     'appointmentDateTime': appointmentDateTime,
@@ -71,6 +72,18 @@ Future<void> registerAppointment(String doctorId, String patientId, DateTime app
     return status! < 500;
   },
   ),
+  );
+
+  // register appointment in activity log
+  NotificationService().registerActivity(
+    appointmentRef.id,
+    '$doctorId has scheduled an appointment with you',
+    {
+      'doctorID': doctorId,
+      'patientID': patientId,
+      'appointmentDateTime': appointmentDateTime.toIso8601String(),
+    },
+    'appointment',
   );
 }
 

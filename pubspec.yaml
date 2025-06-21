@@ -61,6 +61,7 @@ dependencies:
 
   google_maps_flutter: ^2.6.0
   http: ^1.2.1
+  fluttertoast: ^8.2.12
   
 dev_dependencies:
   flutter_test:

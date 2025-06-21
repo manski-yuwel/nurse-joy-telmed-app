@@ -1,12 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 import 'package:dio/dio.dart';
+import 'package:nursejoyapp/notifications/notification_service.dart';
 
 final db = FirebaseFirestore.instance;
 
 class Chat {
   final logger = Logger();
   final dio = Dio();
+  final notificationService = NotificationService();
   // ghet the chatlist by checking if the userID is included in the users pair in the chat doc
   Stream<QuerySnapshot> getChatList(String userID) {
     return db
@@ -106,6 +108,19 @@ class Chat {
       'last_message_senderID': userID,
       'last_message_is_important': isImportant,
     });
+
+    // register the message in the activity log
+    notificationService.registerActivity(
+      recipientID,
+      '$userID has sent you a message',
+      {
+        'chatRoomID': chatRoomID,
+        'senderID': userID,
+        'recipientID': recipientID,
+        'messageBody': messageBody,
+      },
+      'message',
+    );
   }
 
   // function to send a call notification message
