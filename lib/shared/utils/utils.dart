@@ -17,3 +17,30 @@ List<String> createNGrams(String part, {int minGram = 1, int maxGram = 10}) {
   }
   return nGrams;
 }
+
+List<String> getSpecializations() {
+  return [
+    'Cardiologist',
+    'Dermatologist',
+    'Endocrinologist',
+    'Family Physician',
+    'Gastroenterologist',
+    'General Surgeon',
+    'Gynecologist',
+    'Hematologist',
+    'Internal Medicine',
+    'Nephrologist',
+    'Neurologist',
+    'Obstetrician',
+    'Oncologist',
+    'Ophthalmologist',
+    'Orthopedic Surgeon',
+    'Otolaryngologist (ENT)',
+    'Pediatrician',
+    'Psychiatrist',
+    'Pulmonologist',
+    'Radiologist',
+    'Rheumatologist',
+    'Urologist'
+  ];
+}

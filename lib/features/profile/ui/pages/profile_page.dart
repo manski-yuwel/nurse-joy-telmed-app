@@ -156,16 +156,6 @@ class _ProfilePageState extends State<ProfilePage> {
       formData[entry.key] = entry.value.value;
     }
 
-    // ENHANCED DEBUG LOGGING
-    print('=== FORM SAVE DEBUG ===');
-    print('Form data from currentState: $formData');
-    print('FormBuilder fields: ${formState.fields.keys.toList()}');
-    print('Birthdate field state: ${formState.fields[birthdateField]?.value}');
-    print('All field values:');
-    formState.fields.forEach((key, field) {
-      print('  $key: ${field.value}');
-    });
-    print('=======================');
 
     final birthdate = formData[birthdateField];
 

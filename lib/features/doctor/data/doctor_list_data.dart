@@ -10,6 +10,72 @@ Future<QuerySnapshot> getDoctorList() async {
   return doctorList;
 }
 
+Future<List<QueryDocumentSnapshot>> getFilteredDoctorList(
+  String? searchQuery, 
+  String? specialization, 
+  int? minFee, 
+  int? maxFee
+) async {
+  // Start with base query for doctors
+  var query = FirebaseFirestore.instance
+      .collection('users')
+      .where('role', isEqualTo: 'doctor');
+
+  // Apply name search if provided
+  if (searchQuery != null && searchQuery.isNotEmpty) {
+    query = query.where('search_index', arrayContains: searchQuery.toLowerCase());
+  }
+
+  // Get initial list of doctors
+  final doctorDocs = await query.get();
+
+  // If no specialization filter, return the results
+  if (specialization == 'All Specializations' || specialization == null) {
+    return doctorDocs.docs;
+  }
+
+  // Filter doctors based on specialization in subcollection
+  final filteredDocs = <QueryDocumentSnapshot>[];
+  for (final doc in doctorDocs.docs) {
+    try {
+      final infoDoc = await doc.reference
+          .collection('doctor_information')
+          .doc('profile') // assuming you have a document with ID 'details'
+          .get();
+
+      if (infoDoc.exists) {
+        final data = infoDoc.data();
+        final docSpecialization = data?['specialization'];
+        final fee = data?['consultation_fee'] as int?;
+        
+        bool matchesFilters = true;
+        
+        // Check specialization
+        if (specialization != 'All Specializations' && docSpecialization != specialization) {
+          matchesFilters = false;
+        }
+        
+        // Check fee range if needed
+        if (matchesFilters && minFee != null && (fee ?? 0) < minFee) {
+          matchesFilters = false;
+        }
+        
+        if (matchesFilters && maxFee != null && (fee ?? 0) > maxFee) {
+          matchesFilters = false;
+        }
+        
+        if (matchesFilters) {
+          filteredDocs.add(doc);
+        }
+      }
+    } catch (e) {
+      print('Error checking doctor information: $e');
+    }
+  }
+
+  return filteredDocs;
+}
+
 Future<DocumentSnapshot> getDoctorDetails(String doctorId) async {
   final doctorDetails = await FirebaseFirestore.instance.collection('users').doc(doctorId).collection('doctor_information').doc('profile').get();
 

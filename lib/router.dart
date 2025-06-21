@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/chat/ui/pages/chat_list_page.dart';
 import 'package:nursejoyapp/features/chat/ui/pages/chat_room_page.dart';
+import 'package:nursejoyapp/features/dashboard/ui/pages/activity_list.dart';
 import 'package:nursejoyapp/features/doctor/ui/appointment_detail.dart';
 import 'package:nursejoyapp/features/doctor/ui/appointment_list.dart';
 import 'package:nursejoyapp/features/doctor/ui/doctor_list.dart';
@@ -172,7 +173,11 @@ class AppRouter {
           }
           throw Exception('No extra data found');
         },
-      ),  
+      ),
+      GoRoute(
+        path: '/activity-list',
+        builder: (context, state) => const ActivityListPage(),
+      ),
       GoRoute(
         path: '/doctor-list',
         builder: (context, state) => const DoctorList(),

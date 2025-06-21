@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nursejoyapp/shared/utils/utils.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -502,6 +503,7 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
   }
 
   Widget _buildProfessionalDetailsForm() {
+    final specializations = getSpecializations();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -522,12 +524,60 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
           ),
         ),
         const SizedBox(height: 32),
-        _buildFormField(
-          name: specializationField,
-          label: "Profession",
-          hint: "E.g., Psychiatrist, Pediatrist, Cardiologist, etc.",
-          icon: Icons.medical_services_outlined,
-          validator: FormBuilderValidators.required(),
+        Container(
+          margin: const EdgeInsets.only(bottom: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Specialization",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              FormBuilderDropdown<String>(
+                name: specializationField,
+                decoration: InputDecoration(
+                  hintText: "Select your specialization",
+                  hintStyle: TextStyle(color: Colors.grey.shade500),
+                  prefixIcon: const Icon(
+                    Icons.medical_services_outlined,
+                    color: Color(0xFF58f0d7),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                        color: Color(0xFF58f0d7), width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.red, width: 2),
+                  ),
+                ),
+                validator: FormBuilderValidators.required(
+                    errorText: 'Please select your specialization'),
+                items: specializations
+                    .map((specialization) => DropdownMenuItem(
+                          value: specialization,
+                          child: Text(specialization),
+                        ))
+                    .toList(),
+              ),
+            ],
+          ),
         ),
         _buildFormField(
           name: licenseNumberField,

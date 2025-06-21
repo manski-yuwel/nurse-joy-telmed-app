@@ -30,6 +30,11 @@ class NotificationService {
   }
 
 
+  Stream<QuerySnapshot> getAllActivities() {
+    return _firestore.collection('activity_log').orderBy('timestamp', descending: true).snapshots();
+  }
+
+
   Future<void> registerActivity(String userID, String title, Map<String, dynamic> body, String type) async {
     await _firestore.collection('activity_log').add({
       'userID': userID,
