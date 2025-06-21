@@ -1,5 +1,5 @@
 TODO
-- IN-APP ACTIVITY MONITORING
+- IN-APP ACTIVITY MONITORING - DONE
 - USER CURRENT APPOINTMENT LIST - DONE
 - AI REDIRECTION LOGIC
 - PAYMENT INTEGRATION
@@ -11,9 +11,15 @@ TODO
 - UPLOAD PROFILE PIC
 
 
+6/21/2025 - PUTAN
+- NotificationService for grouping activity-related funcs
+- Recent activities in the dashboard
+- message and appointment supported in the dashboard
+- redirection to nurse joy ai chat in the dashboard
 
 6/20/2025 - PUTAN
 - USER CURRENT APPOINTMENT LIST
 - REMOVED _generateChatRoomID and instead use the generateChatRoomID method from ChatListDB
 - FIXED THE CHATROOM GENERATION WHEN USER SENDS MSG
 - FIXED INCONSISTENT APP AND FIRESTORE DOC FIELD NAMES
+
