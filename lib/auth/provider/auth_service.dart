@@ -12,7 +12,9 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   final auth = FirebaseAuth.instance;
   final fcm = FirebaseMessaging.instance;
   User? user;
+  BuildContext? context;
   User? get currentUser => user;
+
 
   AuthService() {
     WidgetsBinding.instance.addObserver(this);
@@ -240,6 +242,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void setUpMessagingListeners() async {
+
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       logger.i('Message received in foreground: ${message.notification}');
     });
@@ -253,6 +256,6 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         logger.i('Message received in initial message: ${message.notification}');
       }
     });
-    
   }
+
 }

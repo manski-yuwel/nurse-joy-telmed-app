@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -112,6 +113,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
       await chatInstance.sendMessage(
         widget.chatRoomID,
         userID,
+        widget.recipientFullName,
         widget.recipientID,
         messageText,
         isImportant: _isImportantToggled,
@@ -163,7 +165,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
           widget.chatRoomID, user!.uid, widget.recipientID, "video");
 
       // Close dialog
-      Navigator.pop(context);
+      context.pop();
 
       // Navigate to video call page
       Navigator.push(
@@ -183,7 +185,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
       });
     } catch (e) {
       // Close dialog and show error
-      Navigator.pop(context);
+      context.pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to initiate call: $e')),
       );
@@ -802,7 +804,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
           titleSpacing: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.black87),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => context.pop(),
           ),
           title: Row(
             children: [
@@ -886,7 +888,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                           leading: const Icon(Icons.person),
                           title: const Text('View Profile'),
                           onTap: () {
-                            Navigator.pop(context);
+                            context.pop();
                             // Navigate to profile
                           },
                         ),

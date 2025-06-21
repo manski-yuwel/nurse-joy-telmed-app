@@ -1,5 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
+import 'package:nursejoyapp/features/doctor/ui/widgets/date_time_picker.dart';
+import 'package:nursejoyapp/notifications/notification_service.dart';
 
 // define functions to fetch doctor list from Firestore
 Future<QuerySnapshot> getDoctorList() async {
@@ -51,7 +53,7 @@ Future<void> registerAppointment(String doctorId, String patientId, DateTime app
 
 
   // register appointment in Firestore
-  await FirebaseFirestore.instance.collection('appointments').add({
+  DocumentReference appointmentRef = await FirebaseFirestore.instance.collection('appointments').add({
     'userID': patientId,
     'doctorID': doctorId,
     'appointmentDateTime': appointmentDateTime,
@@ -72,5 +74,70 @@ Future<void> registerAppointment(String doctorId, String patientId, DateTime app
   },
   ),
   );
+
 }
 
+Future<void> registerEnhancedAppointment(
+  String doctorId, 
+  String patientId, 
+  AppointmentBooking booking,
+) async {
+  try {
+    final appointmentData = {
+      'userID': patientId,
+      'doctorID': doctorId,
+      'appointmentDateTime': Timestamp.fromDate(booking.appointmentDateTime),
+      'description': booking.description,
+      'status': 'scheduled',
+      'createdAt': Timestamp.now(),
+      'updatedAt': Timestamp.now(),
+      
+      'bookingDetails': booking.toMap(),
+      'availableDays': booking.userAvailableDays.map((day) => day.toMap()).toList(),
+      
+      'dayOfWeek': booking.selectedDay.date.weekday,
+      'timeSlotStart': booking.selectedTimeSlot.startTime.hour * 60 + booking.selectedTimeSlot.startTime.minute,
+      'timeSlotEnd': booking.selectedTimeSlot.endTime.hour * 60 + booking.selectedTimeSlot.endTime.minute,
+    };
+
+    print(appointmentData);
+
+    final docRef = await FirebaseFirestore.instance
+        .collection('appointments')
+        .add(appointmentData);
+    final dio = Dio();
+    await dio.post(
+      'https://nurse-joy-api.vercel.app/api/notifications/appointments',
+      data: {
+        'userID': patientId,
+        'doctorID': doctorId,
+        'appointmentDateTime': booking.appointmentDateTime.toIso8601String(),
+        'appointmentId': docRef.id,
+        'description': booking.description,
+        'timeSlot': booking.selectedTimeSlot.displayTime,
+        'date': booking.selectedDay.displayDate,
+      },
+      options: Options(
+        headers: {'Content-Type': 'application/json'},
+        validateStatus: (status) => status! < 500,
+      ),
+    );
+
+    // get full name of the doctor user
+    final doctorUserDetails = await getUserDetails(doctorId);
+    final doctorFullName =  doctorUserDetails['full_name'];   // register appointment in activity log
+    NotificationService().registerActivity(
+    patientId,
+    'You have a new appointment with $doctorFullName',
+    {
+      'doctorID': doctorId,
+      'patientID': patientId,
+      'appointmentDateTime': booking.appointmentDateTime.toIso8601String(),
+    },
+    'appointment',
+  );
+  } catch (e) {
+    throw Exception('Failed to register appointment: $e');
+  }
+
+}
