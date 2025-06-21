@@ -155,6 +155,8 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
 
       // Get the current user ID
       final userID = result.user!.uid;
+      final fullName = '$firstName $lastName';
+      final fullNameLowercase = fullName.toLowerCase();
 
 
       // Update the user role to doctor
@@ -164,11 +166,12 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'profile_pic': '',
         'first_name': firstName,
         'last_name': lastName,
-        'full_name': '$firstName $lastName',
-        'full_name_lowercase': '$firstName $lastName'.toLowerCase(),
+        'full_name': fullName,
+        'full_name_lowercase': fullNameLowercase,
         'is_setup': false,
-        'search_index': createSearchIndex('$firstName $lastName'),
+        'search_index': createSearchIndex(fullNameLowercase),
         'created_at': FieldValue.serverTimestamp(),
+        'status_online': false,
       });
 
       // Create doctor data document
