@@ -222,7 +222,7 @@ Future<void> _bookAppointment() async {
     return AppScaffold(
       title: 'Doctor Details',
       selectedIndex: 0,
-      onItemTapped: (index) {},
+      onItemTapped: _onItemTapped,
       body: Column(
         children: [
           // Doctor Header Section
@@ -489,5 +489,15 @@ Future<void> _bookAppointment() async {
         ],
       ),
     );
+  }
+
+  void _onItemTapped(int index) {
+    if (index == 0) {
+      context.go('/chat');
+    } else if (index == 1) {
+      context.go('/home');
+    } else if (index == 2) {
+      context.go('/profile');
+    }
   }
 }

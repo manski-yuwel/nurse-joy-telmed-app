@@ -162,7 +162,7 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
     return AppScaffold(
       title: 'Find a Doctor',
       selectedIndex: 0,
-      onItemTapped: (index) {},
+      onItemTapped: _onItemTapped,
       body: Column(
         children: [
           // Search and Filters
@@ -172,6 +172,16 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
         ],
       ),
     );
+  }
+
+  void _onItemTapped(int index) {
+    if (index == 0) {
+      context.go('/chat');
+    } else if (index == 1) {
+      context.go('/home');
+    } else if (index == 2) {
+      context.go('/profile');
+    }
   }
   
   Widget _buildSearchAndFilters() {
