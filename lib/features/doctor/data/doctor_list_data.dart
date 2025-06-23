@@ -3,7 +3,6 @@ import 'package:dio/dio.dart';
 import 'package:nursejoyapp/features/doctor/ui/widgets/date_time_picker.dart';
 import 'package:nursejoyapp/notifications/notification_service.dart';
 
-// Improved function to get doctors that are verified, optionally filtered by search, specialization, and fee range
 Future<List<DocumentSnapshot>> getVerifiedFilteredDoctorList(
   {
     String? searchQuery,
@@ -13,20 +12,16 @@ Future<List<DocumentSnapshot>> getVerifiedFilteredDoctorList(
   }) async {
   final firestore = FirebaseFirestore.instance;
 
-  // Step 1: Base query - only doctors
   var query = firestore
       .collection('users')
       .where('role', isEqualTo: 'doctor');
 
-  // Step 2: Search filter using search index (if applicable)
   if (searchQuery != null && searchQuery.isNotEmpty) {
     query = query.where('search_index', arrayContains: searchQuery.toLowerCase());
   }
 
-  // Step 3: Fetch matching documents
   final querySnapshot = await query.get();
 
-  // Step 4: Filter each doctor by subcollection doc 'profile'
   final List<DocumentSnapshot> verifiedDoctors = [];
 
   for (final doc in querySnapshot.docs) {
