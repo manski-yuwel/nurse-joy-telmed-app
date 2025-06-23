@@ -8,6 +8,7 @@ import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:nursejoyapp/shared/utils/utils.dart';
 
 /// Doctor list interface for Nurse Joy application
 /// Implements modern UI patterns with performance optimizations
@@ -30,7 +31,7 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
   String? _selectedSpecialization;
   List<String> _specializations = [];
   bool _isLoading = false;
-  List<QueryDocumentSnapshot> _filteredDoctors = [];
+  List<DocumentSnapshot> _filteredDoctors = [];
   
   @override
   void initState() {
@@ -41,24 +42,11 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
   Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
     try {
-      final doctors = await getDoctorList();
-      _filteredDoctors = doctors.docs;
-      
-      // Extract unique specializations
-      final specializations = <String>{};
-      for (final doc in _filteredDoctors) {
-        final doctorDetails = await getDoctorDetails(doc.id);
-        if (doctorDetails.exists) {
-          final data = doctorDetails.data() as Map<String, dynamic>? ?? {};
-          final spec = data['specialization'] as String?;
-          if (spec != null && spec.isNotEmpty) {
-            specializations.addAll(spec.split(',').map((s) => s.trim()));
-          }
-        }
-      }
-      
+      final doctors = await getVerifiedFilteredDoctorList();
+      _filteredDoctors = doctors;
+
       setState(() {
-        _specializations = specializations.toList()..sort();
+        _specializations = getSpecializations();
         _isLoading = false;
       });
     } catch (e) {
@@ -101,16 +89,12 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
         );
         return;
       }
-
       
-      
-
-      
-      final doctors = await getFilteredDoctorList(
-        _searchController.text.isNotEmpty ? _searchController.text : null,
-        _selectedSpecialization,
-        minFee,
-        maxFee,
+      final doctors = await getVerifiedFilteredDoctorList(
+        searchQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
+        specialization: _selectedSpecialization,
+        minFee: minFee,
+        maxFee: maxFee,
       );
       
       setState(() {
@@ -237,7 +221,8 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
                     )),
               ],
               onChanged: (value) {
-                setState(() => _selectedSpecialization = value);
+                _selectedSpecialization = value;
+                
               },
             ),
             const SizedBox(height: 12),
@@ -325,19 +310,28 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
             future: getDoctorDetails(doctor.id),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Card(
-                  child: ListTile(
-                    leading: CircularProgressIndicator(),
-                    title: Text('Loading...'),
+                // use shimmer
+                return Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Card(
+                    child: ListTile(
+                      leading: CircularProgressIndicator(),
+                      title: Text('Loading...'),
+                    ),
                   ),
                 );
               }
               
               if (snapshot.hasError || !snapshot.hasData) {
-                return const Card(
-                  child: ListTile(
-                    leading: Icon(Icons.error),
-                    title: Text('Error loading doctor details'),
+                return Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Card(
+                    child: ListTile(
+                      leading: Icon(Icons.error),
+                      title: Text('Error loading doctor details'),
+                    ),
                   ),
                 );
               }

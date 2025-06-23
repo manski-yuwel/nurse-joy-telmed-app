@@ -3,82 +3,60 @@ import 'package:dio/dio.dart';
 import 'package:nursejoyapp/features/doctor/ui/widgets/date_time_picker.dart';
 import 'package:nursejoyapp/notifications/notification_service.dart';
 
-// define functions to fetch doctor list from Firestore
-Future<QuerySnapshot> getDoctorList() async {
-  final doctorList = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'doctor').get();
-  
-  return doctorList;
-}
+Future<List<DocumentSnapshot>> getVerifiedFilteredDoctorList(
+  {
+    String? searchQuery,
+    String? specialization,
+    int? minFee,
+    int? maxFee,
+  }) async {
+  final firestore = FirebaseFirestore.instance;
 
-Future<List<QueryDocumentSnapshot>> getFilteredDoctorList(
-  String? searchQuery, 
-  String? specialization, 
-  int? minFee, 
-  int? maxFee
-) async {
-  // Start with base query for doctors
-  var query = FirebaseFirestore.instance
+  var query = firestore
       .collection('users')
-      .where('role', isEqualTo: 'doctor');
+      .where('role', isEqualTo: 'doctor').where('is_verified', isEqualTo: true);
 
-  // Apply name search if provided
   if (searchQuery != null && searchQuery.isNotEmpty) {
     query = query.where('search_index', arrayContains: searchQuery.toLowerCase());
   }
 
-  // Get initial list of doctors
-  final doctorDocs = await query.get();
+  final querySnapshot = await query.get();
 
-  // If no specialization filter, return the results
-  if (specialization == 'All Specializations' || specialization == null) {
-    return doctorDocs.docs;
-  }
+  final List<DocumentSnapshot> verifiedDoctors = [];
 
-  // Filter doctors based on specialization in subcollection
-  final filteredDocs = <QueryDocumentSnapshot>[];
-  for (final doc in doctorDocs.docs) {
+  for (final doc in querySnapshot.docs) {
     try {
-      final infoDoc = await doc.reference
-          .collection('doctor_information')
-          .doc('profile') // assuming you have a document with ID 'details'
-          .get();
+      final userData = doc.data() as Map<String, dynamic>?;
+      if (userData == null || userData['is_verified'] != true) continue;
 
-      if (infoDoc.exists) {
-        final data = infoDoc.data();
-        final docSpecialization = data?['specialization'];
-        final fee = data?['consultation_fee'] as int?;
-        
-        bool matchesFilters = true;
-        
-        // Check specialization
-        if (specialization != 'All Specializations' && docSpecialization != specialization) {
-          matchesFilters = false;
-        }
-        
-        // Check fee range if needed
-        if (matchesFilters && minFee != null && (fee ?? 0) < minFee) {
-          matchesFilters = false;
-        }
-        
-        if (matchesFilters && maxFee != null && (fee ?? 0) > maxFee) {
-          matchesFilters = false;
-        }
-        
-        if (matchesFilters) {
-          filteredDocs.add(doc);
-        }
+      final docSpecialization = userData['specialization'];
+      final fee = userData['consultation_fee'] as int? ?? 0;
+
+      bool matches = true;
+
+      if (specialization != null &&
+          specialization != 'All Specializations' &&
+          docSpecialization != specialization) {
+        matches = false;
+      }
+
+      if (minFee != null && fee < minFee) matches = false;
+      if (maxFee != null && fee > maxFee) matches = false;
+
+      if (matches) {
+        verifiedDoctors.add(doc);
       }
     } catch (e) {
-      print('Error checking doctor information: $e');
+      print('Error filtering doctor ${doc.id}: $e');
     }
   }
 
-  return filteredDocs;
+  return verifiedDoctors;
 }
 
-Future<DocumentSnapshot> getDoctorDetails(String doctorId) async {
-  final doctorDetails = await FirebaseFirestore.instance.collection('users').doc(doctorId).collection('doctor_information').doc('profile').get();
 
+Future<DocumentSnapshot> getDoctorDetails(String doctorId) async {
+  final doctorDetails = await FirebaseFirestore.instance.collection('users').doc(doctorId).get();
   return doctorDetails;
 }
 
@@ -189,21 +167,22 @@ Future<void> registerEnhancedAppointment(
       ),
     );
 
-    // get full name of the doctor user
-    final doctorUserDetails = await getUserDetails(doctorId);
-    final doctorFullName =  doctorUserDetails['full_name'];   // register appointment in activity log
+    // Get doctor and user details
+    final doctorDoc = await getDoctorDetails(doctorId);
+    final doctorData = doctorDoc.data() as Map<String, dynamic>;
+    final doctorFullName = '${doctorData['first_name']} ${doctorData['last_name']}';
+
     NotificationService().registerActivity(
-    patientId,
-    'You have a new appointment with $doctorFullName',
-    {
-      'doctorID': doctorId,
-      'patientID': patientId,
-      'appointmentDateTime': booking.appointmentDateTime.toIso8601String(),
-    },
-    'appointment',
-  );
+      patientId,
+      'You have a new appointment with $doctorFullName',
+      {
+        'doctorID': doctorId,
+        'patientID': patientId,
+        'appointmentDateTime': booking.appointmentDateTime.toIso8601String(),
+      },
+      'appointment',
+    );
   } catch (e) {
     throw Exception('Failed to register appointment: $e');
   }
-
 }

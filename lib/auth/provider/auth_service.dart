@@ -47,20 +47,11 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'is_doctor': false,
       };
     } else {
-      // get the doctor information
-      final doctorInformation = await db
-          .collection('users')
-          .doc(user!.uid)
-          .collection('doctor_information')
-          .doc('profile')
-          .get();
-
-
       return {
         'is_setup': userData['is_setup'],
         'is_doctor': true,
-        'is_verified': doctorInformation.data()?['is_verified'] ?? false,
-        'doc_info_is_setup': doctorInformation.data()?['doc_info_is_setup'] ?? false,
+        'is_verified': userData['is_verified'] ?? false,
+        'doc_info_is_setup': userData['doc_info_is_setup'] ?? false,
       };
     }
   }
@@ -105,7 +96,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'address': '',
         'phone_number': '',
         'role': 'user',
-        'status_online': false,
+        'status_online': true,
         'is_setup': false,
         'created_at': FieldValue.serverTimestamp(),
       });
@@ -171,16 +162,38 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'is_setup': false,
         'search_index': createSearchIndex(fullNameLowercase),
         'created_at': FieldValue.serverTimestamp(),
-        'status_online': false,
+        'status_online': true,
+        'specialization': doctorDetails['specialization'] ?? '',
+        'license_number': doctorDetails['license_number'] ?? '',
+        'years_of_experience': doctorDetails['years_of_experience'] ?? 0,
+        'education': doctorDetails['education'] != null
+            ? [doctorDetails['education']]
+            : [],
+        'hospital_affiliation': doctorDetails['hospital_affiliation'] != null
+            ? [doctorDetails['hospital_affiliation']]
+            : [],
+        'consultation_fee': doctorDetails['consultation_fee'] ?? 0,
+        'consultation_currency':
+            doctorDetails['consultation_currency'] ?? 'USD',
+        'is_verified': false,
+        'doc_info_is_setup': false,
+        'verification_status': 'pending',
+        'verification_date': null,
+        'rating': 0,
+        'num_of_ratings': 0,
+        'working_history': [],
+        'availability_schedule': [],
+        'bio': doctorDetails['bio'] ?? '',
+        'languages': doctorDetails['languages'] ?? [],
+        'services_offered': doctorDetails['services_offered'] ?? [],
+        'certificates': [],
+        'profile_visibility': true,
+        'last_active': FieldValue.serverTimestamp(),
+        'license_file_path': doctorDetails['license_file'] ?? '',
+        'education_file_path': doctorDetails['education_file'] ?? '',
       });
 
-      // Create doctor data document
-      await db
-          .collection('users')
-          .doc(userID)
-          .collection('doctor_information')
-          .doc('profile')
-          .set({
+      await db.collection('users').doc(userID).collection('doctor_information').doc('profile').set({
         'specialization': doctorDetails['specialization'] ?? '',
         'license_number': doctorDetails['license_number'] ?? '',
         'years_of_experience': doctorDetails['years_of_experience'] ?? 0,
