@@ -14,7 +14,7 @@ Future<List<DocumentSnapshot>> getVerifiedFilteredDoctorList(
 
   var query = firestore
       .collection('users')
-      .where('role', isEqualTo: 'doctor');
+      .where('role', isEqualTo: 'doctor').where('is_verified', isEqualTo: true);
 
   if (searchQuery != null && searchQuery.isNotEmpty) {
     query = query.where('search_index', arrayContains: searchQuery.toLowerCase());
@@ -26,18 +26,11 @@ Future<List<DocumentSnapshot>> getVerifiedFilteredDoctorList(
 
   for (final doc in querySnapshot.docs) {
     try {
-      final profileDoc = await doc.reference
-          .collection('doctor_information')
-          .doc('profile')
-          .get();
+      final userData = doc.data() as Map<String, dynamic>?;
+      if (userData == null || userData['is_verified'] != true) continue;
 
-      if (!profileDoc.exists) continue;
-
-      final profileData = profileDoc.data();
-      if (profileData == null || profileData['is_verified'] != true) continue;
-
-      final docSpecialization = profileData['specialization'];
-      final fee = profileData['consultation_fee'] as int? ?? 0;
+      final docSpecialization = userData['specialization'];
+      final fee = userData['consultation_fee'] as int? ?? 0;
 
       bool matches = true;
 
@@ -63,8 +56,7 @@ Future<List<DocumentSnapshot>> getVerifiedFilteredDoctorList(
 
 
 Future<DocumentSnapshot> getDoctorDetails(String doctorId) async {
-  final doctorDetails = await FirebaseFirestore.instance.collection('users').doc(doctorId).collection('doctor_information').doc('profile').get();
-
+  final doctorDetails = await FirebaseFirestore.instance.collection('users').doc(doctorId).get();
   return doctorDetails;
 }
 
@@ -175,21 +167,22 @@ Future<void> registerEnhancedAppointment(
       ),
     );
 
-    // get full name of the doctor user
-    final doctorUserDetails = await getUserDetails(doctorId);
-    final doctorFullName =  doctorUserDetails['full_name'];   // register appointment in activity log
+    // Get doctor and user details
+    final doctorDoc = await getDoctorDetails(doctorId);
+    final doctorData = doctorDoc.data() as Map<String, dynamic>;
+    final doctorFullName = '${doctorData['first_name']} ${doctorData['last_name']}';
+
     NotificationService().registerActivity(
-    patientId,
-    'You have a new appointment with $doctorFullName',
-    {
-      'doctorID': doctorId,
-      'patientID': patientId,
-      'appointmentDateTime': booking.appointmentDateTime.toIso8601String(),
-    },
-    'appointment',
-  );
+      patientId,
+      'You have a new appointment with $doctorFullName',
+      {
+        'doctorID': doctorId,
+        'patientID': patientId,
+        'appointmentDateTime': booking.appointmentDateTime.toIso8601String(),
+      },
+      'appointment',
+    );
   } catch (e) {
     throw Exception('Failed to register appointment: $e');
   }
-
 }

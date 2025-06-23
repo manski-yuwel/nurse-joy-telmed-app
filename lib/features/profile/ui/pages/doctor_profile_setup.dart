@@ -160,17 +160,11 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       final userId = authService.user!.uid;
+      final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
 
-
-      // Get existing doctor data
-      final doctorSnapshot = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('doctor_information')
-          .doc('profile')
-          .get();
-
-      final doctorData = doctorSnapshot.data() ?? {};
+      // Get existing user data
+      final userSnapshot = await userRef.get();
+      final userData = userSnapshot.data() ?? {};
 
       List<Map<String, dynamic>> availabilitySchedule = [];
       
@@ -202,32 +196,19 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
         }
       }
 
-      // Parse working history into a list
-      List<String> workingHistory = [];
-      if (formData[workingHistoryField] != null &&
-          formData[workingHistoryField].toString().isNotEmpty) {
-        workingHistory = formData[workingHistoryField]
-            .toString()
-            .split('\n')
-            .where((item) => item.trim().isNotEmpty)
-            .toList();
-      }
+          // Working history is now handled directly in the form data
 
-      // Update doctor profile data
-      await FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .collection('doctor_information')
-          .doc('profile')
-          .update({
-        'bio': formData[bioField]?.toString() ?? '',
-        'working_history': workingHistory,
-        'availability_schedule': availabilitySchedule,
+      // Update user document with doctor information
+      await userRef.set({
+        ...userData,
+        'bio': formData[bioField] ?? '',
         'languages': languages,
         'services_offered': services,
+        'availability_schedule': availabilitySchedule,
         'doc_info_is_setup': true,
-      });
-
+        'is_setup': true,
+        'updated_at': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
       if (mounted) {
         _showSnackBar('Profile saved successfully!', Colors.green);
@@ -337,8 +318,6 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
       final doc = await FirebaseFirestore.instance
           .collection('users')
           .doc(userId)
-          .collection('doctor_information')
-          .doc('profile')
           .get();
 
       if (doc.exists) {
