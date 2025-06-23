@@ -30,7 +30,7 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
   String? _selectedSpecialization;
   List<String> _specializations = [];
   bool _isLoading = false;
-  List<QueryDocumentSnapshot> _filteredDoctors = [];
+  List<DocumentSnapshot> _filteredDoctors = [];
   
   @override
   void initState() {
@@ -41,8 +41,8 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
   Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
     try {
-      final doctors = await getDoctorList();
-      _filteredDoctors = doctors.docs;
+      final doctors = await getVerifiedFilteredDoctorList();
+      _filteredDoctors = doctors;
       
       // Extract unique specializations
       final specializations = <String>{};
@@ -106,11 +106,11 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
       
 
       
-      final doctors = await getFilteredDoctorList(
-        _searchController.text.isNotEmpty ? _searchController.text : null,
-        _selectedSpecialization,
-        minFee,
-        maxFee,
+      final doctors = await getVerifiedFilteredDoctorList(
+        searchQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
+        specialization: _selectedSpecialization,
+        minFee: minFee,
+        maxFee: maxFee,
       );
       
       setState(() {

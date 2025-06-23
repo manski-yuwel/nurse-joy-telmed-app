@@ -3,78 +3,69 @@ import 'package:dio/dio.dart';
 import 'package:nursejoyapp/features/doctor/ui/widgets/date_time_picker.dart';
 import 'package:nursejoyapp/notifications/notification_service.dart';
 
-// define functions to fetch doctor list from Firestore
-Future<QuerySnapshot> getDoctorList() async {
-  final doctorList = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'doctor').get();
-  
-  return doctorList;
-}
+// Improved function to get doctors that are verified, optionally filtered by search, specialization, and fee range
+Future<List<DocumentSnapshot>> getVerifiedFilteredDoctorList(
+  {
+    String? searchQuery,
+    String? specialization,
+    int? minFee,
+    int? maxFee,
+  }) async {
+  final firestore = FirebaseFirestore.instance;
 
-Future<List<QueryDocumentSnapshot>> getFilteredDoctorList(
-  String? searchQuery, 
-  String? specialization, 
-  int? minFee, 
-  int? maxFee
-) async {
-  // Start with base query for doctors
-  var query = FirebaseFirestore.instance
+  // Step 1: Base query - only doctors
+  var query = firestore
       .collection('users')
       .where('role', isEqualTo: 'doctor');
 
-  // Apply name search if provided
+  // Step 2: Search filter using search index (if applicable)
   if (searchQuery != null && searchQuery.isNotEmpty) {
     query = query.where('search_index', arrayContains: searchQuery.toLowerCase());
   }
 
-  // Get initial list of doctors
-  final doctorDocs = await query.get();
+  // Step 3: Fetch matching documents
+  final querySnapshot = await query.get();
 
-  // If no specialization filter, return the results
-  if (specialization == 'All Specializations' || specialization == null) {
-    return doctorDocs.docs;
-  }
+  // Step 4: Filter each doctor by subcollection doc 'profile'
+  final List<DocumentSnapshot> verifiedDoctors = [];
 
-  // Filter doctors based on specialization in subcollection
-  final filteredDocs = <QueryDocumentSnapshot>[];
-  for (final doc in doctorDocs.docs) {
+  for (final doc in querySnapshot.docs) {
     try {
-      final infoDoc = await doc.reference
+      final profileDoc = await doc.reference
           .collection('doctor_information')
-          .doc('profile') // assuming you have a document with ID 'details'
+          .doc('profile')
           .get();
 
-      if (infoDoc.exists) {
-        final data = infoDoc.data();
-        final docSpecialization = data?['specialization'];
-        final fee = data?['consultation_fee'] as int?;
-        
-        bool matchesFilters = true;
-        
-        // Check specialization
-        if (specialization != 'All Specializations' && docSpecialization != specialization) {
-          matchesFilters = false;
-        }
-        
-        // Check fee range if needed
-        if (matchesFilters && minFee != null && (fee ?? 0) < minFee) {
-          matchesFilters = false;
-        }
-        
-        if (matchesFilters && maxFee != null && (fee ?? 0) > maxFee) {
-          matchesFilters = false;
-        }
-        
-        if (matchesFilters) {
-          filteredDocs.add(doc);
-        }
+      if (!profileDoc.exists) continue;
+
+      final profileData = profileDoc.data();
+      if (profileData == null || profileData['is_verified'] != true) continue;
+
+      final docSpecialization = profileData['specialization'];
+      final fee = profileData['consultation_fee'] as int? ?? 0;
+
+      bool matches = true;
+
+      if (specialization != null &&
+          specialization != 'All Specializations' &&
+          docSpecialization != specialization) {
+        matches = false;
+      }
+
+      if (minFee != null && fee < minFee) matches = false;
+      if (maxFee != null && fee > maxFee) matches = false;
+
+      if (matches) {
+        verifiedDoctors.add(doc);
       }
     } catch (e) {
-      print('Error checking doctor information: $e');
+      print('Error filtering doctor ${doc.id}: $e');
     }
   }
 
-  return filteredDocs;
+  return verifiedDoctors;
 }
+
 
 Future<DocumentSnapshot> getDoctorDetails(String doctorId) async {
   final doctorDetails = await FirebaseFirestore.instance.collection('users').doc(doctorId).collection('doctor_information').doc('profile').get();

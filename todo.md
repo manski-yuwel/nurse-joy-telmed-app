@@ -17,6 +17,8 @@ TODO
 - Included filtering using minFee and maxFee in the doctor list as well as searching by name
 - added minFee and maxFee and medical history fields to the profile set up page
 - filtered the profile setup page to not display minfee, maxfee, and medical history fields if the user is a doctor
+- added schedule_picker
+- added the availability schedule in the doctor profile set up to be time-based instead of morning, afternoon, evening...
 
 6/21/2025 - PUTAN
 - NotificationService for grouping activity-related funcs
