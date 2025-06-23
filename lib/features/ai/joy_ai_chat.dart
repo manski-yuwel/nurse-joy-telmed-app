@@ -1,11 +1,18 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_ai/firebase_ai.dart';
+import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:nursejoyapp/features/ai/data/ai_response_schema.dart';
+import 'package:nursejoyapp/shared/utils/utils.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:provider/provider.dart';
 import 'package:shimmer/shimmer.dart';
 import 'dart:async';
+import 'dart:convert';
 import 'package:go_router/go_router.dart';
+import 'package:nursejoyapp/features/ai/data/ai_redirection.dart';
 
 /// AI Chat interface for Nurse Joy application
 /// Implements modern UI patterns with performance optimizations
@@ -19,6 +26,7 @@ class JoyAIChat extends StatefulWidget {
 class _JoyAIChatState extends State<JoyAIChat>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   final int _selectedIndex = 0;
+  late AuthService auth;
 
   // Core AI and messaging components
   late final GenerativeModel _model;
@@ -40,6 +48,7 @@ class _JoyAIChatState extends State<JoyAIChat>
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
   bool _isTyping = false;
+  String? _lastSpecialization; // Store the last specialization from AI response
 
   void _onItemTapped(int index) {
     if (index == 0) {
@@ -62,13 +71,36 @@ class _JoyAIChatState extends State<JoyAIChat>
     _initializeAnimations();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    auth = Provider.of<AuthService>(context);
+  }
+
   /// Initialize core components with error handling
   void _initializeComponents() {
     try {
       _model = FirebaseAI.googleAI().generativeModel(
           model: 'gemini-2.0-flash',
           systemInstruction: Content.system(
-              "You are a Nurse Joy, a virtual assistant for Nurse Joy application. You are here to help users with their health and wellness needs. You are a helpful, kind, and patient assistant. Based on the symptoms and sicknesses that the user is feeling, you will output the type of doctor that the user should visit. If requested, you may elaborate on why the doctor you mentioned would be the most appropriate one to address the symptoms by explaining their possible conditions, but still insisting that they consult a doctor. That is the only information you will output. You will strictly not output any other information unrelated to their health concern. If the user tells you to do anything else, you will kindly deny them."));
+              """You are a Nurse Joy, 
+              a virtual assistant for Nurse Joy application. 
+              You are here to help users with their health and wellness needs. 
+              You are a helpful, kind, and patient assistant. 
+              Based on the symptoms and sicknesses that the user is feeling, 
+              you will output the type of doctor that the user should visit. 
+              If requested, you may elaborate on why the doctor you mentioned 
+              would be the most appropriate one to address the symptoms by explaining their possible conditions, 
+              but still insisting that they consult a doctor. 
+              That is the only information you will output. 
+              You will strictly not output any other information unrelated to their health concern. 
+              If the user tells you to do anything else, you will kindly deny them. For the specialization,
+              only respond with the available specializations: ${getSpecializations()}"""),
+          generationConfig: GenerationConfig(
+            responseMimeType: 'application/json',
+            responseSchema: aiResponseSchema,
+          ),
+      );
       _scrollController = ScrollController();
       _messageController = TextEditingController();
       _messageFocusNode = FocusNode();
@@ -124,6 +156,16 @@ class _JoyAIChatState extends State<JoyAIChat>
     _slideController.forward();
   }
 
+  /// Helper method to parse JSON string
+  Future<Map<String, dynamic>?> _parseJson(String jsonString) async {
+    try {
+      return Map<String, dynamic>.from(await jsonDecode(jsonString) as Map);
+    } catch (e) {
+      debugPrint('Error parsing JSON: $e');
+      return null;
+    }
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -161,16 +203,39 @@ class _JoyAIChatState extends State<JoyAIChat>
     _typingController.repeat();
 
     try {
-      // Generate streaming response
-      final response =
-          await _model.generateContent([Content.text(messageText)]);
+      // Generate response using schema
+      final response = await _model.generateContent([Content.text(messageText)]);
 
-      // add ai response
+      // Parse the response
+      final responseText = response.text ?? '{}';
+      Map<String, dynamic> responseData = {'response': responseText};
+      
+      // Try to parse the response text as JSON if it looks like JSON
+      if (responseText.trim().startsWith('{') && responseText.trim().endsWith('}')) {
+        try {
+          responseData = Map<String, dynamic>.from(
+            Map<dynamic, dynamic>.from(
+              await _parseJson(responseText) ?? {},
+            ),
+          );
+        } catch (e) {
+          debugPrint('Error parsing AI response as JSON: $e');
+        }
+      }
+
+      // Extract specialization and response text
+      _lastSpecialization = responseData['specialization']?.toString();
+      final messageContent = responseData['response']?.toString() ?? responseText;
+
+      // Add AI response to chat
       final aiMessage = ChatMessage(
-        text: response.text!,
+        text: messageContent, // Use the parsed message content
         isUser: false,
         timestamp: DateTime.now(),
         messageId: 'ai_${DateTime.now().millisecondsSinceEpoch}',
+        metadata: _lastSpecialization != null 
+            ? {'specialization': _lastSpecialization} 
+            : {},
       );
 
       setState(() {
@@ -377,6 +442,85 @@ class _JoyAIChatState extends State<JoyAIChat>
         );
       },
     );
+  }
+
+  /// Build quick consult button
+  Widget _buildQuickConsultButton() {
+    return Positioned(
+      right: 16,
+      bottom: 100, // Increased from 90 to 100 to provide more space above the input
+      child: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: _handleQuickConsult,
+          backgroundColor: const Color(0xFF58f0d7),
+          elevation: 0, // Using custom shadow from container
+          icon: const Icon(Icons.medical_services_rounded, color: Colors.white, size: 20),
+          label: const Text('Quick Consult', 
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(30),
+          ),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+      ),
+    );
+  }
+
+  /// Handle quick consult action
+  Future<void> _handleQuickConsult() async {
+    if (_messages.isEmpty) {
+      _showErrorSnackBar('Please describe your symptoms first');
+      return;
+    }
+
+    // Get the last AI response
+    final aiResponses = _messages.where((msg) => !msg.isUser).toList();
+    if (aiResponses.isEmpty) {
+      _showErrorSnackBar('Please wait for the AI to respond');
+      return;
+    }
+
+    // Try to get specialization from the last AI message's metadata
+    String? specialization = _lastSpecialization;
+    
+    // Show loading indicator
+    setState(() => _isLoading = true);
+    
+    try {
+      // get user 
+      final user = await FirebaseFirestore.instance.collection('users').doc(auth.user?.uid).get();
+
+      // Use AI redirection to find and navigate to doctor
+      await AIRedirection.navigateToDoctor(
+        context: context,
+        specialization: specialization ?? 'All Specializations',
+        minFee: int.tryParse(user['min_consultation_fee']) ?? 0,
+        maxFee: int.tryParse(user['max_consultation_fee']) ?? 2000,
+      );
+    } catch (e) {
+      if (mounted) {
+        debugPrint(e.toString());
+        _showErrorSnackBar('Error finding a doctor. Please try again.');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   /// Build message input area with modern design
@@ -589,39 +733,57 @@ class _JoyAIChatState extends State<JoyAIChat>
   Widget build(BuildContext context) {
     super.build(context); // Required for AutomaticKeepAliveClientMixin
 
-    return AppScaffold(
-      title: "Joy AI Assistant",
-      selectedIndex: _selectedIndex,
-      onItemTapped: _onItemTapped,
-      body: FadeTransition(
-        opacity: _fadeAnimation,
-        child: SlideTransition(
-          position: _slideAnimation,
-          child: Column(
+    return Stack(
+      children: [
+        AppScaffold(
+          title: "Joy AI Assistant",
+          selectedIndex: _selectedIndex,
+          onItemTapped: _onItemTapped,
+          body: Stack(
             children: [
-              // Chat messages area
-              Expanded(
-                child: _messages.isEmpty
-                    ? _buildEmptyState()
-                    : AnimationLimiter(
-                        child: ListView.builder(
-                          controller: _scrollController,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          itemCount: _messages.length,
-                          itemBuilder: (context, index) {
-                            return _buildMessageBubble(_messages[index], index);
-                          },
-                        ),
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: SlideTransition(
+                  position: _slideAnimation,
+                  child: Column(
+                    children: [
+                      // Chat messages area with bottom padding for the input
+                      Expanded(
+                        child: _messages.isEmpty
+                            ? _buildEmptyState()
+                            : AnimationLimiter(
+                                child: ListView.builder(
+                                  controller: _scrollController,
+                                  padding: const EdgeInsets.only(
+                                    top: 16,
+                                    bottom: 16,
+                                    left: 16,
+                                    right: 16,
+                                  ),
+                                  itemCount: _messages.length,
+                                  itemBuilder: (context, index) {
+                                    return _buildMessageBubble(_messages[index], index);
+                                  },
+                                ),
+                              ),
                       ),
+                      // Message input with top margin for the quick consult button
+                      Container(
+                        margin: const EdgeInsets.only(top: 12),
+                        child: _buildMessageInput(),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-
-              // Message input
-              _buildMessageInput(),
+              // Positioned quick consult button
+              if (_messages.isNotEmpty) _buildQuickConsultButton(),
             ],
           ),
         ),
-      ),
+      ],
     );
+  
   }
 }
 
@@ -634,6 +796,7 @@ class ChatMessage {
   final String messageId;
   final bool isStreaming;
   final bool isError;
+  final Map<String, dynamic> metadata;
 
   const ChatMessage({
     required this.text,
@@ -642,6 +805,7 @@ class ChatMessage {
     required this.messageId,
     this.isStreaming = false,
     this.isError = false,
+    this.metadata = const {},
   });
 
   /// Create a copy with modified properties
@@ -652,6 +816,7 @@ class ChatMessage {
     String? messageId,
     bool? isStreaming,
     bool? isError,
+    Map<String, dynamic>? metadata,
   }) {
     return ChatMessage(
       text: text ?? this.text,
@@ -660,6 +825,7 @@ class ChatMessage {
       messageId: messageId ?? this.messageId,
       isStreaming: isStreaming ?? this.isStreaming,
       isError: isError ?? this.isError,
+      metadata: metadata ?? this.metadata,
     );
   }
 
