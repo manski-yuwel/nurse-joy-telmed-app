@@ -73,7 +73,6 @@ Future<QuerySnapshot> getAppointmentList(String doctorId) async {
 // get user details
 Future<DocumentSnapshot> getUserDetails(String userId) async {
   final userDetails = await FirebaseFirestore.instance.collection('users').doc(userId).get();
-
   return userDetails;
 }
 

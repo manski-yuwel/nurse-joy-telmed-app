@@ -11,11 +11,9 @@ class DoctorPage extends StatefulWidget {
   const DoctorPage(
       {super.key,
       required this.doctorId,
-      required this.userDetails,
       required this.doctorDetails});
 
   final String doctorId;
-  final DocumentSnapshot userDetails;
   final DocumentSnapshot doctorDetails;
 
   @override
@@ -202,8 +200,7 @@ Future<void> _bookAppointment() async {
   Widget build(BuildContext context) {
     final doctorData =
         widget.doctorDetails.data() as Map<String, dynamic>? ?? {};
-    final userData = widget.userDetails.data() as Map<String, dynamic>? ?? {};
-    final name = '${userData['first_name']} ${userData['last_name']}';
+    final name = '${doctorData['first_name']} ${doctorData['last_name']}';
     final specialty = doctorData['specialization'] ?? 'General Practitioner';
     final rating = (doctorData['rating'] ?? 0.0).toDouble();
     final reviewCount = doctorData['num_of_ratings'] ?? 0;
@@ -219,8 +216,8 @@ Future<void> _bookAppointment() async {
         (doctorData['services_offered'] as List<dynamic>?)?.cast<String>() ??
             [];
 
-    final isOnline = userData['status_online'] ?? false;
-    final imageUrl = userData['profile_pic'] ?? '';
+    final isOnline = doctorData['status_online'] ?? false;
+    final imageUrl = doctorData['profile_pic'] ?? '';
 
     return AppScaffold(
       title: 'Doctor Details',
@@ -468,10 +465,10 @@ Future<void> _bookAppointment() async {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildContactItem(
-                          Icons.email, 'Email', '${userData['email']}'),
+                          Icons.email, 'Email', '${doctorData['email']}'),
                       const SizedBox(height: 12),
                       _buildContactItem(Icons.phone, 'Phone',
-                          userData['phone_number'] ?? 'Not provided'),
+                          doctorData['phone_number'] ?? 'Not provided'),
                       const SizedBox(height: 12),
                       _buildContactItem(Icons.location_on, 'Location',
                           'Hospital or Clinic Address'),

@@ -13,7 +13,9 @@ import 'package:nursejoyapp/shared/utils/utils.dart';
 /// Doctor list interface for Nurse Joy application
 /// Implements modern UI patterns with performance optimizations
 class DoctorList extends StatefulWidget {
-  const DoctorList({super.key});
+  final Map<String, dynamic> initialData;
+  
+  const DoctorList({super.key, required this.initialData});
 
   @override
   State<DoctorList> createState() => _DoctorListState();
@@ -42,7 +44,11 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
   Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
     try {
-      final doctors = await getVerifiedFilteredDoctorList();
+      final doctors = await getVerifiedFilteredDoctorList(
+        specialization: widget.initialData['specialization'],
+        minFee: widget.initialData['minFee'],
+        maxFee: widget.initialData['maxFee'],
+      );
       _filteredDoctors = doctors;
 
       setState(() {
@@ -403,8 +409,7 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
               onTap: () {
                 HapticFeedback.lightImpact();
                 // navigate to doctor page with doctorDetails and userDetails
-                context.go('/doctor/${userDetails.id}', extra: {
-                  'userDetails': userDetails,
+                context.push('/doctor/${userDetails.id}', extra: {
                   'doctorDetails': doctor,
                 });
               },

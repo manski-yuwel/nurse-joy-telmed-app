@@ -180,7 +180,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/doctor-list',
-        builder: (context, state) => const DoctorList(),
+        builder: (context, state) => DoctorList(initialData: state.extra as Map<String, dynamic>),
       ),
       GoRoute(
         path: '/doctor/:doctorId',
@@ -190,7 +190,6 @@ class AppRouter {
             return DoctorPage(
               doctorId: state.pathParameters['doctorId']!,
               doctorDetails: extra['doctorDetails'] as DocumentSnapshot,
-              userDetails: extra['userDetails'] as DocumentSnapshot,
             );
           }
           throw Exception('No extra data found');
