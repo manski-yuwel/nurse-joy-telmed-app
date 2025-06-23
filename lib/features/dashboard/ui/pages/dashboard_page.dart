@@ -292,7 +292,7 @@ class _DashboardPageState extends State<DashboardPage> {
       final recipientUserDetails = await getUserDetails(body['senderID']);
       final recipientFullName = recipientUserDetails['full_name'];
       if (context.mounted) {
-        context.go(
+        context.push(
           '/chat/${body['chatRoomID']}',
           extra: {'recipientID': body['senderID'], 'recipientFullName': recipientFullName},
         );

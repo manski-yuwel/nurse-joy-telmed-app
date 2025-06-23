@@ -394,7 +394,7 @@ Future<void> _bookAppointment() async {
                       final chat = Chat();
                       final chatRoomID = chat.generateChatRoomID(auth.user!.uid, widget.doctorId);
                       chat.generateChatRoom(chatRoomID, auth.user!.uid, widget.doctorId);
-                      context.go('/chat/$chatRoomID', extra: {
+                      context.push('/chat/$chatRoomID', extra: {
                         'recipientID': widget.doctorId,
                         'recipientFullName': '${widget.doctorDetails['first_name']} ${widget.doctorDetails['last_name']}',
                       });

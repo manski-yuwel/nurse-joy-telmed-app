@@ -230,7 +230,7 @@ class _ChatListPageState extends State<ChatListPage>
         borderRadius: BorderRadius.circular(12),
         onTap: () {
           chatInstance.generateChatRoom(chatRoomID, currentUserID, recipientID);
-          context.go('/chat/$chatRoomID', extra: {'recipientID': recipientID, 'recipientFullName': fullName});
+          context.push('/chat/$chatRoomID', extra: {'recipientID': recipientID, 'recipientFullName': fullName});
         },
         child: Padding(
           padding: const EdgeInsets.all(12.0),
