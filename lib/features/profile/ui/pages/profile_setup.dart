@@ -169,8 +169,8 @@ class _ProfileSetupState extends State<ProfileSetup>
         'age': age,
         'civil_status': civilStatus,
         'gender': gender,
-        'min_consultation_fee': formData[minFeeField] ?? 0,
-        'max_consultation_fee': formData[maxFeeField] ?? 0,
+        'min_consultation_fee': int.tryParse(formData[minFeeField]) ?? 0,
+        'max_consultation_fee': int.tryParse(formData[maxFeeField]) ?? 0,
         'medical_history': formData[medicalHistoryField]?.toString().trim() ?? '',
         'search_index': createSearchIndex(fullNameLowercase),
         'is_setup': true,
@@ -457,6 +457,7 @@ class _ProfileSetupState extends State<ProfileSetup>
                                                       if (fee == null || fee < 0) {
                                                         return 'Fee must be a positive number';
                                                       }
+
                                                       return null;
                                                     },
                                                   ],
