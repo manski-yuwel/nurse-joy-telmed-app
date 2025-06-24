@@ -179,13 +179,13 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
                                   onTap: () => context.go('/doctor-list', extra: {'specialization': null, 'minFee': null, 'maxFee': null}),
                                 ),
                                 _buildModernMenuItem(
-                                  icon: Icons.person_rounded,
+                                  icon: Icons.medical_information_outlined,
                                   title: 'Appointments',
                                   subtitle: 'Appointments List',
                                   onTap: () => context.go('/appointment-list'),
                                 ),
                                 _buildModernMenuItem(
-                                  icon: Icons.person_rounded,
+                                  icon: Icons.medical_information_rounded,
                                   title: 'User Appointments',
                                   subtitle: 'User Appointments List',
                                   onTap: () => context.go('/user-appointment-list'),
@@ -196,6 +196,12 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
                                   title: 'Doctor Profile Set up',
                                   subtitle: 'Doctor Profile Set up',
                                   onTap: () => context.go('/profile-setup/doctor'),
+                                ),
+                                _buildModernMenuItem(
+                                  icon: Icons.attach_money_rounded,
+                                  title: 'Payments',
+                                  subtitle: 'Manage Transactions',
+                                  onTap: () => context.go('/payments'),
                                 ),
                               ],
                             ),

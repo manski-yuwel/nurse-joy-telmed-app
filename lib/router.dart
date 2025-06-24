@@ -24,6 +24,7 @@ import 'package:nursejoyapp/features/entry/ui/app_entry.dart';
 import 'package:nursejoyapp/features/ai/joy_ai_chat.dart';
 import 'package:nursejoyapp/main.dart';
 import 'package:flutter/foundation.dart';
+import 'package:nursejoyapp/features/payments/ui/pages/payments_page.dart';
 
 class AppRouter {
   final AuthService authService;
@@ -204,6 +205,10 @@ class AppRouter {
               state.pathParameters['userId'] ?? authService.user!.uid;
           return ProfilePage(userID: userId);
         },
+      ),
+      GoRoute(
+        path: '/payments',
+        builder: (context, state) => const PaymentsPage(),
       ),
     ],
   );
