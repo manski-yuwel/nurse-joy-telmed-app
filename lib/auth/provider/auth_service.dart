@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:nursejoyapp/shared/utils/utils.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 
 final logger = Logger();
 
@@ -11,10 +12,10 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   final db = FirebaseFirestore.instance;
   final auth = FirebaseAuth.instance;
   final fcm = FirebaseMessaging.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn();
   User? user;
   BuildContext? context;
   User? get currentUser => user;
-
 
   AuthService() {
     WidgetsBinding.instance.addObserver(this);
@@ -30,7 +31,10 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
 
         // save the fcm token in firestore
         if (fcmToken != null) {
-          await db.collection('fcm_tokens').doc(user.uid).set({'fcm_token': fcmToken}, SetOptions(merge: true));
+          await db
+              .collection('fcm_tokens')
+              .doc(user.uid)
+              .set({'fcm_token': fcmToken}, SetOptions(merge: true));
           logger.i('FCM token saved in firestore: $fcmToken');
         }
         setUpMessagingListeners();
@@ -56,10 +60,119 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
+  // Add Google Sign-In method
+  Future<String?> signInWithGoogle() async {
+    try {
+      // Trigger the authentication flow
+      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+
+      if (googleUser == null) {
+        // User canceled the sign-in
+        return 'Sign-in cancelled';
+      }
+
+      // Obtain the auth details from the request
+      final GoogleSignInAuthentication googleAuth =
+          await googleUser.authentication;
+
+      // Create a new credential
+      final credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      // Sign in to Firebase with the Google credential
+      final UserCredential userCredential =
+          await auth.signInWithCredential(credential);
+      final User? firebaseUser = userCredential.user;
+
+      if (firebaseUser == null) {
+        return 'Failed to sign in with Google';
+      }
+
+      // Check if this is a new user
+      final bool isNewUser =
+          userCredential.additionalUserInfo?.isNewUser ?? false;
+
+      if (isNewUser) {
+        // Create user document for new Google sign-in users
+        await _createUserDocument(firebaseUser);
+      }
+
+      // Update user status to online
+      await updateUserStatus(firebaseUser, true);
+
+      return 'Success';
+    } on FirebaseAuthException catch (e) {
+      logger.e('Firebase Auth Error: ${e.message}');
+      return e.message ?? 'Authentication failed';
+    } catch (e) {
+      logger.e('Google Sign-In Error: $e');
+      return 'An error occurred during sign-in';
+    }
+  }
+
+// Helper method to create user document for Google sign-in users
+  Future<void> _createUserDocument(User user) async {
+    try {
+      final userID = user.uid;
+      final displayName = user.displayName ?? '';
+      final nameParts = displayName.split(' ');
+      final firstName = nameParts.isNotEmpty ? nameParts.first : '';
+      final lastName =
+          nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+      final fullNameLowercase = displayName.toLowerCase();
+
+      // Get FCM token
+      final fcmToken = await fcm.getToken();
+
+      // Create user document
+      await db.collection('users').doc(userID).set({
+        'email': user.email ?? '',
+        'profile_pic': user.photoURL ?? '',
+        'full_name': displayName,
+        'first_name': firstName,
+        'last_name': lastName,
+        'full_name_lowercase': fullNameLowercase,
+        'civil_status': '',
+        'age': 0,
+        'birthdate': null,
+        'address': '',
+        'phone_number': '',
+        'gender': '',
+        'role': 'user',
+        'status_online': true,
+        'is_setup': false, // User will need to complete profile setup
+        'created_at': FieldValue.serverTimestamp(),
+        'search_index': createSearchIndex(fullNameLowercase),
+        'fcm_token': fcmToken,
+      });
+
+      // Create health information document
+      await db
+          .collection('users')
+          .doc(userID)
+          .collection('health_information')
+          .doc('health_info')
+          .set({
+        'height': 0,
+        'weight': 0,
+        'blood_type': '',
+        'allergies': [],
+        'medications': [],
+        'other_information': '',
+      });
+
+      logger.i('User document created for Google sign-in user: $userID');
+    } catch (e) {
+      logger.e('Error creating user document: $e');
+      throw e;
+    }
+  }
+
   Future<String?> signIn(String email, String password) async {
     try {
       await auth.signInWithEmailAndPassword(email: email, password: password);
-
 
       // update the status of the user to online if the user signs in
       updateUserStatus(user, true);
@@ -79,7 +192,8 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
 
   Future<String?> signUp(String email, String password) async {
     try {
-      final credential = await auth.createUserWithEmailAndPassword(email: email, password: password);
+      final credential = await auth.createUserWithEmailAndPassword(
+          email: email, password: password);
       // get the user id generated by firebase auth
       final userID = credential.user!.uid;
 
@@ -138,7 +252,8 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   }) async {
     try {
       // First register the user account
-      final result = await auth.createUserWithEmailAndPassword(email: email, password: password);
+      final result = await auth.createUserWithEmailAndPassword(
+          email: email, password: password);
 
       if (result.user == null) {
         return 'Failed to create user';
@@ -148,7 +263,6 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
       final userID = result.user!.uid;
       final fullName = '$firstName $lastName';
       final fullNameLowercase = fullName.toLowerCase();
-
 
       // Update the user role to doctor
       await db.collection('users').doc(userID).set({
@@ -193,7 +307,12 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'education_file_path': doctorDetails['education_file'] ?? '',
       });
 
-      await db.collection('users').doc(userID).collection('doctor_information').doc('profile').set({
+      await db
+          .collection('users')
+          .doc(userID)
+          .collection('doctor_information')
+          .doc('profile')
+          .set({
         'specialization': doctorDetails['specialization'] ?? '',
         'license_number': doctorDetails['license_number'] ?? '',
         'years_of_experience': doctorDetails['years_of_experience'] ?? 0,
@@ -230,15 +349,13 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
       logger.e('Error registering doctor: $e');
       return e.toString();
     }
-    
   }
-
 
   Future<void> signOut() async {
     // update the status to offline if the user signs out
     updateUserStatus(user, false);
+    await _googleSignIn.signOut();
     await auth.signOut();
-
   }
 
   Future<void> updateUserStatus(User? user, bool status) async {
@@ -258,7 +375,6 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   void setUpMessagingListeners() async {
-
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       logger.i('Message received in foreground: ${message.notification}');
     });
@@ -269,9 +385,9 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
 
     fcm.getInitialMessage().then((RemoteMessage? message) {
       if (message != null) {
-        logger.i('Message received in initial message: ${message.notification}');
+        logger
+            .i('Message received in initial message: ${message.notification}');
       }
     });
   }
-
 }
