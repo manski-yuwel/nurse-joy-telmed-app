@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -10,6 +11,9 @@ import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
 
 // TODO:
 // - build backend api for uploading profile pic
@@ -28,6 +32,10 @@ class ProfilePage extends StatefulWidget {
 class _ProfilePageState extends State<ProfilePage> {
   final _formKey = GlobalKey<FormBuilderState>();
   int _selectedIndex = 2; // Set to 2 for Profile tab
+  bool _isUploading = false;
+  File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
+  
 
   // Form field names
   static const String emailField = 'email';
@@ -62,11 +70,81 @@ class _ProfilePageState extends State<ProfilePage> {
     'Prefer not to say'
   ];
 
+
   @override
   void initState() {
     super.initState();
     _fetchUserProfile();
   }
+
+  Future<void> _pickAndUploadImage() async {
+    try {
+      final XFile? pickedFile = await _picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 70,
+      );
+
+      if (pickedFile != null) {
+        setState(() {
+          _imageFile = File(pickedFile.path);
+          _isUploading = true;
+        });
+
+        // Upload to Supabase Storage
+        final userId = widget.userID;
+        final fileName = 'profile_pics/${userId}_profile${path.extension(pickedFile.path)}';
+        print(fileName);
+        final file = File(pickedFile.path);
+
+        // Get Supabase client
+        final supabaseClient = Supabase.instance.client;
+
+        // Upload to Supabase Storage
+        final imageUrl = await supabaseClient.storage
+            .from('avatars')
+            .upload(
+              fileName,
+              file,
+              fileOptions: const FileOptions(
+                cacheControl: '3600',
+                upsert: true,
+              ),
+            );
+
+
+        // Update user's profile in Firestore
+        await FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .update({
+          'profile_pic': imageUrl,
+        });
+
+        // Update local state
+        setState(() {
+          _currentProfileImageUrl = imageUrl;
+          _isUploading = false;
+        });
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile picture updated successfully')),
+        );
+      }
+    } catch (e) {
+      logger.e('Error uploading profile picture: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Failed to update profile picture. Please try again.')),
+      );
+      setState(() => _isUploading = false);
+    }
+  }
+
+
+
+
 
   Future<void> _fetchUserProfile() async {
     setState(() => _isLoading = true);
@@ -105,8 +183,8 @@ class _ProfilePageState extends State<ProfilePage> {
             genderField: data['gender'],
             birthdateField: birthdate,
           };
-          _currentProfileImageUrl = data['avatarurl'];
-          _isDataLoaded = true; // Set flag when data is ready
+          _currentProfileImageUrl = data['profile_pic'];
+          _isDataLoaded = true;
         });
 
         // Debug log
@@ -196,6 +274,13 @@ class _ProfilePageState extends State<ProfilePage> {
         'search_index': _createSearchIndex(fullNameLowercase),
       });
 
+      // update profile pic
+      if (formData['profile_pic'] != null) {
+        await FirebaseFirestore.instance.collection('users').doc(userId).update({
+          'profile_pic': formData['profile_pic'],
+        });
+      }
+
       setState(() => _isEditing = false);
       _showSnackBar('Profile updated successfully!', Colors.green);
     } catch (error) {
@@ -284,26 +369,54 @@ class _ProfilePageState extends State<ProfilePage> {
           : SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: FormBuilder(
-                // CRITICAL: Use the _formKey directly, don't change the key
                 key: _formKey,
                 enabled: _isEditing,
                 initialValue: _formData,
                 child: Column(
                   children: [
                     // Profile Image
-                    CircleAvatar(
-                      radius: 50,
-                      backgroundColor: Colors.grey.shade200,
-                      backgroundImage: _currentProfileImageUrl != null
-                          ? NetworkImage(_currentProfileImageUrl!)
-                          : null,
-                      child: _currentProfileImageUrl == null
-                          ? const Icon(
-                              Icons.person,
-                              size: 50,
-                              color: Colors.grey,
-                            )
-                          : null,
+                    GestureDetector(
+                      onTap: _isEditing ? _pickAndUploadImage : null,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          CircleAvatar(
+                            radius: 50,
+                            backgroundColor: Colors.grey[200],
+                            backgroundImage: _imageFile != null
+                                ? FileImage(_imageFile!)
+                                : _currentProfileImageUrl != null
+                                    ? NetworkImage(_currentProfileImageUrl!)
+                                    : null,
+                            child: _currentProfileImageUrl == null && _imageFile == null
+                                ? const Icon(Icons.person, size: 50, color: Colors.grey)
+                                : null,
+                          ),
+                          if (_isEditing)
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(4),
+                                decoration: const BoxDecoration(
+                                  color: Colors.white,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.camera_alt,
+                                  color: Colors.blue,
+                                  size: 20,
+                                ),
+                              ),
+                            ),
+                          if (_isUploading)
+                            const Positioned.fill(
+                              child: Center(
+                                child: CircularProgressIndicator(),
+                              ),
+                            ),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 24),
 
