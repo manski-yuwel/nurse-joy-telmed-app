@@ -507,7 +507,10 @@ class _ChatListPageState extends State<ChatListPage>
       selectedIndex: _selectedIndex,
       onItemTapped: _onItemTapped,
       actions: [
-        buildCircleImage('assets/img/nursejoy.jpg', 5, 1.5),
+        IconButton(
+          icon: buildCircleImage('assets/img/nursejoy.jpg', 0.5, 1.6),
+          onPressed: () => context.push('/ai'),
+        )
       ],
       floatingActionButton: FloatingActionButton(
         backgroundColor: primaryColor,
