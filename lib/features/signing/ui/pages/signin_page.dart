@@ -30,17 +30,17 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    
+
     _fadeController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 800),
     );
-    
+
     _slideController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    
+
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -48,7 +48,7 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
       parent: _fadeController,
       curve: Curves.easeInOut,
     ));
-    
+
     _slideAnimation = Tween<Offset>(
       begin: const Offset(0.0, 0.3),
       end: Offset.zero,
@@ -56,7 +56,7 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
       parent: _slideController,
       curve: Curves.easeOutCubic,
     ));
-    
+
     _fadeController.forward();
     _slideController.forward();
   }
@@ -68,7 +68,8 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
     super.dispose();
   }
 
-  InputDecoration _getInputDecoration(String label, IconData icon, {bool isPassword = false}) {
+  InputDecoration _getInputDecoration(String label, IconData icon,
+      {bool isPassword = false}) {
     return InputDecoration(
       labelText: label,
       labelStyle: const TextStyle(
@@ -147,6 +148,39 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
     } catch (e) {
       if (context.mounted) {
         _showSnackBar("An error occurred. Please try again.", Colors.red);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  Future<void> _signInWithGoogle() async {
+    if (_isLoading) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      final auth = Provider.of<AuthService>(context, listen: false);
+      final res = await auth.signInWithGoogle();
+
+      if (res == 'Success') {
+        if (context.mounted) {
+          _showSnackBar(
+              "Welcome! Signed in with Google successfully.", Colors.green);
+          // Small delay to show success message
+          await Future.delayed(const Duration(milliseconds: 500));
+          context.go('/');
+        }
+      } else {
+        if (context.mounted) {
+          _showSnackBar(res ?? "Google sign-in failed.", Colors.red);
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        _showSnackBar("An error occurred during Google sign-in.", Colors.red);
       }
     } finally {
       if (mounted) {
@@ -241,31 +275,31 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
               ),
             ),
             const SizedBox(height: 32),
-            
             FormBuilderTextField(
               name: emailField,
-              decoration: _getInputDecoration('Email Address', Icons.email_outlined),
+              decoration:
+                  _getInputDecoration('Email Address', Icons.email_outlined),
               keyboardType: TextInputType.emailAddress,
               validator: FormBuilderValidators.compose([
                 FormBuilderValidators.required(errorText: 'Email is required'),
-                FormBuilderValidators.email(errorText: 'Please enter a valid email'),
+                FormBuilderValidators.email(
+                    errorText: 'Please enter a valid email'),
               ]),
             ),
-            
             const SizedBox(height: 24),
-            
             FormBuilderTextField(
               name: passwordField,
-              decoration: _getInputDecoration('Password', Icons.lock_outline, isPassword: true),
+              decoration: _getInputDecoration('Password', Icons.lock_outline,
+                  isPassword: true),
               obscureText: _obscurePassword,
               validator: FormBuilderValidators.compose([
-                FormBuilderValidators.required(errorText: 'Password is required'),
-                FormBuilderValidators.minLength(6, errorText: 'Password must be at least 6 characters'),
+                FormBuilderValidators.required(
+                    errorText: 'Password is required'),
+                FormBuilderValidators.minLength(6,
+                    errorText: 'Password must be at least 6 characters'),
               ]),
             ),
-            
             const SizedBox(height: 16),
-            
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
@@ -279,9 +313,7 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
                 ),
               ),
             ),
-            
             const SizedBox(height: 24),
-            
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -301,7 +333,8 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.black87),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.black87),
                         ),
                       )
                     : const Text(
@@ -313,9 +346,7 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
                       ),
               ),
             ),
-            
             const SizedBox(height: 32),
-            
             Row(
               children: [
                 Expanded(child: Divider(color: Colors.grey.shade300)),
@@ -332,20 +363,16 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
                 Expanded(child: Divider(color: Colors.grey.shade300)),
               ],
             ),
-            
             const SizedBox(height: 24),
-            
             _buildSocialButton(
-              onPressed: () {}, // TODO: Implement Google sign-in logic
+              onPressed: _isLoading ? () {} : () => _signInWithGoogle(),
               text: "Continue with Google",
               icon: Icons.g_translate,
               color: Colors.white,
               textColor: Colors.black87,
               borderColor: Colors.grey.shade300,
             ),
-            
             const SizedBox(height: 16),
-            
             _buildSocialButton(
               onPressed: () {}, // TODO: Implement Facebook sign-in logic
               text: "Continue with Facebook",
@@ -353,9 +380,7 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
               color: const Color(0xFF1877F2),
               textColor: Colors.white,
             ),
-            
             const SizedBox(height: 32),
-            
             Center(
               child: GestureDetector(
                 onTap: () => context.go('/register'),
@@ -387,7 +412,7 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
   }
 
   Widget _buildSocialButton({
-    required VoidCallback onPressed,
+    required VoidCallback? onPressed, // Add the ? to make it nullable
     required String text,
     required IconData icon,
     required Color color,
@@ -413,8 +438,8 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: borderColor != null 
-                ? BorderSide(color: borderColor) 
+            side: borderColor != null
+                ? BorderSide(color: borderColor)
                 : BorderSide.none,
           ),
           elevation: 0,
@@ -459,7 +484,7 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
                       ),
                     ),
                   ),
-                  
+
                   // Sign In Form
                   Expanded(
                     child: SingleChildScrollView(
