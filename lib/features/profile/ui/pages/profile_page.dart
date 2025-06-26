@@ -1,5 +1,7 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -14,6 +16,7 @@ import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
+import 'package:file_picker/file_picker.dart';
 
 // TODO:
 // - build backend api for uploading profile pic
@@ -34,6 +37,7 @@ class _ProfilePageState extends State<ProfilePage> {
   int _selectedIndex = 2; // Set to 2 for Profile tab
   bool _isUploading = false;
   File? _imageFile;
+  Uint8List? _imageBytes;
   final ImagePicker _picker = ImagePicker();
   
 
@@ -79,7 +83,59 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Future<void> _pickAndUploadImage() async {
     try {
-      final XFile? pickedFile = await _picker.pickImage(
+      if (kIsWeb) {
+        print("web");
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          allowMultiple: false,
+          withData: true,
+        );
+        if (result != null) {
+          final file = result.files.single;
+          final fileName = file.name;
+          final bytes = file.bytes;
+          setState(() {
+            _imageBytes = bytes;
+            _isUploading = true;
+          });
+
+          final path = 'profile_pics/$fileName';
+
+        // Upload to Supabase
+        final response = await Supabase.instance.client.storage
+            .from('avatars')
+            .uploadBinary(
+              path,
+              _imageBytes!,
+              fileOptions: const FileOptions(
+                cacheControl: '3600',
+                upsert: true,
+              ),
+            );
+
+        // get file url
+        final fileUrl = Supabase.instance.client.storage.from('avatars').getPublicUrl(path);
+
+        // upload to firestore
+        await FirebaseFirestore.instance.collection('users').doc(widget.userID).update({
+          'profile_pic': fileUrl,
+        });
+
+        setState(() {
+          _currentProfileImageUrl = fileUrl;
+          _isUploading = false;
+        });
+
+        
+        print('Uploaded file URL: $response');
+      } else {
+        print('File picking cancelled.');
+      }
+
+
+      }
+      else {
+        final XFile? pickedFile = await _picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 70,
       );
@@ -92,8 +148,8 @@ class _ProfilePageState extends State<ProfilePage> {
 
         // Upload to Supabase Storage
         final userId = widget.userID;
-        final fileName = 'profile_pics/${userId}_profile${path.extension(pickedFile.path)}';
-        print(fileName);
+        final filePath = 'profile_pics/${userId}_profile${path.extension(pickedFile.path)}';
+        print(filePath);
         final file = File(pickedFile.path);
 
         // Get Supabase client
@@ -103,7 +159,7 @@ class _ProfilePageState extends State<ProfilePage> {
         final imageUrl = await supabaseClient.storage
             .from('avatars')
             .upload(
-              fileName,
+              filePath,
               file,
               fileOptions: const FileOptions(
                 cacheControl: '3600',
@@ -111,18 +167,21 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             );
 
+        // get file url
+        final fileUrl = Supabase.instance.client.storage.from('avatars').getPublicUrl(filePath);
+
 
         // Update user's profile in Firestore
         await FirebaseFirestore.instance
             .collection('users')
             .doc(userId)
             .update({
-          'profile_pic': imageUrl,
+          'profile_pic': fileUrl,
         });
 
         // Update local state
         setState(() {
-          _currentProfileImageUrl = imageUrl;
+          _currentProfileImageUrl = fileUrl;
           _isUploading = false;
         });
 
@@ -131,7 +190,9 @@ class _ProfilePageState extends State<ProfilePage> {
           const SnackBar(content: Text('Profile picture updated successfully')),
         );
       }
-    } catch (e) {
+    }
+      }
+       catch (e) {
       logger.e('Error uploading profile picture: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -384,14 +445,17 @@ class _ProfilePageState extends State<ProfilePage> {
                             radius: 50,
                             backgroundColor: Colors.grey[200],
                             backgroundImage: _imageFile != null
-                                ? FileImage(_imageFile!)
-                                : _currentProfileImageUrl != null
+                                ? (kIsWeb
+                                    ? MemoryImage(_imageBytes!) // For web: use MemoryImage from bytes
+                                    : FileImage(_imageFile!) as ImageProvider)   // For mobile: use FileImage
+                                : (_currentProfileImageUrl != null
                                     ? NetworkImage(_currentProfileImageUrl!)
-                                    : null,
+                                    : null),
                             child: _currentProfileImageUrl == null && _imageFile == null
                                 ? const Icon(Icons.person, size: 50, color: Colors.grey)
                                 : null,
                           ),
+
                           if (_isEditing)
                             Positioned(
                               bottom: 0,
