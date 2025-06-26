@@ -212,7 +212,7 @@ class _ChatListPageState extends State<ChatListPage>
   }) {
     final fullName = "${user['first_name']} ${user['last_name']}";
     final isOnline = user['status_online'] == true;
-    final avatarUrl = user['avatar_url'] as String?;
+    final avatarUrl = user['profile_pic'] as String?;
     final chatRoomID =
         chatInstance.generateChatRoomID(currentUserID, recipientID);
 

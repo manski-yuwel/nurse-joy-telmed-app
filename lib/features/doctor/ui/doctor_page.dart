@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
@@ -241,7 +242,7 @@ Future<void> _bookAppointment() async {
                     color: Colors.grey[200],
                     image: imageUrl.isNotEmpty
                         ? DecorationImage(
-                            image: NetworkImage(imageUrl),
+                            image: CachedNetworkImageProvider(imageUrl),
                             fit: BoxFit.cover,
                           )
                         : null,
