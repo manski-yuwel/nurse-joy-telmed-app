@@ -81,3 +81,9 @@ Future<void> setIsSetup(String userID, bool isSetup) async {
   });
 }
 
+
+// get user profile pic url
+Future<String> getProfilePicURL(String userID) async {
+  final doc = await db.collection('users').doc(userID).get();
+  return doc.data()!['profile_pic'];
+}

@@ -243,11 +243,11 @@ class _ChatRoomPageState extends State<ChatRoomPage>
               radius: 16,
               backgroundColor: Colors.grey.shade300,
               backgroundImage: _recipientData != null &&
-                      _recipientData!['avatar_url'] != null
-                  ? CachedNetworkImageProvider(_recipientData!['avatar_url'])
+                      _recipientData!['profile_pic'] != null
+                  ? CachedNetworkImageProvider(_recipientData!['profile_pic'])
                   : null,
               child: _recipientData == null ||
-                      _recipientData!['avatar_url'] == null
+                      _recipientData!['profile_pic'] == null
                   ? Text(
                       widget.recipientFullName.isNotEmpty
                           ? widget.recipientFullName
@@ -812,11 +812,11 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                 radius: 18,
                 backgroundColor: Colors.grey.shade300,
                 backgroundImage: _recipientData != null &&
-                        _recipientData!['avatar_url'] != null
-                    ? CachedNetworkImageProvider(_recipientData!['avatar_url'])
+                        _recipientData!['profile_pic'] != null
+                    ? CachedNetworkImageProvider(_recipientData!['profile_pic'])
                     : null,
                 child: _recipientData == null ||
-                        _recipientData!['avatar_url'] == null
+                        _recipientData!['profile_pic'] == null
                     ? Text(
                         widget.recipientFullName.isNotEmpty
                             ? widget.recipientFullName
