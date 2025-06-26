@@ -100,6 +100,7 @@ class _ProfilePageState extends State<ProfilePage> {
           });
 
           final path = 'profile_pics/$fileName';
+          print(path);
 
         // Upload to Supabase
         final response = await Supabase.instance.client.storage
