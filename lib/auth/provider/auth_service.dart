@@ -28,6 +28,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         logger.i("User is signed in!");
         // get fcm token
         final fcmToken = await fcm.getToken();
+        await fcm.requestPermission();
 
         // save the fcm token in firestore
         if (fcmToken != null) {
