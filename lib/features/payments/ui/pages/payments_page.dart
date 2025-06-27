@@ -194,12 +194,23 @@ class _PaymentsPageState extends State<PaymentsPage> {
                         ),
                         title: Text('${tx['amountPrefix']}₱${tx['amount']}'),
                         subtitle: Text(tx['directionText']),
-                        trailing: Text(
-                          tx['timestamp'] != null
-                              ? DateFormat('MMM d, y - h:mm a')
-                                  .format((tx['timestamp'] as Timestamp).toDate())
-                              : '--',
-                          style: const TextStyle(fontSize: 12),
+                        trailing: Column(
+                          mainAxisAlignment: MainAxisAlignment.center, // 🔧 Align vertically center
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              tx['timestamp'] != null
+                                  ? DateFormat('MMM d, y - h:mm a')
+                                      .format((tx['timestamp'] as Timestamp).toDate())
+                                  : '--',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            if (tx['transactionId'] != null)
+                              Text(
+                                'Ref: ${tx['transactionId']}',
+                                style: const TextStyle(fontSize: 10, color: Colors.grey),
+                              ),
+                          ],
                         ),
                       );
                     },
