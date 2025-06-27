@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/payments/data/payments_data.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -22,7 +23,14 @@ class _PaymentsPageState extends State<PaymentsPage> {
   }
 
   void _onItemTapped(int index) {
+    if (index == 0) {
+      context.push('/chat');
+    } else if (index == 1) {
+      context.push('/home');
+    } else if (index == 2) {
+      context.push('/profile');
     // Handle bottom nav taps if needed
+    }
   }
 
   void _showSendMoneyDialog() async {
