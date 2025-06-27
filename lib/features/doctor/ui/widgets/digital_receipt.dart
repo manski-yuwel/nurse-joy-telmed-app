@@ -75,15 +75,23 @@ class _DigitalReceiptDialogState extends State<DigitalReceiptDialog> {
   Future<void> _handlePayment() async {
     final total = widget.amount;
 
+    if (_isProcessing) return;
+
     if (_balance < total) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Insufficient balance.'),
-          backgroundColor: Colors.black87,
-          duration: Duration(seconds: 2),
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Insufficient Balance'),
+          content: const Text('Your balance is not enough to pay for this appointment.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('OK'),
+            ),
+          ],
         ),
       );
-      return;
+      return; // make sure to return here
     }
 
     setState(() => _isProcessing = true);
