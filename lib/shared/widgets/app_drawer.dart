@@ -201,7 +201,7 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
                                   icon: Icons.attach_money_rounded,
                                   title: 'Payments',
                                   subtitle: 'Manage Transactions',
-                                  onTap: () => context.go('/payments'),
+                                  onTap: () => context.push('/payments'),
                                 ),
                               ],
                             ),
