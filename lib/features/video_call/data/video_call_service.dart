@@ -3,7 +3,6 @@ import 'package:logger/logger.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:flutter/material.dart';
 
 class VideoCallService {
   final logger = Logger();
@@ -35,8 +34,8 @@ class VideoCallService {
   // generate token for the call
   String generateToken(String channelName) {
     // implement token server in next js
-    String token = '';
-    return token;
+    String? token = null;
+    return token!;
   }
 
   // Get user list
@@ -94,6 +93,8 @@ class VideoCallService {
       'senderID': callerID,
       'recipientID': calleeID,
       'message_body': 'Video call ended.',
+      'message_type': 'video_call',
+      'call_status': 'ended',
       'timestamp': FieldValue.serverTimestamp(),
     });
 
@@ -125,8 +126,10 @@ class VideoCallService {
   // --- Agora Engine Methods ---
 
   // Request permissions for camera and microphone
-  Future<void> requestPermissions() async {
-    await [Permission.microphone, Permission.camera].request();
+  Future<bool> requestPermissions() async {
+    final micStatus = await Permission.microphone.request();
+    final cameraStatus = await Permission.camera.request();
+    return micStatus.isGranted && cameraStatus.isGranted;
   }
 
   // Initialize the Agora engine
@@ -152,21 +155,26 @@ class VideoCallService {
     // Register callback handlers
     _engine.registerEventHandler(RtcEngineEventHandler(
       onJoinChannelSuccess: (RtcConnection connection, int elapsed) {
+        logger.i('Joined Channel: ${connection.channelId}');
         _infoStrings.add('Joined Channel: ${connection.channelId}');
       },
       onUserJoined: (RtcConnection connection, int uid, int elapsed) {
+        logger.i('User Joined: $uid');
         _infoStrings.add('User Joined: $uid');
         _users.add(uid);
         if (onUsersUpdated != null) {
           onUsersUpdated!(_users);
+          logger.i('Users Updated: $_users');
         }
       },
       onUserOffline:
           (RtcConnection connection, int uid, UserOfflineReasonType reason) {
+        logger.i('User Offline: $uid');
         _infoStrings.add('User Offline: $uid');
         _users.remove(uid);
         if (onUsersUpdated != null) {
           onUsersUpdated!(_users);
+          logger.i('Users Updated: $_users');
         }
       },
     ));
@@ -179,9 +187,10 @@ class VideoCallService {
       return;
     }
 
-    await _engine.joinChannel(
-      token: "",
+    final result = await _engine.joinChannel(
+      token: generateToken(channelName),
       channelId: channelName,
+      uid: 0,
       options: const ChannelMediaOptions(
         autoSubscribeAudio: true,
         autoSubscribeVideo: true,
@@ -189,8 +198,8 @@ class VideoCallService {
         publishMicrophoneTrack: true,
         clientRoleType: ClientRoleType.clientRoleBroadcaster,
       ),
-      uid: 0,
     );
+    logger.i('Joined Channel: $channelName');
   }
 
   // Toggle mute status
@@ -228,18 +237,28 @@ class VideoCallService {
       {required bool isInitiator,
       required String callerId,
       required String calleeId}) async {
-    final channelName = generateChannelName(chatRoomID);
-
-    await requestPermissions();
-    await initializeAgoraSDK();
-    await setupLocalVideo();
-    setupEventHandlers();
-    await joinChannel(channelName);
-
-    if (isInitiator) {
-      await initiateCall(chatRoomID, callerId, calleeId);
-    } else {
-      await acceptCall(chatRoomID);
+    try {
+      // Request and verify permissions
+      final status = await requestPermissions();
+      if (!status) {
+        throw Exception('Camera and microphone permissions are required');
+      }
+      
+      await initializeAgoraSDK();
+      await setupLocalVideo(); // Setup local video preview
+      setupEventHandlers();
+      
+      final channelName = generateChannelName(chatRoomID);
+      await joinChannel(channelName);
+      
+      if (isInitiator) {
+        await initiateCall(chatRoomID, callerId, calleeId);
+      } else {
+        await acceptCall(chatRoomID);
+      }
+    } catch (e) {
+      logger.e('Error starting video call: $e');
+      rethrow;
     }
   }
 }

@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:nursejoyapp/shared/utils/utils.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -333,7 +334,7 @@ class _ProfilePageState extends State<ProfilePage> {
         'civil_status': formData[civilStatusField],
         'gender': formData[genderField],
         'updated_at': Timestamp.now(),
-        'search_index': _createSearchIndex(fullNameLowercase),
+        'search_index': createSearchIndex(fullNameLowercase),
       });
 
       // update profile pic
@@ -353,15 +354,6 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-  List<String> _createSearchIndex(String fullName) {
-    List<String> searchIndex = [];
-    String currentSubstring = '';
-    for (int i = 0; i < fullName.length; i++) {
-      currentSubstring += fullName[i];
-      searchIndex.add(currentSubstring);
-    }
-    return searchIndex;
-  }
 
   InputDecoration _getInputDecoration(String label, IconData icon) {
     return InputDecoration(

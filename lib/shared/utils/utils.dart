@@ -5,6 +5,10 @@ List<String> createSearchIndex(String fullName) {
   for (String part in parts) {
     nGrams.addAll(createNGrams(part));
   }
+  // add the full name per part in increments
+  for (int i = 1; i <= parts.length; i++) {
+    nGrams.add(parts.take(i).join(' '));
+  }
   return nGrams;
 }
 
@@ -17,6 +21,7 @@ List<String> createNGrams(String part, {int minGram = 1, int maxGram = 10}) {
   }
   return nGrams;
 }
+
 
 List<String> getSpecializations() {
   return [
