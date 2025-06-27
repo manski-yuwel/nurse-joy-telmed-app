@@ -30,7 +30,7 @@ class Chat {
     }
 
     // Get the search term with capitalization variations to improve search
-    String searchTermLower = searchTerm.toLowerCase();
+    String searchTermLower = searchTerm.toLowerCase().trim();
 
     try {
       QuerySnapshot querySnapshot = await db
