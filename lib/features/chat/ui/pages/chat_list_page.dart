@@ -91,7 +91,7 @@ class _ChatListPageState extends State<ChatListPage>
       }
     });
 
-    final results = await chatInstance.searchUsers(searchTerm, currentUserID);
+    final results = await chatInstance.searchUsers(searchTerm.toLowerCase().trim(), currentUserID);
 
     setState(() {
       _searchResults = results;
