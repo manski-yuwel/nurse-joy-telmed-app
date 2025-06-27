@@ -32,6 +32,7 @@ void main() {
         'last_name': '',
         'civil_status': '',
         'age': 0,
+        'balance': 0,
         'birthdate': null,
         'address': '',
         'phone_number': '',
