@@ -3,6 +3,7 @@ import 'package:nursejoyapp/features/video_call/data/video_call_service.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:logger/logger.dart';
 
 class VideoCallPage extends StatefulWidget {
   final String chatRoomID;
@@ -29,6 +30,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
   bool _muted = false;
   bool _videoDisabled = false;
   bool _isInitialized = false;
+  final logger = Logger();
   @override
   void initState() {
     super.initState();
@@ -194,14 +196,49 @@ class _VideoCallPageState extends State<VideoCallPage> {
         backgroundColor: const Color(0xFF58f0d7),
         centerTitle: true,
       ),
-      backgroundColor: Colors.black,
-      body: Center(
-        child: Stack(
-          children: <Widget>[
-            _buildVideoGrid(),
-            _buildControlButtons(),
-          ],
-        ),
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          // Remote video (full screen)
+          if (_users.isNotEmpty)
+            Positioned.fill(
+              child: buildVideoView(_users.first),
+            ),
+          
+          // Local video preview (small window)
+          if (_isInitialized)
+            Positioned(
+              top: 20,
+              right: 20,
+              width: 120,
+              height: 200,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.white, width: 1),
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: buildVideoView(0), // Local video has uid 0
+                ),
+              ),
+            ),
+          
+          // Loading indicator
+          if (!_isInitialized)
+            const Center(
+              child: CircularProgressIndicator(),
+            ),
+          
+          // Control buttons
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: _buildControlButtons(),
+          ),
+        ],
       ),
     );
   }
