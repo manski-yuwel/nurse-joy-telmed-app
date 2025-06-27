@@ -54,6 +54,7 @@ Future<void> _bookAppointment() async {
     barrierDismissible: false,
     builder: (context) => AppointmentBookingDialog(
       doctorId: widget.doctorId,
+      consultationFee: widget.doctorDetails['consultation_fee'] ?? 0,
       onBookingComplete: (AppointmentBooking booking) async {
         context.pop();
         setState(() => _isLoading = true);

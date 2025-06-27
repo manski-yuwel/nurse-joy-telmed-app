@@ -4,6 +4,7 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nursejoyapp/features/doctor/ui/widgets/digital_receipt.dart';
 
 /// Model class for appointment time slot
 class AppointmentTimeSlot {
@@ -124,10 +125,12 @@ class AppointmentBookingDialog extends StatefulWidget {
   final String doctorId;
   final List<AppointmentDay>? availableDays;
   final Function(AppointmentBooking) onBookingComplete;
+  final int consultationFee;
 
   const AppointmentBookingDialog({
     Key? key,
     required this.doctorId,
+    required this.consultationFee,
     required this.onBookingComplete,
     this.availableDays,
   }) : super(key: key);
@@ -275,7 +278,7 @@ class _AppointmentBookingDialogState extends State<AppointmentBookingDialog> {
   void _submitBooking() {
     if (_formKey.currentState?.saveAndValidate() ?? false) {
       final formData = _formKey.currentState!.value;
-      
+
       if (_selectedDay == null || _selectedTimeSlot == null) {
         _showErrorDialog('Please select both a day and time slot');
         return;
@@ -288,7 +291,24 @@ class _AppointmentBookingDialogState extends State<AppointmentBookingDialog> {
         description: formData['description'] ?? '',
       );
 
-      widget.onBookingComplete(booking);
+      final now = DateTime.now();
+      final referenceId = now.microsecondsSinceEpoch.toString();
+
+      showDialog(
+        context: context,
+        builder: (context) => DigitalReceiptDialog(
+          booking: booking,
+          doctorId: widget.doctorId,
+          amount: widget.consultationFee,
+          onConfirm: () {
+            widget.onBookingComplete(booking);
+            context.pop(); // close dialog after confirming
+          },
+          onCancel: () {
+            context.pop(); // just close dialog if cancelled
+          },
+        ),
+      );
     }
   }
 
