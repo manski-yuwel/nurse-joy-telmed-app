@@ -28,6 +28,7 @@ class _DoctorPageState extends State<DoctorPage>
   bool _isLoading = false;
   late AuthService auth;
   DateTime? _selectedDateTime;
+  int _selectedIndex = 1; // Home is selected by default
 
   @override
   void initState() {
@@ -493,12 +494,15 @@ Future<void> _bookAppointment() async {
   }
 
   void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
     if (index == 0) {
       context.go('/chat');
     } else if (index == 1) {
       context.go('/home');
     } else if (index == 2) {
-      context.go('/profile');
+      context.go('/profile/${auth.currentUser?.uid}');
     }
   }
 }

@@ -167,7 +167,7 @@ class _AppScaffoldState extends State<AppScaffold>
                       _buildAppBarButton(
                         icon: Icons.notifications_rounded,
                         onPressed: () {
-                          // Handle notifications
+                          context.go('/activity-list');
                         },
                         showBadge: true,
                       ),

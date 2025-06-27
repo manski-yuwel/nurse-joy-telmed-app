@@ -22,6 +22,20 @@ class DoctorList extends StatefulWidget {
 }
 
 class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMixin {
+  int _selectedIndex = 1; // Home is selected by default
+  
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    if (index == 0) {
+      context.go('/chat');
+    } else if (index == 1) {
+      context.go('/home');
+    } else if (index == 2) {
+      context.go('/profile');
+    }
+  }
   // Cache for doctor details to improve performance
   final Map<String, DocumentSnapshot> _doctorDetailsCache = {};
   final ScrollController _scrollController = ScrollController();
@@ -160,9 +174,9 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
     super.build(context);
     
     return AppScaffold(
-      title: 'Find a Doctor',
-      selectedIndex: 0,
+      selectedIndex: _selectedIndex,
       onItemTapped: _onItemTapped,
+      title: 'Find a Doctor',
       body: Column(
         children: [
           // Search and Filters
@@ -174,15 +188,7 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
     );
   }
 
-  void _onItemTapped(int index) {
-    if (index == 0) {
-      context.go('/chat');
-    } else if (index == 1) {
-      context.go('/home');
-    } else if (index == 2) {
-      context.go('/profile');
-    }
-  }
+
   
   Widget _buildSearchAndFilters() {
     return Card(

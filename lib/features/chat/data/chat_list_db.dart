@@ -30,20 +30,17 @@ class Chat {
     }
 
     // Get the search term with capitalization variations to improve search
-    String searchTermLower = searchTerm.toLowerCase();
+    String searchTermLower = searchTerm.toLowerCase().trim();
 
     try {
-      // Search for users where full name and email contains the search term
       QuerySnapshot querySnapshot = await db
           .collection('users')
           .where('search_index', arrayContains: searchTermLower)
           .limit(10)
           .get();
 
-      // Combine results and filter out the current user
       Set<QueryDocumentSnapshot> combinedResults = {};
       combinedResults.addAll(querySnapshot.docs);
-      // Filter out the current user
       return combinedResults.toList();
     } catch (e) {
       logger.e('Error searching for users: $e');
@@ -104,6 +101,7 @@ class Chat {
 
     await db.collection('chats').doc(chatRoomID).update({
       'last_message': messageBody,
+      'message_type': 'text',
       'timestamp': FieldValue.serverTimestamp(),
       'last_message_senderID': userID,
       'last_message_is_important': isImportant,

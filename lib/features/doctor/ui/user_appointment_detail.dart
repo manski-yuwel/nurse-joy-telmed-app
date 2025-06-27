@@ -20,6 +20,20 @@ class UserAppointmentDetail extends StatefulWidget {
 }
 
 class _UserAppointmentDetailState extends State<UserAppointmentDetail> {
+  int _selectedIndex = 1; // Home is selected by default
+  
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    if (index == 0) {
+      context.go('/chat');
+    } else if (index == 1) {
+      context.go('/home');
+    } else if (index == 2) {
+      context.go('/profile/${widget.authService.currentUser?.uid}');
+    }
+  }
   
   @override 
   void didChangeDependencies() {
@@ -31,8 +45,8 @@ class _UserAppointmentDetailState extends State<UserAppointmentDetail> {
   Widget build(BuildContext context) {
     return AppScaffold(
       title: 'Appointment Detail',
-      selectedIndex: 0,
-      onItemTapped: (index) {},
+      selectedIndex: _selectedIndex,
+      onItemTapped: _onItemTapped,
       actions: [
         IconButton(
           icon: Icon(Icons.chat),

@@ -6,9 +6,25 @@ import 'package:intl/intl.dart';
 import 'package:nursejoyapp/notifications/notification_service.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 
-class ActivityListPage extends StatelessWidget {
+class ActivityListPage extends StatefulWidget {
   const ActivityListPage({super.key});
 
+
+  @override
+  State<ActivityListPage> createState() => _ActivityListPageState();
+}
+
+class _ActivityListPageState extends State<ActivityListPage> {
+
+  void _onItemTapped(int index) {
+    if (index == 0) {
+      context.go('/chat');
+    } else if (index == 1) {
+      context.go('/home');
+    } else if (index == 2) {
+      context.go('/profile');
+    }
+  }
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
@@ -16,7 +32,7 @@ class ActivityListPage extends StatelessWidget {
 
     return AppScaffold(
       selectedIndex: 0,
-      onItemTapped: (index) {},
+      onItemTapped: _onItemTapped,
       title: 'All Activities',
       body: StreamBuilder<QuerySnapshot>(
               stream: notificationService.getAllActivities(),
