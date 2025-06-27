@@ -94,6 +94,8 @@ class VideoCallService {
       'senderID': callerID,
       'recipientID': calleeID,
       'message_body': 'Video call ended.',
+      'message_type': 'video_call',
+      'call_status': 'ended',
       'timestamp': FieldValue.serverTimestamp(),
     });
 

@@ -104,6 +104,7 @@ class Chat {
 
     await db.collection('chats').doc(chatRoomID).update({
       'last_message': messageBody,
+      'message_type': 'text',
       'timestamp': FieldValue.serverTimestamp(),
       'last_message_senderID': userID,
       'last_message_is_important': isImportant,
