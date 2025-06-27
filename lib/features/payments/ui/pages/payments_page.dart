@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/payments/data/payments_data.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PaymentsPage extends StatefulWidget {
   const PaymentsPage({Key? key}) : super(key: key);
@@ -110,6 +111,86 @@ class _PaymentsPageState extends State<PaymentsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            //this entire button block is for debug - can be removed later
+            ElevatedButton.icon(
+              icon: const Icon(Icons.bug_report),
+              label: const Text('Debug: Send to Any User'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+              onPressed: () async {
+                final _amountController = TextEditingController();
+                String? targetUserId;
+
+                // Fetch all users for selection
+                final users = await FirebaseFirestore.instance.collection('users').get();
+                final userList = users.docs.map((doc) {
+                  final data = doc.data();
+                  return {
+                    'uid': doc.id,
+                    'name': data['first_name'] ?? data['email'] ?? doc.id,
+                  };
+                }).toList();
+
+                showDialog(
+                  context: context,
+                  builder: (context) => StatefulBuilder(
+                    builder: (context, setState) => AlertDialog(
+                      title: const Text('Debug: Send to Any User'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          DropdownButtonFormField<String>(
+                            value: targetUserId,
+                            hint: const Text('Select User'),
+                            items: userList.map<DropdownMenuItem<String>>((user) {
+                              return DropdownMenuItem<String>(
+                                value: user['uid'],
+                                child: Text(user['name']),
+                              );
+                            }).toList(),
+                            onChanged: (val) => setState(() => targetUserId = val),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _amountController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Amount',
+                              prefixText: '₱',
+                            ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () async {
+                            final amount = int.tryParse(_amountController.text.trim());
+                            if (amount != null &&
+                                amount > 0 &&
+                                targetUserId != null &&
+                                currentUserId != null) {
+                              await PaymentsData.addTransaction(
+                                fromUserId: currentUserId!,
+                                toUserId: targetUserId!,
+                                amount: amount,
+                              );
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Debug transaction sent!')),
+                              );
+                            }
+                          },
+                          child: const Text('Send'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
             ElevatedButton.icon(
               onPressed: _showSendMoneyDialog,
               icon: const Icon(Icons.send),
@@ -134,10 +215,18 @@ class _PaymentsPageState extends State<PaymentsPage> {
                     itemCount: transactions.length,
                     itemBuilder: (context, index) {
                       final tx = transactions[index];
+                      final isSent = tx['fromUserId'] == currentUserId;
+                      final amountPrefix = isSent ? '-' : '+';
+                      final otherPartyName = isSent ? tx['toUserName'] : tx['fromUserName'];
+                      final directionText = isSent
+                          ? 'Sent to $otherPartyName'
+                          : 'Received from $otherPartyName';
+
                       return ListTile(
-                        leading: const Icon(Icons.receipt_long),
-                        title: Text('₱${tx['amount']}'),
-                        subtitle: Text('${tx['timestamp']?.toDate() ?? ''}'),
+                        leading: Icon(isSent ? Icons.arrow_upward : Icons.arrow_downward,
+                            color: isSent ? Colors.red : Colors.green),
+                        title: Text('$amountPrefix₱${tx['amount']}'),
+                        subtitle: Text(directionText),
                         trailing: Text('${tx['status']}'),
                       );
                     },
