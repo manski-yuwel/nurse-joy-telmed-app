@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
@@ -6,13 +7,13 @@ import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
 import 'package:go_router/go_router.dart';
 
-class AppointmentList extends StatefulWidget {
-  const AppointmentList({super.key});
+class UserAppointmentList extends StatefulWidget {
+  const UserAppointmentList({super.key});
   @override
-  State<AppointmentList> createState() => _AppointmentListState();
+  State<UserAppointmentList> createState() => _UserAppointmentListState();
 }
 
-class _AppointmentListState extends State<AppointmentList> {
+class _UserAppointmentListState extends State<UserAppointmentList> {
   late AuthService auth;
 
   @override
@@ -52,7 +53,7 @@ class _AppointmentListState extends State<AppointmentList> {
       selectedIndex: 1,
       onItemTapped: _handleNavigation,
       body: FutureBuilder(
-        future: getAppointmentList(auth.user!.uid),
+        future: getUserAppointmentList(auth.user!.uid),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -65,26 +66,26 @@ class _AppointmentListState extends State<AppointmentList> {
                 final appointment = snapshot.data!.docs[index];
 
                 return FutureBuilder(
-                  future: getUserDetails(appointment['userID']),
-                  builder: (context, patientDetails) {
-                    if (patientDetails.connectionState ==
+                  future: getUserDetails(appointment['doctorID']),
+                  builder: (context, doctorProfile) {
+                    if (doctorProfile.connectionState ==
                         ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator());
-                    } else if (patientDetails.hasError) {
+                    } else if (doctorProfile.hasError) {
                       return Center(
-                          child: Text('Error: ${patientDetails.error}'));
-                    } else if (patientDetails.hasData) {
-                      if (patientDetails.data != null) {
-                        final patientData = patientDetails.data!;
-                        final patientName =
-                            '${patientData['first_name']} ${patientData['last_name']}';
+                          child: Text('Error: ${doctorProfile.error}'));
+                    } else if (doctorProfile.hasData) {
+                      if (doctorProfile.data != null) {
+                        final doctorData = doctorProfile.data!;
+                        final doctorName =
+                            '${doctorData['first_name']} ${doctorData['last_name']}';
                         return Card(
                           margin: const EdgeInsets.symmetric(
                             horizontal: 16.0,
                             vertical: 8.0,
                           ),
                           child: ListTile(
-                            title: Text(patientName),
+                            title: Text(doctorName),
                             subtitle: Text(appointment['appointmentDateTime']
                                 .toDate()
                                 .toString()),
@@ -95,33 +96,38 @@ class _AppointmentListState extends State<AppointmentList> {
                                 IconButton(
                                   icon: const Icon(Icons.chat_bubble_outline),
                                   onPressed: () {
-                                    final chatRoomID = Chat().generateChatRoomID(
+                                    final chatInstance = Chat();
+                                    final chatRoomID = chatInstance.generateChatRoomID(
                                       auth.user!.uid,
-                                      appointment['userID'],
+                                      appointment['doctorID'],
                                     );
                                     context.go('/chat/$chatRoomID', extra: {
-                                      'recipientID': appointment['userID'],
-                                      'recipientFullName': patientName,
+                                      'recipientID': appointment['doctorID'],
+                                      'recipientFullName': doctorName,
                                     });
                                   },
-                                  tooltip: 'Chat with patient',
+                                  tooltip: 'Chat with doctor',
                                 ),
                                 // Profile button for patient
                                 IconButton(
                                   icon: const Icon(Icons.person_outline),
-                                  onPressed: () {
+                                  onPressed: () async {
+                                    final doctorDetails = await getDoctorDetails(appointment['doctorID']);
                                     context.go(
-                                        '/profile/${appointment['userID']}');
+                                        '/doctor/${appointment['doctorID']}', extra: {
+                                      'doctorDetails': doctorDetails,
+                                      'userDetails': doctorData,
+                                    });
                                   },
-                                  tooltip: 'View patient profile',
+                                  tooltip: 'View doctor profile',
                                 ),
                               ],
                             ),
                             onTap: () {
                               context.go(
-                                  '/appointment-detail/${appointment.id}',
+                                  '/user-appointment-detail/${appointment.id}',
                                   extra: {
-                                    'patientData': patientData,
+                                    'doctorData': doctorData,
                                   });
                             },
                           ),
@@ -143,4 +149,5 @@ class _AppointmentListState extends State<AppointmentList> {
       ),
     );
   }
+
 }

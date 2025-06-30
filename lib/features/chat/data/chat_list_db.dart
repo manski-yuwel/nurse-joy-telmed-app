@@ -1,12 +1,14 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 import 'package:dio/dio.dart';
+import 'package:nursejoyapp/notifications/notification_service.dart';
 
 final db = FirebaseFirestore.instance;
 
 class Chat {
   final logger = Logger();
   final dio = Dio();
+  final notificationService = NotificationService();
   // ghet the chatlist by checking if the userID is included in the users pair in the chat doc
   Stream<QuerySnapshot> getChatList(String userID) {
     return db
@@ -28,20 +30,17 @@ class Chat {
     }
 
     // Get the search term with capitalization variations to improve search
-    String searchTermLower = searchTerm.toLowerCase();
+    String searchTermLower = searchTerm.toLowerCase().trim();
 
     try {
-      // Search for users where full name and email contains the search term
       QuerySnapshot querySnapshot = await db
           .collection('users')
           .where('search_index', arrayContains: searchTermLower)
           .limit(10)
           .get();
 
-      // Combine results and filter out the current user
       Set<QueryDocumentSnapshot> combinedResults = {};
       combinedResults.addAll(querySnapshot.docs);
-      // Filter out the current user
       return combinedResults.toList();
     } catch (e) {
       logger.e('Error searching for users: $e');
@@ -58,7 +57,7 @@ class Chat {
       return;
     }
 
-    await db.collection('chats').doc(chatRoomID).update({
+    await db.collection('chats').doc(chatRoomID).set({
       'users': [userID, recipientID],
       'last_message': '',
       'timestamp': FieldValue.serverTimestamp(),
@@ -88,7 +87,7 @@ class Chat {
 
   // function to send a message
   Future<void> sendMessage(
-      String chatRoomID, String? userID, String recipientID, String messageBody,
+      String chatRoomID, String? userID, String fullName, String recipientID, String messageBody,
       {bool isImportant = false}) async {
     await db.collection('chats').doc(chatRoomID).collection('messages').add({
       'senderID': userID,
@@ -99,26 +98,27 @@ class Chat {
       'is_important': isImportant,
     });
 
-    await dio.post('https://nurse-joy-api.vercel.app/api/notifications/messages', data: {
-      'userID': recipientID,
-      'messageBody': messageBody,
-      'chatRoomID': chatRoomID,
-    },
-    options: Options(headers: {
-      'Content-Type': 'application/json',
-    },
-    validateStatus: (status) {
-      return status! < 500;
-    },
-    ),
-    );
 
     await db.collection('chats').doc(chatRoomID).update({
       'last_message': messageBody,
+      'message_type': 'text',
       'timestamp': FieldValue.serverTimestamp(),
       'last_message_senderID': userID,
       'last_message_is_important': isImportant,
     });
+
+    // register the message in the activity log
+    notificationService.registerActivity(
+      recipientID,
+      '$fullName has sent you a message',
+      {
+        'chatRoomID': chatRoomID,
+        'senderID': userID,
+        'recipientID': recipientID,
+        'messageBody': messageBody,
+      },
+      'message',
+    );
   }
 
   // function to send a call notification message

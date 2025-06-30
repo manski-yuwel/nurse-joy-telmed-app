@@ -3,10 +3,13 @@ import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/chat/ui/pages/chat_list_page.dart';
 import 'package:nursejoyapp/features/chat/ui/pages/chat_room_page.dart';
+import 'package:nursejoyapp/features/dashboard/ui/pages/activity_list.dart';
 import 'package:nursejoyapp/features/doctor/ui/appointment_detail.dart';
 import 'package:nursejoyapp/features/doctor/ui/appointment_list.dart';
 import 'package:nursejoyapp/features/doctor/ui/doctor_list.dart';
 import 'package:nursejoyapp/features/doctor/ui/doctor_page.dart';
+import 'package:nursejoyapp/features/doctor/ui/user_appointment_detail.dart';
+import 'package:nursejoyapp/features/doctor/ui/user_appointment_list.dart';
 import 'package:nursejoyapp/features/map/ui/pages/viewmap.dart';
 import 'package:nursejoyapp/features/profile/ui/pages/profile_page.dart';
 import 'package:nursejoyapp/features/profile/ui/pages/profile_setup.dart';
@@ -21,6 +24,7 @@ import 'package:nursejoyapp/features/entry/ui/app_entry.dart';
 import 'package:nursejoyapp/features/ai/joy_ai_chat.dart';
 import 'package:nursejoyapp/main.dart';
 import 'package:flutter/foundation.dart';
+import 'package:nursejoyapp/features/payments/ui/pages/payments_page.dart';
 
 class AppRouter {
   final AuthService authService;
@@ -152,9 +156,32 @@ class AppRouter {
           throw Exception('No extra data found');
         },
       ),
+
+      GoRoute(
+        path: '/user-appointment-list',
+        builder: (context, state) => const UserAppointmentList(),
+      ),
+
+      GoRoute(
+        path: '/user-appointment-detail/:appointmentId',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>?;
+          if (extra != null) {
+            return UserAppointmentDetail(
+              appointmentId: state.pathParameters['appointmentId']!,
+              doctorData: extra['doctorData'] as DocumentSnapshot,
+            );
+          }
+          throw Exception('No extra data found');
+        },
+      ),
+      GoRoute(
+        path: '/activity-list',
+        builder: (context, state) => const ActivityListPage(),
+      ),
       GoRoute(
         path: '/doctor-list',
-        builder: (context, state) => const DoctorList(),
+        builder: (context, state) => DoctorList(initialData: state.extra as Map<String, dynamic>),
       ),
       GoRoute(
         path: '/doctor/:doctorId',
@@ -164,7 +191,6 @@ class AppRouter {
             return DoctorPage(
               doctorId: state.pathParameters['doctorId']!,
               doctorDetails: extra['doctorDetails'] as DocumentSnapshot,
-              userDetails: extra['userDetails'] as DocumentSnapshot,
             );
           }
           throw Exception('No extra data found');
@@ -179,6 +205,10 @@ class AppRouter {
               state.pathParameters['userId'] ?? authService.user!.uid;
           return ProfilePage(userID: userId);
         },
+      ),
+      GoRoute(
+        path: '/payments',
+        builder: (context, state) => const PaymentsPage(),
       ),
     ],
   );

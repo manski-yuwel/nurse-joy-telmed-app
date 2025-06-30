@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -10,6 +11,7 @@ import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/video_call/ui/video_call_page.dart';
 import 'package:nursejoyapp/features/chat/ui/widgets/message_types.dart';
+
 
 class ChatRoomPage extends StatefulWidget {
   final String chatRoomID;
@@ -112,6 +114,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
       await chatInstance.sendMessage(
         widget.chatRoomID,
         userID,
+        widget.recipientFullName,
         widget.recipientID,
         messageText,
         isImportant: _isImportantToggled,
@@ -163,7 +166,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
           widget.chatRoomID, user!.uid, widget.recipientID, "video");
 
       // Close dialog
-      Navigator.pop(context);
+      context.pop();
 
       // Navigate to video call page
       Navigator.push(
@@ -183,7 +186,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
       });
     } catch (e) {
       // Close dialog and show error
-      Navigator.pop(context);
+      context.pop();
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to initiate call: $e')),
       );
@@ -241,11 +244,11 @@ class _ChatRoomPageState extends State<ChatRoomPage>
               radius: 16,
               backgroundColor: Colors.grey.shade300,
               backgroundImage: _recipientData != null &&
-                      _recipientData!['avatar_url'] != null
-                  ? CachedNetworkImageProvider(_recipientData!['avatar_url'])
+                      _recipientData!['profile_pic'] != null
+                  ? CachedNetworkImageProvider(_recipientData!['profile_pic'])
                   : null,
               child: _recipientData == null ||
-                      _recipientData!['avatar_url'] == null
+                      _recipientData!['profile_pic'] == null
                   ? Text(
                       widget.recipientFullName.isNotEmpty
                           ? widget.recipientFullName
@@ -802,7 +805,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
           titleSpacing: 0,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.black87),
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => context.pop(),
           ),
           title: Row(
             children: [
@@ -810,11 +813,11 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                 radius: 18,
                 backgroundColor: Colors.grey.shade300,
                 backgroundImage: _recipientData != null &&
-                        _recipientData!['avatar_url'] != null
-                    ? CachedNetworkImageProvider(_recipientData!['avatar_url'])
+                        _recipientData!['profile_pic'] != null
+                    ? CachedNetworkImageProvider(_recipientData!['profile_pic'])
                     : null,
                 child: _recipientData == null ||
-                        _recipientData!['avatar_url'] == null
+                        _recipientData!['profile_pic'] == null
                     ? Text(
                         widget.recipientFullName.isNotEmpty
                             ? widget.recipientFullName
@@ -886,7 +889,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                           leading: const Icon(Icons.person),
                           title: const Text('View Profile'),
                           onTap: () {
-                            Navigator.pop(context);
+                            context.pop();
                             // Navigate to profile
                           },
                         ),

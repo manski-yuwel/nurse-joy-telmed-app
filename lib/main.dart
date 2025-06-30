@@ -12,6 +12,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide EmailAuthProvider;
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
 
 Future<void> backgroundMessageHandler(RemoteMessage message) async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -25,6 +26,12 @@ void main() async {
   await dotenv.load(fileName: '.env');
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // initialie supabase connection for storage
+  await supabase.Supabase.initialize(
+    url: dotenv.env['SUPABASE_URL']!,
+    anonKey: dotenv.env['SUPABASE_ANONKEY']!,
   );
 
   // set up background message handler

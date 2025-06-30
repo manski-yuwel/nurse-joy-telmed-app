@@ -8,20 +8,140 @@ import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:nursejoyapp/shared/utils/utils.dart';
 
 /// Doctor list interface for Nurse Joy application
 /// Implements modern UI patterns with performance optimizations
 class DoctorList extends StatefulWidget {
-  const DoctorList({super.key});
+  final Map<String, dynamic> initialData;
+  
+  const DoctorList({super.key, required this.initialData});
 
   @override
   State<DoctorList> createState() => _DoctorListState();
 }
 
 class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMixin {
+  int _selectedIndex = 1; // Home is selected by default
+  
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    if (index == 0) {
+      context.go('/chat');
+    } else if (index == 1) {
+      context.go('/home');
+    } else if (index == 2) {
+      context.go('/profile');
+    }
+  }
   // Cache for doctor details to improve performance
   final Map<String, DocumentSnapshot> _doctorDetailsCache = {};
   final ScrollController _scrollController = ScrollController();
+  
+  // Filter state
+  final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _minFeeController = TextEditingController();
+  final TextEditingController _maxFeeController = TextEditingController();
+  String? _selectedSpecialization;
+  List<String> _specializations = [];
+  bool _isLoading = false;
+  List<DocumentSnapshot> _filteredDoctors = [];
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadInitialData();
+  }
+  
+  Future<void> _loadInitialData() async {
+    setState(() => _isLoading = true);
+    try {
+      final doctors = await getVerifiedFilteredDoctorList(
+        specialization: widget.initialData['specialization'],
+        minFee: widget.initialData['minFee'],
+        maxFee: widget.initialData['maxFee'],
+      );
+      _filteredDoctors = doctors;
+
+      setState(() {
+        _specializations = getSpecializations();
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading doctors: $e')),
+        );
+      }
+    }
+  }
+  
+  Future<void> _applyFilters() async {
+    setState(() => _isLoading = true);
+    try {
+      final minFee = _minFeeController.text.isNotEmpty 
+          ? int.tryParse(_minFeeController.text) 
+          : null;
+      final maxFee = _maxFeeController.text.isNotEmpty 
+          ? int.tryParse(_maxFeeController.text) 
+          : null;
+
+      if (minFee != null && maxFee != null && minFee > maxFee) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Minimum fee cannot be greater than maximum fee')),
+        );
+        return;
+      }
+
+      if (minFee != null && minFee < 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Minimum fee cannot be negative')),
+        );
+        return;
+      }
+
+      if (maxFee != null && maxFee < 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Maximum fee cannot be negative')),
+        );
+        return;
+      }
+      
+      final doctors = await getVerifiedFilteredDoctorList(
+        searchQuery: _searchController.text.isNotEmpty ? _searchController.text : null,
+        specialization: _selectedSpecialization,
+        minFee: minFee,
+        maxFee: maxFee,
+      );
+      
+      setState(() {
+        _filteredDoctors = doctors;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error applying filters: $e')),
+        );
+      }
+    }
+  }
+
+
+  
+  void _clearFilters() {
+    setState(() {
+      _searchController.clear();
+      _minFeeController.clear();
+      _maxFeeController.clear();
+      _selectedSpecialization = null;
+    });
+    _loadInitialData();
+  }
 
   @override
   bool get wantKeepAlive => true;
@@ -29,7 +149,24 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
   @override
   void dispose() {
     _scrollController.dispose();
+    _searchController.dispose();
+    _minFeeController.dispose();
+    _maxFeeController.dispose();
     super.dispose();
+  }
+
+  Future<DocumentSnapshot> _getDoctorDetails(String doctorId) async {
+    if (_doctorDetailsCache.containsKey(doctorId)) {
+      return _doctorDetailsCache[doctorId]!;
+    }
+    
+    try {
+      final details = await getDoctorDetails(doctorId);
+      _doctorDetailsCache[doctorId] = details;
+      return details;
+    } catch (e) {
+      rethrow;
+    }
   }
 
   @override
@@ -37,51 +174,192 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
     super.build(context);
     
     return AppScaffold(
+      selectedIndex: _selectedIndex,
+      onItemTapped: _onItemTapped,
       title: 'Find a Doctor',
-      selectedIndex: 0,
-      onItemTapped: (index) {},
-      body: _buildDoctorList(),
+      body: Column(
+        children: [
+          // Search and Filters
+          _buildSearchAndFilters(),
+          // Doctor List
+          Expanded(child: _buildDoctorList()),
+        ],
+      ),
+    );
+  }
+
+
+  
+  Widget _buildSearchAndFilters() {
+    return Card(
+      margin: const EdgeInsets.all(8.0),
+      elevation: 2.0,
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Search Bar
+            TextField(
+              controller: _searchController,
+              decoration: InputDecoration(
+                hintText: 'Search doctors...',
+                prefixIcon: const Icon(Icons.search),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _applyFilters();
+                        },
+                      )
+                    : null,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+              ),
+              onSubmitted: (_) => _applyFilters(),
+            ),
+            const SizedBox(height: 12),
+            
+            // Specialization Dropdown
+            DropdownButtonFormField<String>(
+              value: _selectedSpecialization,
+              decoration: InputDecoration(
+                labelText: 'Specialization',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10.0),
+                ),
+              ),
+              hint: const Text('Select specialization'),
+              items: [
+                const DropdownMenuItem(
+                  value: null,
+                  child: Text('All Specializations'),
+                ),
+                ..._specializations.map((spec) => DropdownMenuItem(
+                      value: spec,
+                      child: Text(spec),
+                    )),
+              ],
+              onChanged: (value) {
+                _selectedSpecialization = value;
+                
+              },
+            ),
+            const SizedBox(height: 12),
+            
+            // Price Range
+            const Text('Consultation Fee Range', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _minFeeController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Min (₱)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: TextField(
+                    controller: _maxFeeController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Max (₱)',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            
+            // Action Buttons
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _applyFilters,
+                    icon: const Icon(Icons.filter_alt),
+                    label: const Text('Apply Filters'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                TextButton(
+                  onPressed: _clearFilters,
+                  child: const Text('Clear'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   Widget _buildDoctorList() {
-    return FutureBuilder<QuerySnapshot>(
-      future: getDoctorList(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoadingState();
-        }
-        
-        if (snapshot.hasError) {
-          return _buildErrorState(snapshot.error.toString());
-        }
+    if (_isLoading && _filteredDoctors.isEmpty) {
+      return _buildLoadingState();
+    }
+    
+    if (_filteredDoctors.isEmpty) {
+      return _buildEmptyState();
+    }
+    
+    final doctors = _filteredDoctors;
 
-        final doctors = snapshot.data?.docs ?? [];
-
-        if (doctors.isEmpty) {
-          return _buildEmptyState();
-        }
-
-        return AnimationLimiter(
-          child: FutureBuilder(
-            future: getDoctorDetails(doctors[0].id),
+    return AnimationLimiter(
+      child: ListView.builder(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(16),
+        itemCount: doctors.length,
+        itemBuilder: (BuildContext context, int index) {
+          final doctor = doctors[index];
+          
+          return FutureBuilder<DocumentSnapshot>(
+            future: getDoctorDetails(doctor.id),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return _buildLoadingState();
+                // use shimmer
+                return Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Card(
+                    child: ListTile(
+                      leading: CircularProgressIndicator(),
+                      title: Text('Loading...'),
+                    ),
+                  ),
+                );
               }
               
-              if (snapshot.hasError) {
-                return _buildErrorState(snapshot.error.toString());
+              if (snapshot.hasError || !snapshot.hasData) {
+                return Shimmer.fromColors(
+                  baseColor: Colors.grey[300]!,
+                  highlightColor: Colors.grey[100]!,
+                  child: Card(
+                    child: ListTile(
+                      leading: Icon(Icons.error),
+                      title: Text('Error loading doctor details'),
+                    ),
+                  ),
+                );
               }
-
-              final doctorDetails = snapshot.data;
-
-              return ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(16),
-                itemCount: doctors.length,
-                itemBuilder: (BuildContext context, int index) {
-                  final doctor = doctors[index];
+              
+              final doctorDetails = snapshot.data!;
+              
               Widget animatedCard = SlideAnimation(
                 verticalOffset: 50.0,
                 child: FadeInAnimation(
@@ -98,10 +376,8 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
           );
         },
       ),
-     );
-    }
-  );
-}
+    );
+  }
 
   Widget _buildDoctorCard(DocumentSnapshot? doctor, int index, DocumentSnapshot? userDetails) {
     if (doctor == null) {
@@ -115,6 +391,9 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
     final name = '${userDetails['first_name']} ${userDetails['last_name']}';
     final isOnline = userDetails['status_online'] ?? false;
     final imageUrl = userDetails['profile_pic'] ?? '';
+    
+    return Builder(
+      builder: (BuildContext context) {
     
         
         final doctorInfo = doctor.data() as Map<String, dynamic>? ?? {};
@@ -146,8 +425,7 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
               onTap: () {
                 HapticFeedback.lightImpact();
                 // navigate to doctor page with doctorDetails and userDetails
-                context.go('/doctor/${userDetails.id}', extra: {
-                  'userDetails': userDetails,
+                context.push('/doctor/${userDetails.id}', extra: {
                   'doctorDetails': doctor,
                 });
               },
@@ -359,17 +637,8 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
             ),
           ),
         );
-      }
-    
-
-  Future<DocumentSnapshot> _getCachedDoctorDetails(String doctorId) async {
-    if (_doctorDetailsCache.containsKey(doctorId)) {
-      return _doctorDetailsCache[doctorId]!;
-    }
-    
-    final details = await getDoctorDetails(doctorId);
-    _doctorDetailsCache[doctorId] = details;
-    return details;
+      },
+    );
   }
 
   Widget _buildDoctorCardSkeleton() {
@@ -455,11 +724,11 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
         children: [
           Icon(Icons.error_outline, color: Colors.red.shade600),
           const SizedBox(width: 12),
-          Expanded(
+          const Expanded(
             child: Text(
               'Unable to load doctor details',
               style: TextStyle(
-                color: Colors.red.shade700,
+                color: Colors.red,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -500,7 +769,7 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
             ),
             const SizedBox(height: 12),
             Text(
-              'Unable to load doctors list. Please try again.',
+              'Error: $error',
               style: TextStyle(
                 fontSize: 16,
                 color: Colors.grey.shade600,
@@ -552,11 +821,11 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
               ),
             ),
             const SizedBox(height: 12),
-            Text(
-              'Check back later for available doctors',
+            const Text(
+              'Try adjusting your search or filters',
               style: TextStyle(
                 fontSize: 16,
-                color: Colors.grey.shade600,
+                color: Colors.grey,
               ),
               textAlign: TextAlign.center,
             ),

@@ -212,7 +212,7 @@ class _ChatListPageState extends State<ChatListPage>
   }) {
     final fullName = "${user['first_name']} ${user['last_name']}";
     final isOnline = user['status_online'] == true;
-    final avatarUrl = user['avatar_url'] as String?;
+    final avatarUrl = user['profile_pic'] as String?;
     final chatRoomID =
         chatInstance.generateChatRoomID(currentUserID, recipientID);
 
@@ -230,16 +230,7 @@ class _ChatListPageState extends State<ChatListPage>
         borderRadius: BorderRadius.circular(12),
         onTap: () {
           chatInstance.generateChatRoom(chatRoomID, currentUserID, recipientID);
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => ChatRoomPage(
-                chatRoomID: chatRoomID,
-                recipientID: recipientID,
-                recipientFullName: fullName,
-              ),
-            ),
-          );
+          context.push('/chat/$chatRoomID', extra: {'recipientID': recipientID, 'recipientFullName': fullName});
         },
         child: Padding(
           padding: const EdgeInsets.all(12.0),
@@ -516,7 +507,10 @@ class _ChatListPageState extends State<ChatListPage>
       selectedIndex: _selectedIndex,
       onItemTapped: _onItemTapped,
       actions: [
-        buildCircleImage('assets/img/nursejoy.jpg', 5, 1.5),
+        IconButton(
+          icon: buildCircleImage('assets/img/nursejoy.jpg', 0.5, 1.6),
+          onPressed: () => context.push('/ai'),
+        )
       ],
       floatingActionButton: FloatingActionButton(
         backgroundColor: primaryColor,

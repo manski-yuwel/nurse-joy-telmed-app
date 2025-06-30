@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nursejoyapp/shared/utils/utils.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -502,6 +503,7 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
   }
 
   Widget _buildProfessionalDetailsForm() {
+    final specializations = getSpecializations();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -522,12 +524,60 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
           ),
         ),
         const SizedBox(height: 32),
-        _buildFormField(
-          name: specializationField,
-          label: "Profession",
-          hint: "E.g., Psychiatrist, Pediatrist, Cardiologist, etc.",
-          icon: Icons.medical_services_outlined,
-          validator: FormBuilderValidators.required(),
+        Container(
+          margin: const EdgeInsets.only(bottom: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                "Specialization",
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              FormBuilderDropdown<String>(
+                name: specializationField,
+                decoration: InputDecoration(
+                  hintText: "Select your specialization",
+                  hintStyle: TextStyle(color: Colors.grey.shade500),
+                  prefixIcon: const Icon(
+                    Icons.medical_services_outlined,
+                    color: Color(0xFF58f0d7),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                        color: Color(0xFF58f0d7), width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: Colors.red, width: 2),
+                  ),
+                ),
+                validator: FormBuilderValidators.required(
+                    errorText: 'Please select your specialization'),
+                items: specializations
+                    .map((specialization) => DropdownMenuItem(
+                          value: specialization,
+                          child: Text(specialization),
+                        ))
+                    .toList(),
+              ),
+            ],
+          ),
         ),
         _buildFormField(
           name: licenseNumberField,
@@ -650,101 +700,104 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF58f0d7),
-              Color(0xFF4dd0e1),
-            ],
+    return PopScope( // This would be easier with a navigator
+      canPop: true, // Disables back navigation to prevent unintended behaviour
+      child: Scaffold(
+        body: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF58f0d7),
+                Color(0xFF4dd0e1),
+              ],
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Column(
-              children: [
-                // Header
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 80,
-                        height: 80,
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          shape: BoxShape.circle,
+          child: SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Column(
+                children: [
+                  // Header
+                  Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.medical_services_outlined,
+                            size: 40,
+                            color: Colors.white,
+                          ),
                         ),
-                        child: const Icon(
-                          Icons.medical_services_outlined,
-                          size: 40,
-                          color: Colors.white,
+                        const SizedBox(height: 16),
+                        const Text(
+                          "Doctor Registration",
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 16),
-                      const Text(
-                        "Doctor Registration",
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                        const SizedBox(height: 8),
+                        Text(
+                          _currentStep == 0
+                              ? "Step 1: Account Information"
+                              : "Step 2: Professional Details",
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _currentStep == 0
-                            ? "Step 1: Account Information"
-                            : "Step 2: Professional Details",
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white.withOpacity(0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Form Container
-                Expanded(
-                  child: Container(
-                    margin: const EdgeInsets.only(top: 20),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(30),
-                        topRight: Radius.circular(30),
-                      ),
+                      ],
                     ),
-                    child: FormBuilder(
-                      key: _formKey,
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.all(24.0),
-                        child: AnimationLimiter(
-                          child: Column(
-                            children: AnimationConfiguration.toStaggeredList(
-                              duration: const Duration(milliseconds: 375),
-                              childAnimationBuilder: (widget) => SlideAnimation(
-                                horizontalOffset: 50.0,
-                                child: FadeInAnimation(child: widget),
+                  ),
+
+                  // Form Container
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 20),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(30),
+                          topRight: Radius.circular(30),
+                        ),
+                      ),
+                      child: FormBuilder(
+                        key: _formKey,
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(24.0),
+                          child: AnimationLimiter(
+                            child: Column(
+                              children: AnimationConfiguration.toStaggeredList(
+                                duration: const Duration(milliseconds: 375),
+                                childAnimationBuilder: (widget) => SlideAnimation(
+                                  horizontalOffset: 50.0,
+                                  child: FadeInAnimation(child: widget),
+                                ),
+                                children: [
+                                  if (_currentStep == 0)
+                                    _buildCredentialsForm()
+                                  else
+                                    _buildProfessionalDetailsForm(),
+                                ],
                               ),
-                              children: [
-                                if (_currentStep == 0)
-                                  _buildCredentialsForm()
-                                else
-                                  _buildProfessionalDetailsForm(),
-                              ],
                             ),
                           ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

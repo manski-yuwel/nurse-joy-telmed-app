@@ -4,6 +4,7 @@ import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nursejoyapp/features/doctor/ui/widgets/digital_receipt.dart';
 
 /// Model class for appointment time slot
 class AppointmentTimeSlot {
@@ -124,10 +125,12 @@ class AppointmentBookingDialog extends StatefulWidget {
   final String doctorId;
   final List<AppointmentDay>? availableDays;
   final Function(AppointmentBooking) onBookingComplete;
+  final int consultationFee;
 
   const AppointmentBookingDialog({
     Key? key,
     required this.doctorId,
+    required this.consultationFee,
     required this.onBookingComplete,
     this.availableDays,
   }) : super(key: key);
@@ -275,7 +278,7 @@ class _AppointmentBookingDialogState extends State<AppointmentBookingDialog> {
   void _submitBooking() {
     if (_formKey.currentState?.saveAndValidate() ?? false) {
       final formData = _formKey.currentState!.value;
-      
+
       if (_selectedDay == null || _selectedTimeSlot == null) {
         _showErrorDialog('Please select both a day and time slot');
         return;
@@ -288,7 +291,24 @@ class _AppointmentBookingDialogState extends State<AppointmentBookingDialog> {
         description: formData['description'] ?? '',
       );
 
-      widget.onBookingComplete(booking);
+      final now = DateTime.now();
+      final referenceId = now.microsecondsSinceEpoch.toString();
+
+      showDialog(
+        context: context,
+        builder: (context) => DigitalReceiptDialog(
+          booking: booking,
+          doctorId: widget.doctorId,
+          amount: widget.consultationFee,
+          onConfirm: () {
+            widget.onBookingComplete(booking);
+            context.pop(); // close dialog after confirming
+          },
+          onCancel: () {
+            context.pop(); // just close dialog if cancelled
+          },
+        ),
+      );
     }
   }
 
@@ -553,55 +573,4 @@ class _AppointmentBookingDialogState extends State<AppointmentBookingDialog> {
   }
 }
 
-// ==== ENHANCED FIREBASE FUNCTIONS ====
 
-/// Enhanced appointment registration with detailed booking information
-Future<void> registerEnhancedAppointment(
-  String doctorId, 
-  String patientId, 
-  AppointmentBooking booking,
-) async {
-  try {
-    final appointmentData = {
-      'userID': patientId,
-      'doctorID': doctorId,
-      'appointmentDateTime': Timestamp.fromDate(booking.appointmentDateTime),
-      'description': booking.description,
-      'status': 'scheduled',
-      'createdAt': Timestamp.now(),
-      'updatedAt': Timestamp.now(),
-      
-      'bookingDetails': booking.toMap(),
-      'availableDays': booking.userAvailableDays.map((day) => day.toMap()).toList(),
-      
-      'dayOfWeek': booking.selectedDay.date.weekday,
-      'timeSlotStart': booking.selectedTimeSlot.startTime.hour * 60 + booking.selectedTimeSlot.startTime.minute,
-      'timeSlotEnd': booking.selectedTimeSlot.endTime.hour * 60 + booking.selectedTimeSlot.endTime.minute,
-    };
-
-    print(appointmentData);
-
-    final docRef = await FirebaseFirestore.instance
-        .collection('appointments')
-        .add(appointmentData);
-    final dio = Dio();
-    await dio.post(
-      'https://nurse-joy-api.vercel.app/api/notifications/appointments',
-      data: {
-        'userID': patientId,
-        'doctorID': doctorId,
-        'appointmentDateTime': booking.appointmentDateTime.toIso8601String(),
-        'appointmentId': docRef.id,
-        'description': booking.description,
-        'timeSlot': booking.selectedTimeSlot.displayTime,
-        'date': booking.selectedDay.displayDate,
-      },
-      options: Options(
-        headers: {'Content-Type': 'application/json'},
-        validateStatus: (status) => status! < 500,
-      ),
-    );
-  } catch (e) {
-    throw Exception('Failed to register appointment: $e');
-  }
-}

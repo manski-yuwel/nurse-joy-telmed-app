@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
@@ -11,11 +12,9 @@ class DoctorPage extends StatefulWidget {
   const DoctorPage(
       {super.key,
       required this.doctorId,
-      required this.userDetails,
       required this.doctorDetails});
 
   final String doctorId;
-  final DocumentSnapshot userDetails;
   final DocumentSnapshot doctorDetails;
 
   @override
@@ -28,6 +27,11 @@ class _DoctorPageState extends State<DoctorPage>
   bool _isFavorite = false;
   bool _isLoading = false;
   late AuthService auth;
+<<<<<<< HEAD
+=======
+  DateTime? _selectedDateTime;
+  int _selectedIndex = 1; // Home is selected by default
+>>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
 
   @override
   void initState() {
@@ -47,6 +51,7 @@ class _DoctorPageState extends State<DoctorPage>
     super.dispose();
   }
 
+<<<<<<< HEAD
   Future<void> _bookAppointment() async {
     showDialog(
       context: context,
@@ -80,6 +85,63 @@ class _DoctorPageState extends State<DoctorPage>
                     Text('Date: ${booking.selectedDay.displayDate}'),
                     Text('Time: ${booking.selectedTimeSlot.displayTime}'),
                   ],
+=======
+Future<void> _bookAppointment() async {
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => AppointmentBookingDialog(
+      doctorId: widget.doctorId,
+      consultationFee: widget.doctorDetails['consultation_fee'] ?? 0,
+      onBookingComplete: (AppointmentBooking booking) async {
+        context.pop();
+        setState(() => _isLoading = true);
+        
+        try {
+          await registerEnhancedAppointment(
+            widget.doctorId,
+            auth.user!.uid, // Your actual user ID
+            booking,
+          );
+          
+          if (!context.mounted) return;
+          
+          // Success dialog
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Appointment Booked'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Your appointment has been scheduled!'),
+                  const SizedBox(height: 8),
+                  Text('Date: ${booking.selectedDay.displayDate}'),
+                  Text('Time: ${booking.selectedTimeSlot.displayTime}'),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => context.pop(),
+                  child: const Text('OK'),
+                ),
+              ],
+            ),
+          );
+        } catch (e) {
+          // Error handling
+          if (!context.mounted) return;
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Error'),
+              content: Text('Failed to book appointment: $e'),
+              actions: [
+                TextButton(
+                  onPressed: () => context.pop(),
+                  child: const Text('OK'),
+>>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
                 ),
                 actions: [
                   TextButton(
@@ -199,8 +261,7 @@ class _DoctorPageState extends State<DoctorPage>
   Widget build(BuildContext context) {
     final doctorData =
         widget.doctorDetails.data() as Map<String, dynamic>? ?? {};
-    final userData = widget.userDetails.data() as Map<String, dynamic>? ?? {};
-    final name = '${userData['first_name']} ${userData['last_name']}';
+    final name = '${doctorData['first_name']} ${doctorData['last_name']}';
     final specialty = doctorData['specialization'] ?? 'General Practitioner';
     final rating = (doctorData['rating'] ?? 0.0).toDouble();
     final reviewCount = doctorData['num_of_ratings'] ?? 0;
@@ -216,13 +277,13 @@ class _DoctorPageState extends State<DoctorPage>
         (doctorData['services_offered'] as List<dynamic>?)?.cast<String>() ??
             [];
 
-    final isOnline = userData['status_online'] ?? false;
-    final imageUrl = userData['profile_pic'] ?? '';
+    final isOnline = doctorData['status_online'] ?? false;
+    final imageUrl = doctorData['profile_pic'] ?? '';
 
     return AppScaffold(
       title: 'Doctor Details',
       selectedIndex: 0,
-      onItemTapped: (index) {},
+      onItemTapped: _onItemTapped,
       body: Column(
         children: [
           // Doctor Header Section
@@ -241,7 +302,7 @@ class _DoctorPageState extends State<DoctorPage>
                     color: Colors.grey[200],
                     image: imageUrl.isNotEmpty
                         ? DecorationImage(
-                            image: NetworkImage(imageUrl),
+                            image: CachedNetworkImageProvider(imageUrl),
                             fit: BoxFit.cover,
                           )
                         : null,
@@ -389,11 +450,17 @@ class _DoctorPageState extends State<DoctorPage>
                   child: IconButton(
                     onPressed: () {
                       final chat = Chat();
+<<<<<<< HEAD
                       final chatRoomID = chat.generateChatRoomID(
                           auth.user!.uid, widget.doctorId);
                       chat.generateChatRoom(
                           chatRoomID, auth.user!.uid, widget.doctorId);
                       context.go('/chat/$chatRoomID', extra: {
+=======
+                      final chatRoomID = chat.generateChatRoomID(auth.user!.uid, widget.doctorId);
+                      chat.generateChatRoom(chatRoomID, auth.user!.uid, widget.doctorId);
+                      context.push('/chat/$chatRoomID', extra: {
+>>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
                         'recipientID': widget.doctorId,
                         'recipientFullName':
                             '${widget.doctorDetails['first_name']} ${widget.doctorDetails['last_name']}',
@@ -468,10 +535,10 @@ class _DoctorPageState extends State<DoctorPage>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildContactItem(
-                          Icons.email, 'Email', '${userData['email']}'),
+                          Icons.email, 'Email', '${doctorData['email']}'),
                       const SizedBox(height: 12),
                       _buildContactItem(Icons.phone, 'Phone',
-                          userData['phone_number'] ?? 'Not provided'),
+                          doctorData['phone_number'] ?? 'Not provided'),
                       const SizedBox(height: 12),
                       _buildContactItem(Icons.location_on, 'Location',
                           'Hospital or Clinic Address'),
@@ -492,5 +559,18 @@ class _DoctorPageState extends State<DoctorPage>
         ],
       ),
     );
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+    if (index == 0) {
+      context.go('/chat');
+    } else if (index == 1) {
+      context.go('/home');
+    } else if (index == 2) {
+      context.go('/profile/${auth.currentUser?.uid}');
+    }
   }
 }
