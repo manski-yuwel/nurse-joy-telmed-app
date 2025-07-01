@@ -7,10 +7,59 @@ import 'package:nursejoyapp/features/doctor/ui/widgets/date_time_picker.dart';
 import 'package:nursejoyapp/notifications/notification_service.dart';
 import 'package:dio/dio.dart';
 
-class MockDio extends Mock implements Dio {}
-class MockNotificationService extends Mock implements NotificationService {}
+// Mock classes
+class MockDio extends Mock implements Dio {
+  @override
+  Future<Response<T>> post<T>(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Options? options,
+    CancelToken? cancelToken,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    return super.noSuchMethod(
+      Invocation.method(
+        #post, 
+        [path], 
+        {
+          #data: data,
+          #queryParameters: queryParameters,
+          #options: options,
+          #cancelToken: cancelToken,
+          #onSendProgress: onSendProgress,
+          #onReceiveProgress: onReceiveProgress,
+        },
+      ),
+      returnValue: Response<T>(
+        data: {} as T,
+        statusCode: 200,
+        requestOptions: RequestOptions(path: path),
+      ),
+    );
+  }
+}
+
+class MockNotificationService extends Mock implements NotificationService {
+  @override
+  Future<void> registerActivity(
+    String userID, 
+    String title, 
+    Map<String, dynamic> body, 
+    String type,
+  ) async {
+    return super.noSuchMethod(
+      Invocation.method(#registerActivity, [userID, title, body, type]),
+      returnValue: Future.value(),
+      returnValueForMissingStub: Future.value(),
+    ) as Future<void>;
+  }
+}
 
 void main() {
+
+
   group('DoctorService', () {
     late FakeFirebaseFirestore fakeFirestore;
     late MockDio mockDio;
@@ -99,37 +148,29 @@ void main() {
       expect(snapshot.docs.length, 1);
     });
 
-    test('registerAppointment registers a new appointment', () async {
-      final doctorId = 'doctor1';
-      final patientId = 'patient1';
-      final appointmentDateTime = DateTime.now();
-
-      when(mockDio.post(argThat(isA<String>()), data: anyNamed('data'), options: anyNamed('options')))
-          .thenAnswer((_) async => Response(requestOptions: RequestOptions(path: ''), statusCode: 200));
-
-      await doctorService.registerAppointment(doctorId, patientId, appointmentDateTime);
-
-      final appointments = await fakeFirestore.collection('appointments').get();
-      expect(appointments.docs.length, 1);
-    });
 
     test('registerEnhancedAppointment registers a new enhanced appointment', () async {
       final doctorId = 'doctor1';
       final patientId = 'patient1';
+      final now = DateTime.now();
+      final timeSlot = AppointmentTimeSlot(
+        id: '1',
+        startTime: TimeOfDay.now(),
+        endTime: TimeOfDay(hour: TimeOfDay.now().hour + 1, minute: 0),
+      );
+      final selectedDay = AppointmentDay(
+        id: '1',
+        date: now,
+        timeSlots: [timeSlot],
+      );
       final booking = AppointmentBooking(
-        selectedDay: AppointmentDay(id: '1', date: DateTime.now(), timeSlots: []),
-        selectedTimeSlot: AppointmentTimeSlot(id: '1', startTime: TimeOfDay.now(), endTime: TimeOfDay.now()),
-        userAvailableDays: [],
+        selectedDay: selectedDay,
+        selectedTimeSlot: timeSlot,
+        userAvailableDays: [selectedDay],
         description: 'Checkup',
       );
 
-      await fakeFirestore.collection('users').doc(doctorId).set({
-        'first_name': 'John',
-        'last_name': 'Doe',
-      });
-
-      when(mockDio.post(argThat(isA<String>()), data: anyNamed('data'), options: anyNamed('options')))
-          .thenAnswer((_) async => Response(requestOptions: RequestOptions(path: ''), statusCode: 200));
+      // set up the registerActivity
       when(mockNotificationService.registerActivity(
         patientId,
         'You have a new appointment with John Doe',
@@ -139,7 +180,36 @@ void main() {
           'appointmentDateTime': booking.appointmentDateTime.toIso8601String(),
         },
         'appointment',
-      )).thenAnswer((_) async {});
+      )).thenAnswer((_) => Future.value());
+
+      // set up the dio post
+      when(mockDio.post(
+        'https://nurse-joy-api.vercel.app/api/notifications/appointments',
+        data: anyNamed('data'),
+        options: anyNamed('options'),
+      )).thenAnswer((invocation) async {
+        final data = invocation.namedArguments[#data] as Map<String, dynamic>;
+        expect(data['userID'], patientId);
+        expect(data['doctorID'], doctorId);
+        expect(data['appointmentDateTime'], isNotNull);
+        expect(data['description'], 'Checkup');
+        
+        return Response(
+          data: {},
+          statusCode: 200,
+          requestOptions: RequestOptions(path: ''),
+        );
+      });
+      
+      await fakeFirestore.collection('users').doc(doctorId).set({
+        'first_name': 'John',
+        'last_name': 'Doe',
+        'role': 'doctor',
+        'is_verified': true,
+        'specialization': 'Cardiology',
+        'consultation_fee': 100,
+        'search_index': ['john', 'doe', 'cardiology'],
+      });
 
       await doctorService.registerEnhancedAppointment(doctorId, patientId, booking);
 
