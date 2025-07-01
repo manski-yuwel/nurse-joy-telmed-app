@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:nursejoyapp/features/doctor/ui/widgets/date_time_picker.dart';
 import 'package:nursejoyapp/notifications/notification_service.dart';
 
+
 // define functions to fetch doctor list from Firestore
 Future<QuerySnapshot> getDoctorList() async {
   final doctorList = await FirebaseFirestore.instance
@@ -65,6 +66,7 @@ Future<List<DocumentSnapshot>> getVerifiedFilteredDoctorList(
   return verifiedDoctors;
 }
 
+
 Future<DocumentSnapshot> getDoctorDetails(String doctorId) async {
   final doctorDetails = await FirebaseFirestore.instance.collection('users').doc(doctorId).get();
   return doctorDetails;
@@ -82,7 +84,7 @@ Future<QuerySnapshot> getAppointmentList(String doctorId) async {
 
 // get user details
 Future<DocumentSnapshot> getUserDetails(String userId) async {
-  final userDetails = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+  final userDetails = await FirebaseFirestore.instance.collection('users').doc(userId).get();b
   return userDetails;
 }
 
@@ -96,12 +98,16 @@ Future<DocumentSnapshot> getAppointmentDetails(String appointmentId) async {
   return appointmentDetails;
 }
 
+
 // get user appointment list
 Future<QuerySnapshot> getUserAppointmentList(String userID) async {
   final appointmentList = await FirebaseFirestore.instance.collection('appointments').where('userID', isEqualTo: userID).get();
 
   return appointmentList;
 }
+
+
+
 
 // register appointment
 Future<void> registerAppointment(
@@ -133,6 +139,7 @@ Future<void> registerAppointment(
   );
 
 }
+
 
 Future<void> registerEnhancedAppointment(
   String doctorId, 
@@ -198,4 +205,4 @@ Future<void> registerEnhancedAppointment(
   } catch (e) {
     throw Exception('Failed to register appointment: $e');
   }
-}
+
