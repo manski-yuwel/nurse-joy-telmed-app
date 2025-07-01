@@ -496,6 +496,9 @@ class _JoyAIChatState extends State<JoyAIChat>
 
     // Try to get specialization from the last AI message's metadata
     String? specialization = _lastSpecialization;
+    if (specialization == '') {
+      specialization = 'All Specializations';
+    }
     
     // Show loading indicator
     setState(() => _isLoading = true);

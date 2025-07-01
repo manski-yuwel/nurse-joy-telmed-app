@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -7,8 +8,7 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
-import 'package:nursejoyapp/features/profile/data/profile_service.dart';
-// Removed unused import
+import 'package:nursejoyapp/shared/utils/utils.dart';
 
 class ProfileSetup extends StatefulWidget {
   const ProfileSetup({super.key});
@@ -157,31 +157,24 @@ class _ProfileSetupState extends State<ProfileSetup>
       final fullName = '$firstName $lastName';
       final fullNameLowercase = fullName.toLowerCase();
 
-      // Get profile service
-      final profileService = Provider.of<ProfileService>(context, listen: false);
-      
-      // Update user profile data using ProfileService
-      await profileService.updateProfile(
-        userID: userId,
-        profilePicURL: authService.user?.photoURL ?? '',
-        email: authService.user?.email ?? '',
-        firstName: firstName,
-        lastName: lastName,
-        fullName: fullName,
-        fullNameLowercase: fullNameLowercase,
-        civilStatus: civilStatus,
-        age: age,
-        birthdate: birthdate,
-        address: formData[addressField].toString().trim(),
-        phoneNumber: formData[phoneField].toString().trim(),
-        gender: formData[genderField].toString(),
-        username: null, // No username field in this form
-        currentPassword: null, // No password change in this form
-        newPassword: null, // No password change in this form
-      );
-
-      // Update additional fields not covered by updateProfile
-      await profileService.setIsSetup(userId, true);
+      // Update user profile data
+      await FirebaseFirestore.instance.collection('users').doc(userId).update({
+        'first_name': firstName,
+        'last_name': lastName,
+        'full_name': fullName,
+        'full_name_lowercase': fullNameLowercase,
+        'phone_number': formData[phoneField].toString().trim(),
+        'address': formData[addressField].toString().trim(),
+        'birthdate': Timestamp.fromDate(birthdate),
+        'age': age,
+        'civil_status': civilStatus,
+        'gender': gender,
+        'min_consultation_fee': int.tryParse(formData[minFeeField]) ?? 0,
+        'max_consultation_fee': int.tryParse(formData[maxFeeField]) ?? 0,
+        'medical_history': formData[medicalHistoryField]?.toString().trim() ?? '',
+        'search_index': createSearchIndex(fullNameLowercase),
+        'is_setup': true,
+      });
 
       if (mounted) {
         _showSnackBar('Profile saved successfully!', Colors.green);
