@@ -168,12 +168,13 @@ class _ProfileSetupState extends State<ProfileSetup>
         firstName: firstName,
         lastName: lastName,
         fullName: fullName,
-        fullNameLower: fullNameLowercase,
+        fullNameLowercase: fullNameLowercase,
         civilStatus: civilStatus,
         age: age,
         birthdate: birthdate,
         address: formData[addressField].toString().trim(),
         phoneNumber: formData[phoneField].toString().trim(),
+        gender: formData[genderField].toString(),
         username: null, // No username field in this form
         currentPassword: null, // No password change in this form
         newPassword: null, // No password change in this form

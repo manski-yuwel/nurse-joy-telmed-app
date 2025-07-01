@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/payments/data/payments_data.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -16,6 +17,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
   int _selectedIndex = -1;
   final currentUserId = FirebaseAuth.instance.currentUser?.uid;
   List<String> eWallets = ['GCash']; // Example e-wallets
+  late final PaymentsData _paymentsData;
 
   void _addEWallet() {
     setState(() {
@@ -36,7 +38,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
 
   void _showSendMoneyDialog() async {
     final _amountController = TextEditingController();
-    final doctors = await PaymentsData.getDoctors();
+    final doctors = await _paymentsData.getDoctors();
     String? selectedDoctorId;
 
     showDialog(
@@ -81,7 +83,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                     amount > 0 &&
                     selectedDoctorId != null &&
                     currentUserId != null) {
-                  await PaymentsData.addTransaction(
+                  await _paymentsData.addTransaction(
                     fromUserId: currentUserId!,
                     toUserId: selectedDoctorId!,
                     amount: amount,
@@ -98,6 +100,12 @@ class _PaymentsPageState extends State<PaymentsPage> {
         ),
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _paymentsData = Provider.of<PaymentsData>(context, listen: false);
   }
 
   @override
@@ -172,7 +180,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                                 amount > 0 &&
                                 targetUserId != null &&
                                 currentUserId != null) {
-                              await PaymentsData.addTransaction(
+                              await _paymentsData.addTransaction(
                                 fromUserId: currentUserId!,
                                 toUserId: targetUserId!,
                                 amount: amount,
@@ -202,7 +210,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
             const SizedBox(height: 8),
             Expanded(
               child: StreamBuilder<List<Map<String, dynamic>>>(
-                stream: PaymentsData.getUserTransactions(currentUserId),
+                stream: _paymentsData.getUserTransactions(currentUserId),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());

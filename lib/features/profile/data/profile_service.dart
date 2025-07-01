@@ -19,12 +19,13 @@ class ProfileService {
     required String firstName,
     required String lastName,
     required String fullName,
-    required String fullNameLower,
+    required String fullNameLowercase,
     required String civilStatus,
     required int age,
-    required DateTime birthdate,
+    required dynamic birthdate, // Can be DateTime or Timestamp
     required String address,
     required String phoneNumber,
+    required String gender,
     String? username,
     String? currentPassword,
     String? newPassword,
@@ -56,12 +57,12 @@ class ProfileService {
     }
 
     // Update profile picture if changed
-    if (profilePicURL != _auth.currentUser!.photoURL) {
+    if (profilePicURL.isNotEmpty && profilePicURL != _auth.currentUser!.photoURL) {
       await _auth.currentUser!.updatePhotoURL(profilePicURL);
     }
 
     // Update email if changed
-    if (email != _auth.currentUser!.email && email.isNotEmpty) {
+    if (email.isNotEmpty && email != _auth.currentUser!.email) {
       await _auth.currentUser!.verifyBeforeUpdateEmail(email);
     }
 
@@ -70,26 +71,44 @@ class ProfileService {
       await _auth.currentUser!.updatePassword(newPassword);
     }
 
-    // Update display name with username if provided, otherwise use full name
-    final newDisplayName = username ?? '$firstName $lastName';
-    if (newDisplayName != _auth.currentUser!.displayName) {
-      await _auth.currentUser!.updateDisplayName(newDisplayName);
+    // Update display name with full name
+    if (fullName.isNotEmpty && fullName != _auth.currentUser!.displayName) {
+      await _auth.currentUser!.updateDisplayName(fullName);
     }
 
-    // Update user document in Firestore
-    await _firestore.collection('users').doc(userID).update({
+    // Prepare the update data
+    final updateData = {
+      'email': email,
       'first_name': firstName,
       'last_name': lastName,
       'full_name': fullName,
-      'full_name_lower': fullNameLower,
-      'civil_status': civilStatus,
-      'age': age,
-      'birthdate': birthdate,
-      'address': address,
+      'full_name_lowercase': fullNameLowercase,
       'phone_number': phoneNumber,
-      'username': username,
-      'updated_at': FieldValue.serverTimestamp(),
-    });
+      'address': address,
+      'birthdate': birthdate is DateTime ? Timestamp.fromDate(birthdate) : birthdate,
+      'age': age,
+      'civil_status': civilStatus,
+      'gender': gender,
+      'updated_at': Timestamp.now(),
+      'search_index': _createSearchIndex(fullNameLowercase),
+    };
+
+    // Only include profile pic if it's not empty
+    if (profilePicURL.isNotEmpty) {
+      updateData['profile_pic'] = profilePicURL;
+    }
+
+    // Update user document in Firestore
+    await _firestore.collection('users').doc(userID).update(updateData);
+  }
+
+  // Creates a search index for a string by splitting it into substrings
+  List<String> _createSearchIndex(String input) {
+    final index = <String>[];
+    for (var i = 1; i <= input.length; i++) {
+      index.add(input.substring(0, i).toLowerCase());
+    }
+    return index;
   }
 
   // Get user profile
