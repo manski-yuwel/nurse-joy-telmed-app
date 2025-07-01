@@ -22,7 +22,10 @@ if the type is message,
 the body should include the chatRoomID, senderID, recipientID, messageBody
 */
 class NotificationService {
-  final _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+  
+  NotificationService({FirebaseFirestore? firestore}) 
+      : _firestore = firestore ?? FirebaseFirestore.instance;
 
 
   Stream<QuerySnapshot> getActivities(String userID) {

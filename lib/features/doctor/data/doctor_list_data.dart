@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import 'package:nursejoyapp/features/doctor/ui/widgets/date_time_picker.dart';
 import 'package:nursejoyapp/notifications/notification_service.dart';
 
-<<<<<<< HEAD
+
 // define functions to fetch doctor list from Firestore
 Future<QuerySnapshot> getDoctorList() async {
   final doctorList = await FirebaseFirestore.instance
@@ -14,14 +14,7 @@ Future<QuerySnapshot> getDoctorList() async {
   return doctorList;
 }
 
-Future<DocumentSnapshot> getDoctorDetails(String doctorId) async {
-  final doctorDetails = await FirebaseFirestore.instance
-      .collection('users')
-      .doc(doctorId)
-      .collection('doctor_information')
-      .doc('profile')
-      .get();
-=======
+
 Future<List<DocumentSnapshot>> getVerifiedFilteredDoctorList(
   {
     String? searchQuery,
@@ -73,7 +66,6 @@ Future<List<DocumentSnapshot>> getVerifiedFilteredDoctorList(
   return verifiedDoctors;
 }
 
->>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
 
 Future<DocumentSnapshot> getDoctorDetails(String doctorId) async {
   final doctorDetails = await FirebaseFirestore.instance.collection('users').doc(doctorId).get();
@@ -82,28 +74,17 @@ Future<DocumentSnapshot> getDoctorDetails(String doctorId) async {
 
 // get appointment list
 Future<QuerySnapshot> getAppointmentList(String doctorId) async {
-<<<<<<< HEAD
   final appointmentList = await FirebaseFirestore.instance
       .collection('appointments')
       .where('doctorId', isEqualTo: doctorId)
       .get();
-=======
-  // sort appointment list by created_at
-  final appointmentList = await FirebaseFirestore.instance.collection('appointments').where('doctorId', isEqualTo: doctorId).orderBy('createdAt', descending: true).get();
->>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
 
   return appointmentList;
 }
 
 // get user details
 Future<DocumentSnapshot> getUserDetails(String userId) async {
-<<<<<<< HEAD
-  final userDetails =
-      await FirebaseFirestore.instance.collection('users').doc(userId).get();
-
-=======
-  final userDetails = await FirebaseFirestore.instance.collection('users').doc(userId).get();
->>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
+  final userDetails = await FirebaseFirestore.instance.collection('users').doc(userId).get();b
   return userDetails;
 }
 
@@ -117,8 +98,7 @@ Future<DocumentSnapshot> getAppointmentDetails(String appointmentId) async {
   return appointmentDetails;
 }
 
-<<<<<<< HEAD
-=======
+
 // get user appointment list
 Future<QuerySnapshot> getUserAppointmentList(String userID) async {
   final appointmentList = await FirebaseFirestore.instance.collection('appointments').where('userID', isEqualTo: userID).get();
@@ -127,7 +107,8 @@ Future<QuerySnapshot> getUserAppointmentList(String userID) async {
 }
 
 
->>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
+
+
 // register appointment
 Future<void> registerAppointment(
     String doctorId, String patientId, DateTime appointmentDateTime) async {
@@ -158,8 +139,7 @@ Future<void> registerAppointment(
   );
 
 }
-<<<<<<< HEAD
-=======
+
 
 Future<void> registerEnhancedAppointment(
   String doctorId, 
@@ -225,5 +205,4 @@ Future<void> registerEnhancedAppointment(
   } catch (e) {
     throw Exception('Failed to register appointment: $e');
   }
-}
->>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
+

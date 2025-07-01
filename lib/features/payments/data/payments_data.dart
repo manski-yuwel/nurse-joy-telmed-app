@@ -2,10 +2,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rxdart/rxdart.dart';
 
 class PaymentsData {
-  static final _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _db;
 
-  // Add a new transaction and update balances
-  static Future<void> addTransaction({
+  // Constructor with dependency injection
+  PaymentsData({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
+
+
+  // Add a new transaction (stores both user IDs and names)
+  Future<void> addTransaction({
     required String fromUserId,
     required String toUserId,
     required int amount,
@@ -88,7 +92,7 @@ class PaymentsData {
   }
 
   // Get transactions for a user (sent or received)
-  static Stream<List<Map<String, dynamic>>> getUserTransactions(String? userId) {
+  Stream<List<Map<String, dynamic>>> getUserTransactions(String? userId) {
     if (userId == null) return const Stream.empty();
 
     final sentStream = _db
@@ -125,13 +129,13 @@ class PaymentsData {
   }
 
   // Get all doctors for dropdown
-  static Future<List<Map<String, dynamic>>> getDoctors() async {
+  Future<List<Map<String, dynamic>>> getDoctors() async {
     final query = await _db
         .collection('users')
         .where('role', isEqualTo: 'doctor')
         .get();
     return query.docs.map((doc) {
-      final data = doc.data();
+      final data = doc.data() as Map<String, dynamic>;
       data['uid'] = doc.id;
       return data;
     }).toList();

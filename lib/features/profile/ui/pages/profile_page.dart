@@ -11,6 +11,7 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/profile/data/profile_page_db.dart';
+import 'package:nursejoyapp/features/profile/data/profile_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:logger/logger.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
@@ -40,6 +41,7 @@ class _ProfilePageState extends State<ProfilePage> {
   File? _imageFile;
   Uint8List? _imageBytes;
   final ImagePicker _picker = ImagePicker();
+  final ProfileService _profileService = ProfileService();
   
 
   // Form field names

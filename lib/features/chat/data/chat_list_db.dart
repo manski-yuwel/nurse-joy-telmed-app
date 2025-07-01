@@ -3,22 +3,33 @@ import 'package:logger/logger.dart';
 import 'package:dio/dio.dart';
 import 'package:nursejoyapp/notifications/notification_service.dart';
 
-final db = FirebaseFirestore.instance;
-
 class Chat {
-  final logger = Logger();
-  final dio = Dio();
-  final notificationService = NotificationService();
+  final FirebaseFirestore _firestore;
+  final Logger logger;
+  final Dio dio;
+  final NotificationService notificationService;
+
+  // Default constructor that uses the default Firestore instance
+  Chat({
+    FirebaseFirestore? firestore,
+    Logger? logger,
+    Dio? dio,
+    NotificationService? notificationService,
+  })  : _firestore = firestore ?? FirebaseFirestore.instance,
+        logger = logger ?? Logger(),
+        dio = dio ?? Dio(),
+        notificationService = notificationService ?? NotificationService();
+
   // ghet the chatlist by checking if the userID is included in the users pair in the chat doc
   Stream<QuerySnapshot> getChatList(String userID) {
-    return db
+    return _firestore
         .collection('chats')
         .where('users', arrayContains: userID)
         .snapshots();
   }
 
   Stream<QuerySnapshot> getOnlineUsers() {
-    return db.collection('users').snapshots();
+    return _firestore.collection('users').snapshots();
   }
 
   // Method to search for users by email
@@ -33,7 +44,7 @@ class Chat {
     String searchTermLower = searchTerm.toLowerCase().trim();
 
     try {
-      QuerySnapshot querySnapshot = await db
+      QuerySnapshot querySnapshot = await _firestore
           .collection('users')
           .where('search_index', arrayContains: searchTermLower)
           .limit(10)
@@ -52,12 +63,12 @@ class Chat {
   Future<void> generateChatRoom(
       String chatRoomID, String userID, String recipientID) async {
     // check if the chatroom already exists
-    final chatRoomDoc = await db.collection('chats').doc(chatRoomID).get();
+    final chatRoomDoc = await _firestore.collection('chats').doc(chatRoomID).get();
     if (chatRoomDoc.exists) {
       return;
     }
 
-    await db.collection('chats').doc(chatRoomID).set({
+    await _firestore.collection('chats').doc(chatRoomID).set({
       'users': [userID, recipientID],
       'last_message': '',
       'timestamp': FieldValue.serverTimestamp(),
@@ -73,11 +84,11 @@ class Chat {
 
   // function to get the recipient user details
   Future<DocumentSnapshot<Object>> getRecipientDetails(String userID) async {
-    return await db.collection('users').doc(userID).get();
+    return await _firestore.collection('users').doc(userID).get();
   }
 
   Stream<QuerySnapshot> getChatRoomMessages(String chatRoomID) {
-    return db
+    return _firestore
         .collection('chats')
         .doc(chatRoomID)
         .collection('messages')
@@ -89,7 +100,7 @@ class Chat {
   Future<void> sendMessage(
       String chatRoomID, String? userID, String fullName, String recipientID, String messageBody,
       {bool isImportant = false}) async {
-    await db.collection('chats').doc(chatRoomID).collection('messages').add({
+    await _firestore.collection('chats').doc(chatRoomID).collection('messages').add({
       'senderID': userID,
       'recipientID': recipientID,
       'message_body': messageBody,
@@ -98,8 +109,7 @@ class Chat {
       'is_important': isImportant,
     });
 
-
-    await db.collection('chats').doc(chatRoomID).update({
+    await _firestore.collection('chats').doc(chatRoomID).update({
       'last_message': messageBody,
       'message_type': 'text',
       'timestamp': FieldValue.serverTimestamp(),
@@ -124,7 +134,7 @@ class Chat {
   // function to send a call notification message
   Future<DocumentReference> sendCallNotification(String chatRoomID,
       String callerID, String recipientID, String callType) async {
-    final docRef = await db
+    final docRef = await _firestore
         .collection('chats')
         .doc(chatRoomID)
         .collection('messages')
@@ -137,7 +147,7 @@ class Chat {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
-    await db.collection('chats').doc(chatRoomID).update({
+    await _firestore.collection('chats').doc(chatRoomID).update({
       'last_message': 'Video call',
       'timestamp': FieldValue.serverTimestamp(),
       'last_message_senderID': callerID,
@@ -149,7 +159,7 @@ class Chat {
   // function to update call status in message
   Future<void> updateCallStatus(
       String chatRoomID, String messageID, String status) async {
-    await db
+    await _firestore
         .collection('chats')
         .doc(chatRoomID)
         .collection('messages')
@@ -161,13 +171,13 @@ class Chat {
 
   Future<void> migrateMessages() async {
     // Get all chat rooms
-    final snapshot = await db.collection('chats').get();
+    final snapshot = await _firestore.collection('chats').get();
 
     for (var chatDoc in snapshot.docs) {
       String chatRoomID = chatDoc.id;
 
       // Get all messages in this chat room
-      final messagesSnapshot = await db
+      final messagesSnapshot = await _firestore
           .collection('chats')
           .doc(chatRoomID)
           .collection('messages')
@@ -176,7 +186,7 @@ class Chat {
       for (var messageDoc in messagesSnapshot.docs) {
         var messageData = messageDoc.data();
         if (!messageData.containsKey('is_important')) {
-          await db
+          await _firestore
               .collection('chats')
               .doc(chatRoomID)
               .collection('messages')

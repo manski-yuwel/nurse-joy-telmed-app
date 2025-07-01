@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/payments/data/payments_data.dart';
 import 'package:nursejoyapp/features/payments/ui/widgets/payments_debug.dart';
@@ -17,7 +18,10 @@ class PaymentsPage extends StatefulWidget {
 class _PaymentsPageState extends State<PaymentsPage> {
   int _selectedIndex = -1;
   final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-  List<String> eWallets = ['GCash'];
+
+  List<String> eWallets = ['GCash']; // Example e-wallets
+  late final PaymentsData _paymentsData;
+
 
   void _addEWallet() {
     setState(() {
@@ -37,6 +41,9 @@ class _PaymentsPageState extends State<PaymentsPage> {
 
   void _showAddMoneyDialog() {
     final _amountController = TextEditingController();
+    final doctors = await _paymentsData.getDoctors();
+    String? selectedDoctorId;
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -48,6 +55,32 @@ class _PaymentsPageState extends State<PaymentsPage> {
             labelText: 'Amount',
             prefixText: '₱',
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final amount = int.tryParse(_amountController.text.trim());
+                if (amount != null &&
+                    amount > 0 &&
+                    selectedDoctorId != null &&
+                    currentUserId != null) {
+                  await _paymentsData.addTransaction(
+                    fromUserId: currentUserId!,
+                    toUserId: selectedDoctorId!,
+                    amount: amount,
+                  );
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Transaction successful!')),
+                  );
+                }
+              },
+              child: const Text('Send'),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -73,6 +106,12 @@ class _PaymentsPageState extends State<PaymentsPage> {
         ],
       ),
     );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _paymentsData = Provider.of<PaymentsData>(context, listen: false);
   }
 
   @override
@@ -115,13 +154,82 @@ class _PaymentsPageState extends State<PaymentsPage> {
 
             if (currentUserId != null) DebugButtons(currentUserId: currentUserId!),
 
+
+                showDialog(
+                  context: context,
+                  builder: (context) => StatefulBuilder(
+                    builder: (context, setState) => AlertDialog(
+                      title: const Text('Debug: Send to Any User'),
+                      content: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          DropdownButtonFormField<String>(
+                            value: targetUserId,
+                            hint: const Text('Select User'),
+                            items: userList.map<DropdownMenuItem<String>>((user) {
+                              return DropdownMenuItem<String>(
+                                value: user['uid'],
+                                child: Text(user['name']),
+                              );
+                            }).toList(),
+                            onChanged: (val) => setState(() => targetUserId = val),
+                          ),
+                          const SizedBox(height: 8),
+                          TextField(
+                            controller: _amountController,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: 'Amount',
+                              prefixText: '₱',
+                            ),
+                          ),
+                        ],
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          onPressed: () async {
+                            final amount = int.tryParse(_amountController.text.trim());
+                            if (amount != null &&
+                                amount > 0 &&
+                                targetUserId != null &&
+                                currentUserId != null) {
+                              await _paymentsData.addTransaction(
+                                fromUserId: currentUserId!,
+                                toUserId: targetUserId!,
+                                amount: amount,
+                              );
+                              Navigator.of(context).pop();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Debug transaction sent!')),
+                              );
+                            }
+                          },
+                          child: const Text('Send'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+            ElevatedButton.icon(
+              onPressed: _showSendMoneyDialog,
+              icon: const Icon(Icons.send),
+              label: const Text('Send Money'),
+            ),
+            const SizedBox(height: 8),
+
             const Text('Transaction History',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             SizedBox(
               height: 200,
               child: StreamBuilder<List<Map<String, dynamic>>>(
-                stream: PaymentsData.getUserTransactions(currentUserId),
+                stream: _paymentsData.getUserTransactions(currentUserId),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) {
                     return const Center(child: CircularProgressIndicator());
