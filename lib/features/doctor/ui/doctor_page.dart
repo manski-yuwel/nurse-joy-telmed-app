@@ -6,8 +6,8 @@ import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
 import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
-import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
 import 'package:nursejoyapp/features/doctor/ui/widgets/date_time_picker.dart';
+
 class DoctorPage extends StatefulWidget {
   const DoctorPage(
       {super.key,
@@ -27,8 +27,11 @@ class _DoctorPageState extends State<DoctorPage>
   bool _isFavorite = false;
   bool _isLoading = false;
   late AuthService auth;
+<<<<<<< HEAD
+=======
   DateTime? _selectedDateTime;
   int _selectedIndex = 1; // Home is selected by default
+>>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
 
   @override
   void initState() {
@@ -48,12 +51,48 @@ class _DoctorPageState extends State<DoctorPage>
     super.dispose();
   }
 
+<<<<<<< HEAD
+  Future<void> _bookAppointment() async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AppointmentBookingDialog(
+        doctorId: widget.doctorId,
+        onBookingComplete: (AppointmentBooking booking) async {
+          context.pop();
+          setState(() => _isLoading = true);
+
+          try {
+            await registerEnhancedAppointment(
+              widget.doctorId,
+              auth.user!.uid, // Your actual user ID
+              booking,
+            );
+
+            if (!context.mounted) return;
+
+            // Success dialog
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Appointment Booked'),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Your appointment has been scheduled!'),
+                    const SizedBox(height: 8),
+                    Text('Date: ${booking.selectedDay.displayDate}'),
+                    Text('Time: ${booking.selectedTimeSlot.displayTime}'),
+                  ],
+=======
 Future<void> _bookAppointment() async {
   showDialog(
     context: context,
     barrierDismissible: false,
     builder: (context) => AppointmentBookingDialog(
       doctorId: widget.doctorId,
+      consultationFee: widget.doctorDetails['consultation_fee'] ?? 0,
       onBookingComplete: (AppointmentBooking booking) async {
         context.pop();
         setState(() => _isLoading = true);
@@ -102,17 +141,39 @@ Future<void> _bookAppointment() async {
                 TextButton(
                   onPressed: () => context.pop(),
                   child: const Text('OK'),
+>>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
                 ),
-              ],
-            ),
-          );
-        } finally {
-          setState(() => _isLoading = false);
-        }
-      },
-    ),
-  );
-}
+                actions: [
+                  TextButton(
+                    onPressed: () => context.pop(),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          } catch (e) {
+            // Error handling
+            if (!context.mounted) return;
+            showDialog(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Error'),
+                content: Text('Failed to book appointment: $e'),
+                actions: [
+                  TextButton(
+                    onPressed: () => context.pop(),
+                    child: const Text('OK'),
+                  ),
+                ],
+              ),
+            );
+          } finally {
+            setState(() => _isLoading = false);
+          }
+        },
+      ),
+    );
+  }
 
   List<Widget> _buildSection(String title, List<String> items) {
     return [
@@ -124,18 +185,16 @@ Future<void> _bookAppointment() async {
         ),
       ),
       const SizedBox(height: 8),
-      ...items
-          .map((item) => Padding(
-                padding: const EdgeInsets.only(bottom: 8.0, left: 8.0),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('• '),
-                    Expanded(child: Text(item)),
-                  ],
-                ),
-              ))
-          .toList(),
+      ...items.map((item) => Padding(
+            padding: const EdgeInsets.only(bottom: 8.0, left: 8.0),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('• '),
+                Expanded(child: Text(item)),
+              ],
+            ),
+          )),
       const SizedBox(height: 16),
     ];
   }
@@ -391,11 +450,20 @@ Future<void> _bookAppointment() async {
                   child: IconButton(
                     onPressed: () {
                       final chat = Chat();
+<<<<<<< HEAD
+                      final chatRoomID = chat.generateChatRoomID(
+                          auth.user!.uid, widget.doctorId);
+                      chat.generateChatRoom(
+                          chatRoomID, auth.user!.uid, widget.doctorId);
+                      context.go('/chat/$chatRoomID', extra: {
+=======
                       final chatRoomID = chat.generateChatRoomID(auth.user!.uid, widget.doctorId);
                       chat.generateChatRoom(chatRoomID, auth.user!.uid, widget.doctorId);
                       context.push('/chat/$chatRoomID', extra: {
+>>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
                         'recipientID': widget.doctorId,
-                        'recipientFullName': '${widget.doctorDetails['first_name']} ${widget.doctorDetails['last_name']}',
+                        'recipientFullName':
+                            '${widget.doctorDetails['first_name']} ${widget.doctorDetails['last_name']}',
                       });
                     },
                     icon: const Icon(Icons.chat, color: Colors.blue),
