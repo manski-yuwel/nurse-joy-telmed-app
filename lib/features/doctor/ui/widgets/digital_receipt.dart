@@ -32,10 +32,12 @@ class _DigitalReceiptDialogState extends State<DigitalReceiptDialog> {
   int _balance = 0;
   String _userAccountName = '';
   String _doctorAccountName = '';
+  late final PaymentsData _paymentsData;
 
   @override
   void initState() {
     super.initState();
+    _paymentsData = PaymentsData();
     _loadUserData();
   }
 
@@ -54,7 +56,7 @@ class _DigitalReceiptDialogState extends State<DigitalReceiptDialog> {
       final userData = userSnap.data();
       final doctorData = doctorSnap.data();
 
-      final balance = await PaymentsData.getBalance(userId).first;
+      final balance = await _paymentsData.getBalance(userId).first;
 
       setState(() {
         _balance = balance;
@@ -100,7 +102,7 @@ class _DigitalReceiptDialogState extends State<DigitalReceiptDialog> {
       final fromUserId = FirebaseAuth.instance.currentUser!.uid;
       final toUserId = widget.doctorId;
 
-      await PaymentsData.addTransaction(
+      await _paymentsData.addTransaction(
         fromUserId: fromUserId,
         toUserId: toUserId,
         amount: widget.amount,

@@ -5,7 +5,9 @@ import 'package:nursejoyapp/features/payments/data/payments_data.dart';
 class DebugButtons extends StatelessWidget {
   final String? currentUserId;
 
-  const DebugButtons({super.key, required this.currentUserId});
+  DebugButtons({super.key, required this.currentUserId});
+
+  final PaymentsData _paymentsData = PaymentsData();
 
   @override
   Widget build(BuildContext context) {
@@ -71,7 +73,7 @@ class DebugButtons extends StatelessWidget {
                           return;
                         }
 
-                        final balance = await PaymentsData.getBalance(currentUserId!).first;
+                        final balance = await _paymentsData.getBalance(currentUserId!).first;
                         if (amount > balance) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(content: Text('Insufficient balance!')),
@@ -79,7 +81,7 @@ class DebugButtons extends StatelessWidget {
                           return;
                         }
 
-                        await PaymentsData.addTransaction(
+                        await _paymentsData.addTransaction(
                           fromUserId: currentUserId!,
                           toUserId: targetUserId!,
                           amount: amount,

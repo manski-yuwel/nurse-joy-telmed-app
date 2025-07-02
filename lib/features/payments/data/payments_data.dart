@@ -52,7 +52,7 @@ class PaymentsData {
 
 
   // Add money to the user's balance and log as "Cash In"
-  static Future<void> addMoney({
+  Future<void> addMoney({
     required String userId,
     required int amount,
   }) async {
@@ -85,7 +85,7 @@ class PaymentsData {
 
 
   // Get live balance stream
-  static Stream<int> getBalance(String userId) {
+  Stream<int> getBalance(String userId) {
     return _db.collection('users').doc(userId).snapshots().map(
       (doc) => (doc.data()?['balance'] ?? 0) as int,
     );
