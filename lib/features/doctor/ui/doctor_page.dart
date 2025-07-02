@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/doctor/ui/widgets/date_time_picker.dart';
+import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
 
 class DoctorPage extends StatefulWidget {
   const DoctorPage(
@@ -27,11 +28,8 @@ class _DoctorPageState extends State<DoctorPage>
   bool _isFavorite = false;
   bool _isLoading = false;
   late AuthService auth;
-<<<<<<< HEAD
-=======
   DateTime? _selectedDateTime;
   int _selectedIndex = 1; // Home is selected by default
->>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
 
   @override
   void initState() {
@@ -51,41 +49,6 @@ class _DoctorPageState extends State<DoctorPage>
     super.dispose();
   }
 
-<<<<<<< HEAD
-  Future<void> _bookAppointment() async {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AppointmentBookingDialog(
-        doctorId: widget.doctorId,
-        onBookingComplete: (AppointmentBooking booking) async {
-          context.pop();
-          setState(() => _isLoading = true);
-
-          try {
-            await registerEnhancedAppointment(
-              widget.doctorId,
-              auth.user!.uid, // Your actual user ID
-              booking,
-            );
-
-            if (!context.mounted) return;
-
-            // Success dialog
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Appointment Booked'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Your appointment has been scheduled!'),
-                    const SizedBox(height: 8),
-                    Text('Date: ${booking.selectedDay.displayDate}'),
-                    Text('Time: ${booking.selectedTimeSlot.displayTime}'),
-                  ],
-=======
 Future<void> _bookAppointment() async {
   showDialog(
     context: context,
@@ -141,36 +104,13 @@ Future<void> _bookAppointment() async {
                 TextButton(
                   onPressed: () => context.pop(),
                   child: const Text('OK'),
->>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () => context.pop(),
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-            );
-          } catch (e) {
-            // Error handling
-            if (!context.mounted) return;
-            showDialog(
-              context: context,
-              builder: (context) => AlertDialog(
-                title: const Text('Error'),
-                content: Text('Failed to book appointment: $e'),
-                actions: [
-                  TextButton(
-                    onPressed: () => context.pop(),
-                    child: const Text('OK'),
-                  ),
-                ],
-              ),
-            );
+              ],
+            ));
           } finally {
             setState(() => _isLoading = false);
           }
-        },
+        }
       ),
     );
   }
@@ -450,17 +390,9 @@ Future<void> _bookAppointment() async {
                   child: IconButton(
                     onPressed: () {
                       final chat = Chat();
-<<<<<<< HEAD
-                      final chatRoomID = chat.generateChatRoomID(
-                          auth.user!.uid, widget.doctorId);
-                      chat.generateChatRoom(
-                          chatRoomID, auth.user!.uid, widget.doctorId);
-                      context.go('/chat/$chatRoomID', extra: {
-=======
                       final chatRoomID = chat.generateChatRoomID(auth.user!.uid, widget.doctorId);
                       chat.generateChatRoom(chatRoomID, auth.user!.uid, widget.doctorId);
                       context.push('/chat/$chatRoomID', extra: {
->>>>>>> 02fada15fdd22b977bcad73646ff4620be1945ab
                         'recipientID': widget.doctorId,
                         'recipientFullName':
                             '${widget.doctorDetails['first_name']} ${widget.doctorDetails['last_name']}',
