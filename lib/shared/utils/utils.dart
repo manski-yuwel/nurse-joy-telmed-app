@@ -24,13 +24,14 @@ List<String> createNGrams(String part, {int minGram = 1, int maxGram = 10}) {
 
 
 List<String> getSpecializations() {
-  return [
+  final specializations = <String>{
+    'All Specializations',
     'Cardiologist',
     'Dermatologist',
     'Endocrinologist',
     'Family Physician',
-    'Gastroenterologist',
     'General Surgeon',
+    'Gastroenterologist',
     'Gynecologist',
     'Hematologist',
     'Internal Medicine',
@@ -47,5 +48,7 @@ List<String> getSpecializations() {
     'Radiologist',
     'Rheumatologist',
     'Urologist'
-  ];
+  };
+  
+  return specializations.toList()..sort();
 }

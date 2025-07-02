@@ -57,16 +57,34 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
   
   Future<void> _loadInitialData() async {
     setState(() => _isLoading = true);
+    debugPrint('Initial data: ${widget.initialData}');
     try {
-      final doctors = await getVerifiedFilteredDoctorList(
-        specialization: widget.initialData['specialization'],
-        minFee: widget.initialData['minFee'],
-        maxFee: widget.initialData['maxFee'],
-      );
-      _filteredDoctors = doctors;
-
+      // Load specializations first
+      _specializations = getSpecializations();
+      
+      // Get initial specialization value
+      final initialSpecialization = widget.initialData['specialization'];
+      
+      // Set initial values
       setState(() {
-        _specializations = getSpecializations();
+        // If the initial specialization is 'All Specializations' or null, set to null
+        _selectedSpecialization = (initialSpecialization == 'All Specializations' || initialSpecialization == null) 
+            ? null 
+            : initialSpecialization;
+            
+        _minFeeController.text = widget.initialData['minFee']?.toString() ?? '';
+        _maxFeeController.text = widget.initialData['maxFee']?.toString() ?? '';
+      });
+      
+      // Load doctors with initial filters
+      final doctors = await getVerifiedFilteredDoctorList(
+        specialization: _selectedSpecialization,
+        minFee: _minFeeController.text.isNotEmpty ? int.tryParse(_minFeeController.text) : null,
+        maxFee: _maxFeeController.text.isNotEmpty ? int.tryParse(_maxFeeController.text) : null,
+      );
+      
+      setState(() {
+        _filteredDoctors = doctors;
         _isLoading = false;
       });
     } catch (e) {
@@ -140,7 +158,6 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
       _maxFeeController.clear();
       _selectedSpecialization = null;
     });
-    _loadInitialData();
   }
 
   @override
@@ -232,19 +249,18 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
                 ),
               ),
               hint: const Text('Select specialization'),
-              items: [
-                const DropdownMenuItem(
-                  value: null,
-                  child: Text('All Specializations'),
-                ),
-                ..._specializations.map((spec) => DropdownMenuItem(
-                      value: spec,
-                      child: Text(spec),
-                    )),
-              ],
+              items: _specializations.map<DropdownMenuItem<String>>((String value) {
+                return DropdownMenuItem<String>(
+                  // Use the actual value for the dropdown item
+                  value: value,
+                  child: Text(value),
+                );
+              }).toList(),
               onChanged: (value) {
-                _selectedSpecialization = value;
-                
+                setState(() {
+                  // Convert 'All Specializations' to null when selected
+                  _selectedSpecialization = (value == 'All Specializations') ? null : value;
+                });
               },
             ),
             const SizedBox(height: 12),

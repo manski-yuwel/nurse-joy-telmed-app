@@ -111,7 +111,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
   @override
   void initState() {
     super.initState();
-    _paymentsData = Provider.of<PaymentsData>(context, listen: false);
+    _paymentsData = PaymentsData();
   }
 
   @override
