@@ -2,9 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:nursejoyapp/features/ai/data/ai_redirection.dart';
-import 'package:flutter/material.dart';
 import 'dart:convert';
-
 import 'package:nursejoyapp/firebase_options.dart';
 
 // Helper function to extract JSON from response
@@ -33,6 +31,7 @@ void main() {
     // Initialize test bindings
     TestWidgetsFlutterBinding.ensureInitialized();
     
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     
     // Initialize the actual model
     model = AIRedirection.getGenerativeModel();
