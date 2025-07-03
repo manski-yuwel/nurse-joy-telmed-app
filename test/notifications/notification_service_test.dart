@@ -257,7 +257,7 @@ void main() {
         final result = notificationService.resolveActivityBody(type, body);
         
         // Assert
-        expect(result.length, 3);
+        expect(result.length, 4);
         expect(result['appointmentID'], 'app123');
         expect(result['doctorID'], 'doc123');
         expect(result['appointmentDateTime'], '2023-01-01T12:00:00Z');
@@ -268,6 +268,7 @@ void main() {
         // Arrange
         const type = 'appointment';
         final body = {
+          'id': 'app123',
           'appointmentID': 'app123',
           // 'doctorID' is missing
           'appointmentDateTime': '2023-01-01T12:00:00Z',
@@ -277,7 +278,8 @@ void main() {
         final result = notificationService.resolveActivityBody(type, body);
         
         // Assert
-        expect(result.length, 3);
+        expect(result.length, 4);
+        expect(result['id'], 'app123');
         expect(result['appointmentID'], 'app123');
         expect(result['doctorID'], null); // Should be null if missing
         expect(result['appointmentDateTime'], '2023-01-01T12:00:00Z');
@@ -298,7 +300,7 @@ void main() {
         final result = notificationService.resolveActivityBody(type, body);
         
         // Assert
-        expect(result.length, 4);
+        expect(result.length, 5);
         expect(result['chatRoomID'], 'chat123');
         expect(result['senderID'], 'user123');
         expect(result['recipientID'], 'user456');
@@ -310,6 +312,7 @@ void main() {
         // Arrange
         const type = 'message';
         final body = {
+          'id': 'chat123',
           'chatRoomID': 'chat123',
           // 'senderID' is missing
           'recipientID': 'user456',
@@ -320,7 +323,8 @@ void main() {
         final result = notificationService.resolveActivityBody(type, body);
         
         // Assert
-        expect(result.length, 4);
+        expect(result.length, 5);
+        expect(result['id'], 'chat123');
         expect(result['chatRoomID'], 'chat123');
         expect(result['senderID'], null); // Should be null if missing
         expect(result['recipientID'], 'user456');
@@ -351,7 +355,8 @@ void main() {
         final result = notificationService.resolveActivityBody(type, body);
         
         // Assert
-        expect(result.length, 3);
+        expect(result.length, 4);
+        expect(result['id'], null);
         expect(result['appointmentID'], null);
         expect(result['doctorID'], null);
         expect(result['appointmentDateTime'], null);

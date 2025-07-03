@@ -189,7 +189,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                     style: const TextStyle(fontSize: 12, color: Colors.grey),
                                   ),
                                   onTap: () {
-                                    _handleActivityTap(body['id'], body, activity['type'], context);
+                                    _handleActivityTap(body, activity['type'], context);
                                   },
                               );
                             },
@@ -261,16 +261,16 @@ class _DashboardPageState extends State<DashboardPage> {
 
 
 
-  void _handleActivityTap(String appointmentID, Map<String, dynamic> body, String type, BuildContext context) async {
-    if (type == 'appointment') {
-      final doctorData = await getUserDetails(body['doctorID']);
+  void _handleActivityTap(Map<String, dynamic> body, String type, BuildContext context) async {
+    if (type == 'appointment' && body['id'] != null) {
+      final doctorUserDetails = await getUserDetails(body['doctorID']);
       if (context.mounted) {
         context.push(
-          '/user-appointment-detail/${appointmentID}',
-          extra: {'doctorData': doctorData},
+          '/appointment/${body['id']}',
+          extra: doctorUserDetails,
         );
       }
-    } else if (type == 'message' && body['chatRoomID'] != null) {
+    } else if (type == 'message' && body['id'] != null) {
       final recipientUserDetails = await getUserDetails(body['senderID']);
       final recipientFullName = recipientUserDetails['full_name'];
       if (context.mounted) {
