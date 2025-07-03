@@ -149,7 +149,7 @@ void main() {
     });
 
 
-    test('registerEnhancedAppointment registers a new enhanced appointment', () async {
+    test('registerEnhancedAppointment registers a new appointment', () async {
       final doctorId = 'doctor1';
       final patientId = 'patient1';
       final now = DateTime.now();
@@ -216,5 +216,128 @@ void main() {
       final appointments = await fakeFirestore.collection('appointments').get();
       expect(appointments.docs.length, 1);
     });
+
+    group('getVerifiedFilteredDoctorList', () {
+      test('should filter by specialization', () async {
+        await fakeFirestore.collection('users').add({
+          'role': 'doctor',
+          'is_verified': true,
+          'specialization': 'Cardiology',
+        });
+        await fakeFirestore.collection('users').add({
+          'role': 'doctor',
+          'is_verified': true,
+          'specialization': 'Dermatology',
+        });
+
+        final results = await doctorService.getVerifiedFilteredDoctorList(specialization: 'Cardiology');
+        expect(results.length, 1);
+        expect((results.first.data() as Map<String, dynamic>)['specialization'], 'Cardiology');
+      });
+
+      test('should filter by consultation fee', () async {
+        await fakeFirestore.collection('users').add({
+          'role': 'doctor',
+          'is_verified': true,
+          'consultation_fee': 100,
+        });
+        await fakeFirestore.collection('users').add({
+          'role': 'doctor',
+          'is_verified': true,
+          'consultation_fee': 200,
+        });
+
+        final results = await doctorService.getVerifiedFilteredDoctorList(minFee: 150);
+        expect(results.length, 1);
+        expect((results.first.data() as Map<String, dynamic>)['consultation_fee'], 200);
+      });
+
+      test('should filter by a combination of specialization and fee', () async {
+        await fakeFirestore.collection('users').add({
+          'role': 'doctor',
+          'is_verified': true,
+          'specialization': 'Cardiology',
+          'consultation_fee': 100,
+        });
+        await fakeFirestore.collection('users').add({
+          'role': 'doctor',
+          'is_verified': true,
+          'specialization': 'Cardiology',
+          'consultation_fee': 200,
+        });
+
+        final results = await doctorService.getVerifiedFilteredDoctorList(specialization: 'Cardiology', maxFee: 150);
+        expect(results.length, 1);
+        expect((results.first.data() as Map<String, dynamic>)['consultation_fee'], 100);
+      });
+
+      test('should return an empty list when no doctors match the criteria', () async {
+        final results = await doctorService.getVerifiedFilteredDoctorList(specialization: 'NonExistent');
+        expect(results, isEmpty);
+      });
+    });
+
+    group('getDoctorDetails', () {
+      test('should return a non-existent snapshot for a non-existent doctor', () async {
+        final doc = await doctorService.getDoctorDetails('non_existent_doctor');
+        expect(doc.exists, isFalse);
+      });
+    });
+
+    group('getAppointmentList', () {
+      test('should return an empty list when a doctor has no appointments', () async {
+        final snapshot = await doctorService.getAppointmentList('doctor_with_no_appointments');
+        expect(snapshot.docs, isEmpty);
+      });
+    });
+
+    group('getUserAppointmentList', () {
+      test('should return an empty list when a user has no appointments', () async {
+        final snapshot = await doctorService.getUserAppointmentList('user_with_no_appointments');
+        expect(snapshot.docs, isEmpty);
+      });
+    });
+
+    group('registerAppointment', () {
+      test('should register an appointment and make a Dio call', () async {
+        final doctorId = 'doctor1';
+        final patientId = 'patient1';
+        final appointmentDateTime = DateTime.now();
+
+        when(mockDio.post(
+          'https://nurse-joy-api.vercel.app/api/notifications/appointments',
+          data: anyNamed('data'),
+          options: anyNamed('options'),
+        )).thenAnswer((_) async => Response(requestOptions: RequestOptions(path: ''), statusCode: 200));
+
+        await doctorService.registerAppointment(doctorId, patientId, appointmentDateTime);
+
+        final appointments = await fakeFirestore.collection('appointments').get();
+        expect(appointments.docs.length, 1);
+        final appointmentData = appointments.docs.first.data();
+        expect(appointmentData['doctorID'], doctorId);
+        expect(appointmentData['userID'], patientId);
+
+        verify(mockDio.post('https://nurse-joy-api.vercel.app/api/notifications/appointments', data: anyNamed('data'), options: anyNamed('options'))).called(1);
+      });
+    });
+
+    group('registerEnhancedAppointment', () {
+      test('should throw an exception if the doctor is not found', () async {
+        final booking = AppointmentBooking(
+          selectedDay: AppointmentDay(id: '1', date: DateTime.now(), timeSlots: []),
+          selectedTimeSlot: AppointmentTimeSlot(id: '1', startTime: TimeOfDay.now(), endTime: TimeOfDay.now()),
+          userAvailableDays: [],
+          description: '',
+        );
+
+        expect(
+          () => doctorService.registerEnhancedAppointment('non_existent_doctor', 'patient1', booking),
+          throwsA(isA<Exception>()),
+        );
+      });
+    });
   });
 }
+
+    

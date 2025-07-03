@@ -196,6 +196,7 @@ Future<void> registerEnhancedAppointment(
       patientId,
       'You have a new appointment with $doctorFullName',
       {
+        'id': docRef.id,
         'doctorID': doctorId,
         'patientID': patientId,
         'appointmentDateTime': booking.appointmentDateTime.toIso8601String(),

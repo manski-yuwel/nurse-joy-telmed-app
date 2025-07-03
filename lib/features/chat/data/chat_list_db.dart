@@ -159,14 +159,18 @@ class Chat {
   // function to update call status in message
   Future<void> updateCallStatus(
       String chatRoomID, String messageID, String status) async {
-    await _firestore
+    final messageDoc = await _firestore
         .collection('chats')
         .doc(chatRoomID)
         .collection('messages')
         .doc(messageID)
-        .update({
-      'call_status': status,
-    });
+        .get();
+
+    if (messageDoc.exists) {
+      await messageDoc.reference.update({
+        'call_status': status,
+      });
+    }
   }
 
   Future<void> migrateMessages() async {
