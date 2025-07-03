@@ -50,7 +50,7 @@ void main() {
     });
 
     test('getChatList returns a stream of chat lists', () async {
-      final userID = 'user1';
+      const userID = 'user1';
       await fakeFirestore.collection('chats').add({
         'users': [userID, 'user2'],
         'last_message': 'Hello',
@@ -88,7 +88,7 @@ void main() {
     });
 
     test('generateChatRoom creates a new chat room', () async {
-      final chatRoomID = 'user1_user2';
+      const chatRoomID = 'user1_user2';
       await chat.generateChatRoom(chatRoomID, 'user1', 'user2');
 
       final doc = await fakeFirestore.collection('chats').doc(chatRoomID).get();
@@ -104,7 +104,7 @@ void main() {
     });
 
     test('getRecipientDetails returns the correct user details', () async {
-      final userID = 'user1';
+      const userID = 'user1';
       await fakeFirestore.collection('users').doc(userID).set({'name': 'John Doe'});
 
       final doc = await chat.getRecipientDetails(userID);
@@ -114,7 +114,7 @@ void main() {
     });
 
     test('getChatRoomMessages returns a stream of messages', () async {
-      final chatRoomID = 'user1_user2';
+      const chatRoomID = 'user1_user2';
       await fakeFirestore.collection('chats').doc(chatRoomID).collection('messages').add({
         'message_body': 'Hello',
         'timestamp': DateTime.now(),
@@ -128,7 +128,7 @@ void main() {
     });
 
     test('sendMessage adds a new message to the chat room', () async {
-      final chatRoomID = 'user1_user2';
+      const chatRoomID = 'user1_user2';
       await fakeFirestore.collection('chats').doc(chatRoomID).set({'users': ['user1', 'user2']});
 
       // Setup mock with actual data
@@ -162,7 +162,7 @@ void main() {
     });
 
     test('sendCallNotification sends a call notification', () async {
-      final chatRoomID = 'user1_user2';
+      const chatRoomID = 'user1_user2';
       await fakeFirestore.collection('chats').doc(chatRoomID).set({'users': ['user1', 'user2']});
 
       final docRef = await chat.sendCallNotification(chatRoomID, 'user1', 'user2', 'video');
@@ -173,8 +173,8 @@ void main() {
     });
 
     test('updateCallStatus updates the call status of a message', () async {
-      final chatRoomID = 'user1_user2';
-      final messageID = 'message1';
+      const chatRoomID = 'user1_user2';
+      const messageID = 'message1';
       await fakeFirestore.collection('chats').doc(chatRoomID).collection('messages').doc(messageID).set({
         'call_status': 'pending',
       });
@@ -186,7 +186,7 @@ void main() {
     });
 
     test('migrateMessages migrates messages correctly', () async {
-      final chatRoomID = 'user1_user2';
+      const chatRoomID = 'user1_user2';
       await fakeFirestore.collection('chats').doc(chatRoomID).set({'users': ['user1', 'user2']});
       await fakeFirestore.collection('chats').doc(chatRoomID).collection('messages').add({
         'message_body': 'Hello',
@@ -195,7 +195,7 @@ void main() {
       await chat.migrateMessages();
 
       final messages = await fakeFirestore.collection('chats').doc(chatRoomID).collection('messages').get();
-      expect((messages.docs.first.data() as Map<String, dynamic>)['is_important'], false);
+      expect(messages.docs.first.data()['is_important'], false);
     });
   });
 }

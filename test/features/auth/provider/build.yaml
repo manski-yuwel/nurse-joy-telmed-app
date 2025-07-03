@@ -1,0 +1,17 @@
+targets:
+  $default:
+    builders:
+      build_runner:
+        generate_for:
+          - test/features/auth/provider/*.dart
+      mockito:
+        generate_for:
+          - test/features/auth/provider/*.dart
+
+builders:
+  build_runner:
+    generate_for:
+      - test/features/auth/provider/*.dart
+  mockito:
+    generate_for:
+      - test/features/auth/provider/*.dart

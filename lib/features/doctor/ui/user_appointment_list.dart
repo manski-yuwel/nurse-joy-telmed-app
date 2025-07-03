@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
@@ -113,6 +112,7 @@ class _UserAppointmentListState extends State<UserAppointmentList> {
                                   icon: const Icon(Icons.person_outline),
                                   onPressed: () async {
                                     final doctorDetails = await getDoctorDetails(appointment['doctorID']);
+                                    if (!context.mounted) return;
                                     context.go(
                                         '/doctor/${appointment['doctorID']}', extra: {
                                       'doctorDetails': doctorDetails,

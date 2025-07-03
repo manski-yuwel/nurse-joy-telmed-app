@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
-import 'package:nursejoyapp/features/chat/ui/pages/chat_room_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:logger/logger.dart';
 import 'package:provider/provider.dart';

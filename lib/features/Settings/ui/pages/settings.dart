@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:nursejoyapp/auth/provider/auth_service.dart';
-import 'package:provider/provider.dart';
 import 'package:nursejoyapp/features/chat/data/chat_list_db.dart';
 import 'package:nursejoyapp/migrations/profile/profile_migrate.dart';
 import 'package:go_router/go_router.dart';
-import 'package:nursejoyapp/shared/widgets/app_bottom_nav_bar.dart';
-import 'package:nursejoyapp/shared/widgets/app_drawer.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -83,8 +79,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthService>(context); // Access AuthService
-    double appBarHeight = kToolbarHeight + MediaQuery.of(context).padding.top;
     return AppScaffold(
       title: _appBarTitle,
       selectedIndex: _selectedIndex,
@@ -126,7 +120,7 @@ class _SettingsPageState extends State<SettingsPage> {
           ),
 
           // Clear Cache
-          ListTile(title: const Text('Clear Cache')),
+          const ListTile(title: Text('Clear Cache')),
 
           // Divider for migration section
           const Divider(thickness: 2, height: 40),

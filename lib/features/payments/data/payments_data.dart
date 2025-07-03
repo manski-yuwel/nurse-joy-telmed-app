@@ -15,10 +15,9 @@ class PaymentsData {
     required int amount,
     String? status,
   }) async {
-    final firestore = FirebaseFirestore.instance;
-    final fromUserRef = firestore.collection('users').doc(fromUserId);
-    final toUserRef = firestore.collection('users').doc(toUserId);
-    final transactionsRef = firestore.collection('transactions');
+    final fromUserRef = _db.collection('users').doc(fromUserId);
+    final toUserRef = _db.collection('users').doc(toUserId);
+    final transactionsRef = _db.collection('transactions');
     final txDocRef = transactionsRef.doc();
     final txId = txDocRef.id;
 
@@ -27,7 +26,7 @@ class PaymentsData {
     final fromName = fromUserSnap.data()?['first_name'] ?? fromUserSnap.data()?['email'] ?? fromUserId;
     final toName = toUserSnap.data()?['first_name'] ?? toUserSnap.data()?['email'] ?? toUserId;
 
-    await firestore.runTransaction((transaction) async {
+    await _db.runTransaction((transaction) async {
       final fromBalance = (fromUserSnap.data()?['balance'] ?? 0) as int;
       final toBalance = (toUserSnap.data()?['balance'] ?? 0) as int;
 
@@ -56,11 +55,11 @@ class PaymentsData {
     required String userId,
     required int amount,
   }) async {
-    final transactionsRef = FirebaseFirestore.instance.collection('transactions');
+    final transactionsRef = _db.collection('transactions');
     final txDocRef = transactionsRef.doc();
     final txId = txDocRef.id;
 
-    final userDoc = await FirebaseFirestore.instance.collection('users').doc(userId).get();
+    final userDoc = await _db.collection('users').doc(userId).get();
     final userName = userDoc.data()?['first_name'] ?? userDoc.data()?['email'] ?? userId;
 
     final txData = {
@@ -76,7 +75,7 @@ class PaymentsData {
 
     await txDocRef.set(txData);
 
-    final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
+    final userRef = _db.collection('users').doc(userId);
     await userRef.update({
       'balance': FieldValue.increment(amount),
     });
@@ -135,7 +134,7 @@ class PaymentsData {
         .where('role', isEqualTo: 'doctor')
         .get();
     return query.docs.map((doc) {
-      final data = doc.data() as Map<String, dynamic>;
+      final data = doc.data();
       data['uid'] = doc.id;
       return data;
     }).toList();

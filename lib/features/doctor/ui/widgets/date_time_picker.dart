@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/features/doctor/ui/widgets/digital_receipt.dart';
 
@@ -291,8 +290,6 @@ class _AppointmentBookingDialogState extends State<AppointmentBookingDialog> {
         description: formData['description'] ?? '',
       );
 
-      final now = DateTime.now();
-      final referenceId = now.microsecondsSinceEpoch.toString();
 
       showDialog(
         context: context,

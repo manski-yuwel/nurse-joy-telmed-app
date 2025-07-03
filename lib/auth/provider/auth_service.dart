@@ -64,7 +64,6 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   // Add Google Sign-In method
   Future<String?> signInWithGoogle() async {
     try {
-      // Trigger the authentication flow
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {

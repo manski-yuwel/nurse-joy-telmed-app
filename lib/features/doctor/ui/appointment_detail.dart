@@ -9,7 +9,7 @@ import 'package:provider/provider.dart';
 
 class AppointmentDetail extends StatefulWidget {
   AppointmentDetail({super.key, required this.appointmentId, required this.patientData});
-  late AuthService authService;
+  late final AuthService authService;
 
   final String appointmentId;
   final DocumentSnapshot patientData;
@@ -34,7 +34,7 @@ class _AppointmentDetailState extends State<AppointmentDetail> {
       onItemTapped: (index) {},
       actions: [
         IconButton(
-          icon: Icon(Icons.chat),
+          icon: const Icon(Icons.chat),
           onPressed: () {
             final chat = Chat();
             final chatRoomID = chat.generateChatRoomID(widget.authService.currentUser!.uid, widget.patientData.id);

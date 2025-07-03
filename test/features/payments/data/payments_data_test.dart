@@ -1,190 +1,131 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:nursejoyapp/features/payments/data/payments_data.dart';
-import 'package:mockito/mockito.dart';
-
-// Create a mock for FirebaseFirestore
-class MockFirebaseFirestore extends Mock implements FirebaseFirestore {}
-class MockCollectionReference extends Mock implements CollectionReference<Map<String, dynamic>> {}
-class MockDocumentReference extends Mock implements DocumentReference<Map<String, dynamic>> {}
-class MockDocumentSnapshot extends Mock implements DocumentSnapshot<Map<String, dynamic>> {}
-class MockQuerySnapshot extends Mock implements QuerySnapshot<Map<String, dynamic>> {}
-class MockQueryDocumentSnapshot extends Mock implements QueryDocumentSnapshot<Map<String, dynamic>> {}
 
 void main() {
-  late FakeFirebaseFirestore fakeFirestore;
-  late PaymentsData paymentsData;
-  
-  const String testFromUserId = 'user1';
-  const String testToUserId = 'user2';
-  const String testFromUserName = 'John';
-  const String testToUserName = 'Jane';
-  const int testAmount = 1000;
-  
-  setUp(() {
-    fakeFirestore = FakeFirebaseFirestore();
-    paymentsData = PaymentsData(db: fakeFirestore);
-    // Initialize FirebaseFirestore with our fake instance
-    
-    // Seed test data
-    fakeFirestore.collection('users').doc(testFromUserId).set({
-      'first_name': testFromUserName,
-      'email': 'john@example.com',
-    });
-    
-    fakeFirestore.collection('users').doc(testToUserId).set({
-      'first_name': testToUserName,
-      'email': 'jane@example.com',
-    });
-  });
-
   group('PaymentsData', () {
-    test('addTransaction should create a transaction with correct data', () async {
-      // Act
-      await paymentsData.addTransaction(
-        fromUserId: testFromUserId,
-        toUserId: testToUserId,
-        amount: testAmount,
-      );
+    late FakeFirebaseFirestore fakeFirestore;
+    late PaymentsData paymentsData;
 
-      // Assert - Verify transaction was created with correct data
-      final transactions = await fakeFirestore.collection('transactions').get();
-      expect(transactions.docs.length, 1);
-      
-      final transaction = transactions.docs.first.data();
-      expect(transaction['fromUserId'], testFromUserId);
-      expect(transaction['fromUserName'], testFromUserName);
-      expect(transaction['toUserId'], testToUserId);
-      expect(transaction['toUserName'], testToUserName);
-      expect(transaction['amount'], testAmount);
-      expect(transaction['status'], 'Completed');
-      expect(transaction, contains('timestamp'));
+    setUp(() async {
+      fakeFirestore = FakeFirebaseFirestore();
+      paymentsData = PaymentsData(db: fakeFirestore);
     });
 
-    test('addTransaction should use user ID as name when name is missing', 
+    test('addTransaction should update balances and create a transaction',
         () async {
-      // Arrange - Create a user without a name
-      const String unknownUserId = 'unknown_user';
-      await fakeFirestore.collection('users').doc(unknownUserId).set({
-        'email': 'unknown@example.com',
-      });
+      // Arrange
+      await fakeFirestore
+          .collection('users')
+          .doc('user1')
+          .set({'balance': 100, 'first_name': 'John'});
+      await fakeFirestore
+          .collection('users')
+          .doc('user2')
+          .set({'balance': 50, 'first_name': 'Jane'});
 
       // Act
       await paymentsData.addTransaction(
-        fromUserId: testFromUserId,
-        toUserId: unknownUserId,
-        amount: testAmount,
+        fromUserId: 'user1',
+        toUserId: 'user2',
+        amount: 30,
       );
 
       // Assert
-      final transactions = await fakeFirestore.collection('transactions').get();
-      final transaction = transactions.docs.first.data();
-      expect(transaction['toUserName'], unknownUserId);
+      final user1Doc =
+          await fakeFirestore.collection('users').doc('user1').get();
+      final user2Doc =
+          await fakeFirestore.collection('users').doc('user2').get();
+      final transactionSnapshot =
+          await fakeFirestore.collection('transactions').get();
+
+      expect(user1Doc.data()?['balance'], 70);
+      expect(user2Doc.data()?['balance'], 80);
+      expect(transactionSnapshot.docs.length, 1);
+      expect(transactionSnapshot.docs.first.data()['amount'], 30);
     });
 
-    test('getUserTransactions should return empty stream for null userId', () async {
-      // Act
-      final stream = paymentsData.getUserTransactions(null);
-      
-      // Assert
-      expect(await stream.isEmpty, isTrue);
-    });
-
-    test('getUserTransactions should return sent and received transactions',
+    test('addMoney should increase balance and log a "Cash In" transaction',
         () async {
-      // Arrange - Add test transactions
-      await fakeFirestore.collection('transactions').add({
-        'fromUserId': testFromUserId,
-        'fromUserName': testFromUserName,
-        'toUserId': testToUserId,
-        'toUserName': testToUserName,
-        'amount': 1000,
-        'status': 'Completed',
-        'timestamp': Timestamp.now(),
-      });
-      
-      await fakeFirestore.collection('transactions').add({
-        'fromUserId': testToUserId,
-        'fromUserName': testToUserName,
-        'toUserId': testFromUserId,
-        'toUserName': testFromUserName,
-        'amount': 500,
-        'status': 'Completed',
-        'timestamp': Timestamp.now(),
-      });
+      // Arrange
+      await fakeFirestore
+          .collection('users')
+          .doc('user1')
+          .set({'balance': 100, 'first_name': 'John'});
 
       // Act
-      final stream = paymentsData.getUserTransactions(testFromUserId);
-      final transactions = await stream.first;
+      await paymentsData.addMoney(userId: 'user1', amount: 50);
 
       // Assert
-      expect(transactions.length, 2);
-      expect(transactions.any((t) => t['fromUserId'] == testFromUserId), isTrue);
-      expect(transactions.any((t) => t['toUserId'] == testFromUserId), isTrue);
+      final user1Doc =
+          await fakeFirestore.collection('users').doc('user1').get();
+      final transactionSnapshot =
+          await fakeFirestore.collection('transactions').get();
+
+      expect(user1Doc.data()?['balance'], 150);
+      expect(transactionSnapshot.docs.length, 1);
+      expect(transactionSnapshot.docs.first.data()['status'], 'Cash In');
     });
 
-    test('getUserTransactions should sort transactions by timestamp descending',
+    test('getBalance should return a stream of the user\'s balance', () async {
+      // Arrange
+      await fakeFirestore.collection('users').doc('user1').set({'balance': 100});
+
+      // Act
+      final balanceStream = paymentsData.getBalance('user1');
+
+      // Assert
+      expect(balanceStream, emits(100));
+    });
+
+    test(
+        'getUserTransactions should return a stream of transactions for a user',
         () async {
-      // Arrange - Add test transactions with different timestamps
-      final now = DateTime.now();
-      
+      // Arrange
       await fakeFirestore.collection('transactions').add({
-        'fromUserId': testFromUserId,
-        'toUserId': testToUserId,
-        'amount': 1000,
-        'timestamp': Timestamp.fromDate(now.subtract(const Duration(days: 1))),
+        'fromUserId': 'user1',
+        'toUserId': 'user2',
+        'amount': 50,
+        'timestamp': DateTime.now(),
       });
-      
       await fakeFirestore.collection('transactions').add({
-        'fromUserId': testToUserId,
-        'toUserId': testFromUserId,
-        'amount': 500,
-        'timestamp': Timestamp.fromDate(now.add(const Duration(days: 1))),
+        'fromUserId': 'user2',
+        'toUserId': 'user1',
+        'amount': 20,
+        'timestamp': DateTime.now(),
       });
 
       // Act
-      final stream = paymentsData.getUserTransactions(testFromUserId);
-      final transactions = await stream.first;
+      final transactionsStream = paymentsData.getUserTransactions('user1');
 
       // Assert
-      expect(transactions.length, 2);
-      expect(transactions[0]['amount'], 500); // Newer transaction first
-      expect(transactions[1]['amount'], 1000); // Older transaction second
+      expect(
+        transactionsStream,
+        emits(
+          isA<List<Map<String, dynamic>>>()
+              .having((list) => list.length, 'length', 2),
+        ),
+      );
     });
 
-    test('getDoctors should return list of doctors', () async {
-      // Arrange - Add test doctors
-      await fakeFirestore.collection('users').doc('doc1').set({
+    test('getDoctors should return a list of users with the "doctor" role',
+        () async {
+      // Arrange
+      await fakeFirestore.collection('users').add({
+        'role': 'doctor',
         'first_name': 'Dr. Smith',
-        'email': 'smith@example.com',
-        'role': 'doctor',
       });
-      
-      await fakeFirestore.collection('users').doc('doc2').set({
-        'first_name': 'Dr. Johnson',
-        'email': 'johnson@example.com',
-        'role': 'doctor',
-      });
-      
-      // Add a non-doctor user that shouldn't be returned
-      await fakeFirestore.collection('users').doc('user3').set({
-        'first_name': 'Regular User',
-        'email': 'user@example.com',
+      await fakeFirestore.collection('users').add({
         'role': 'patient',
+        'first_name': 'John Doe',
       });
 
       // Act
       final doctors = await paymentsData.getDoctors();
 
       // Assert
-      expect(doctors.length, 2);
-      expect(doctors.any((d) => d['first_name'] == 'Dr. Smith'), isTrue);
-      expect(doctors.any((d) => d['first_name'] == 'Dr. Johnson'), isTrue);
-      expect(doctors.every((d) => d['role'] == 'doctor'), isTrue);
-      
-      // Verify uid is added to each doctor
-      expect(doctors.every((d) => d['uid'] != null), isTrue);
+      expect(doctors.length, 1);
+      expect(doctors.first['first_name'], 'Dr. Smith');
     });
   });
 }

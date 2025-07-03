@@ -88,9 +88,9 @@ class _ViewMapPageState extends State<ViewMapPage> {
             left: 16,
             child: FloatingActionButton(
               backgroundColor: Colors.red,
-              child: const Icon(Icons.local_hospital, color: Colors.black),
               onPressed: _showNearbyHospitals,
               tooltip: 'Show Nearby Hospitals',
+              child: const Icon(Icons.local_hospital, color: Colors.black),
             ),
           ),
           if (_isLoadingHospitals)
@@ -213,7 +213,7 @@ class _ViewMapPageState extends State<ViewMapPage> {
           _hospitalMarkers = markers;
         });
         // Zoom to fit all markers (same as before)
-        if (markers.isNotEmpty && mapController != null) {
+        if (markers.isNotEmpty) {
           final lats = markers.map((m) => m.position.latitude);
           final lngs = markers.map((m) => m.position.longitude);
           final sw = LatLng(lats.reduce(min), lngs.reduce(min));

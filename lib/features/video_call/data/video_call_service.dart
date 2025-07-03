@@ -187,7 +187,7 @@ class VideoCallService {
       return;
     }
 
-    final result = await _engine.joinChannel(
+    await _engine.joinChannel(
       token: generateToken(channelName),
       channelId: channelName,
       uid: 0,

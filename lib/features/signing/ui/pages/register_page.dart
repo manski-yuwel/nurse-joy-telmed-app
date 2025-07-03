@@ -25,8 +25,6 @@ class _RegisterPageState extends State<RegisterPage>
 
   // Form field names
   static const String emailField = 'email';
-  static const String firstNameField = 'first_name';
-  static const String lastNameField = 'last_name';
   static const String passwordField = 'password';
   static const String confirmPasswordField = 'confirm_password';
 

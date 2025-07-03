@@ -32,9 +32,7 @@ class AppScaffold extends StatefulWidget {
 class _AppScaffoldState extends State<AppScaffold>
     with TickerProviderStateMixin {
   late AnimationController _appBarController;
-  late AnimationController _drawerController;
   late Animation<double> _appBarAnimation;
-  late Animation<Offset> _drawerSlideAnimation;
 
   @override
   void initState() {
@@ -45,23 +43,11 @@ class _AppScaffoldState extends State<AppScaffold>
       vsync: this,
     );
 
-    _drawerController = AnimationController(
-      duration: const Duration(milliseconds: 400),
-      vsync: this,
-    );
-
     _appBarAnimation = CurvedAnimation(
       parent: _appBarController,
       curve: Curves.easeInOut,
     );
 
-    _drawerSlideAnimation = Tween<Offset>(
-      begin: const Offset(-1.0, 0.0),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _drawerController,
-      curve: Curves.easeOutCubic,
-    ));
 
     _appBarController.forward();
   }
@@ -69,7 +55,6 @@ class _AppScaffoldState extends State<AppScaffold>
   @override
   void dispose() {
     _appBarController.dispose();
-    _drawerController.dispose();
     super.dispose();
   }
 

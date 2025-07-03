@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 
 class AppBottomNavBar extends StatefulWidget {
   final int currentIndex;
@@ -18,7 +17,6 @@ class AppBottomNavBar extends StatefulWidget {
 class _AppBottomNavBarState extends State<AppBottomNavBar>
     with TickerProviderStateMixin {
   late AnimationController _animationController;
-  late Animation<double> _animation;
 
   @override
   void initState() {
@@ -26,10 +24,6 @@ class _AppBottomNavBarState extends State<AppBottomNavBar>
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
-    );
-    _animation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
     );
     _animationController.forward();
   }
@@ -50,26 +44,26 @@ class _AppBottomNavBarState extends State<AppBottomNavBar>
       shadowColor: Colors.transparent,
       indicatorColor: Colors.transparent,
       labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-      selectedIndex: widget.currentIndex,
+      selectedIndex: widget.currentIndex.clamp(0, 2), // Handle -1 by clamping to valid range
       onDestinationSelected: widget.onTap,
       destinations: [
         _buildNavDestination(
           index: 0,
           icon: Icons.chat_bubble_rounded,
           label: 'Chat',
-          isSelected: widget.currentIndex == 0,
+          isSelected: widget.currentIndex == 0 && widget.currentIndex != -1,
         ),
         _buildNavDestination(
           index: 1,
           icon: Icons.dashboard_rounded,
           label: 'Dashboard',
-          isSelected: widget.currentIndex == 1,
+          isSelected: widget.currentIndex == 1 && widget.currentIndex != -1,
         ),
         _buildNavDestination(
           index: 2,
           icon: Icons.person_rounded,
           label: 'Profile',
-          isSelected: widget.currentIndex == 2,
+          isSelected: widget.currentIndex == 2 && widget.currentIndex != -1,
         ),
       ],
     );

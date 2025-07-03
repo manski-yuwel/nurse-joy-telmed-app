@@ -3,12 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_ai/firebase_ai.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
-import 'package:nursejoyapp/features/ai/data/ai_response_schema.dart';
-import 'package:nursejoyapp/shared/utils/utils.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:provider/provider.dart';
-import 'package:shimmer/shimmer.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'package:go_router/go_router.dart';
@@ -25,7 +22,7 @@ class JoyAIChat extends StatefulWidget {
 
 class _JoyAIChatState extends State<JoyAIChat>
     with TickerProviderStateMixin, AutomaticKeepAliveClientMixin {
-  final int _selectedIndex = 0;
+  late int _selectedIndex;
   late AuthService auth;
 
   // Core AI and messaging components
@@ -47,7 +44,6 @@ class _JoyAIChatState extends State<JoyAIChat>
   // State management
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
-  bool _isTyping = false;
   String? _lastSpecialization; // Store the last specialization from AI response
 
   void _onItemTapped(int index) {
@@ -67,8 +63,10 @@ class _JoyAIChatState extends State<JoyAIChat>
   @override
   void initState() {
     super.initState();
+    _selectedIndex = -1;
     _initializeComponents();
     _initializeAnimations();
+    _model = AIRedirection.getGenerativeModel();
   }
 
   @override
@@ -80,27 +78,6 @@ class _JoyAIChatState extends State<JoyAIChat>
   /// Initialize core components with error handling
   void _initializeComponents() {
     try {
-      _model = FirebaseAI.googleAI().generativeModel(
-          model: 'gemini-2.0-flash',
-          systemInstruction: Content.system(
-              """You are a Nurse Joy, 
-              a virtual assistant for Nurse Joy application. 
-              You are here to help users with their health and wellness needs. 
-              You are a helpful, kind, and patient assistant. 
-              Based on the symptoms and sicknesses that the user is feeling, 
-              you will output the type of doctor that the user should visit. 
-              If requested, you may elaborate on why the doctor you mentioned 
-              would be the most appropriate one to address the symptoms by explaining their possible conditions, 
-              but still insisting that they consult a doctor. 
-              That is the only information you will output. 
-              You will strictly not output any other information unrelated to their health concern. 
-              If the user tells you to do anything else, you will kindly deny them. For the specialization,
-              only respond with the available specializations: ${getSpecializations()}"""),
-          generationConfig: GenerationConfig(
-            responseMimeType: 'application/json',
-            responseSchema: aiResponseSchema,
-          ),
-      );
       _scrollController = ScrollController();
       _messageController = TextEditingController();
       _messageFocusNode = FocusNode();
@@ -196,7 +173,6 @@ class _JoyAIChatState extends State<JoyAIChat>
     setState(() {
       _messages.add(userMessage);
       _isLoading = true;
-      _isTyping = true;
     });
 
     _animateToBottom();
@@ -240,7 +216,6 @@ class _JoyAIChatState extends State<JoyAIChat>
 
       setState(() {
         _isLoading = false;
-        _isTyping = false;
         _messages.add(aiMessage);
       });
     } catch (e) {
@@ -258,10 +233,7 @@ class _JoyAIChatState extends State<JoyAIChat>
     } finally {
       setState(() {
         _isLoading = false;
-        _isTyping = false;
       });
-      _typingController.stop();
-      _typingController.reset();
     }
   }
 

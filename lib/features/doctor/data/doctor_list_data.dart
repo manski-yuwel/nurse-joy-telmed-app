@@ -113,7 +113,7 @@ Future<QuerySnapshot> getUserAppointmentList(String userID) async {
 Future<void> registerAppointment(
     String doctorId, String patientId, DateTime appointmentDateTime) async {
   // register appointment in Firestore
-  DocumentReference appointmentRef = await FirebaseFirestore.instance.collection('appointments').add({
+  await FirebaseFirestore.instance.collection('appointments').add({
     'userID': patientId,
     'doctorID': doctorId,
     'appointmentDateTime': appointmentDateTime,
