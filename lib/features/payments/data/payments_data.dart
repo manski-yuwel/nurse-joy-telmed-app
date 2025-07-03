@@ -55,29 +55,37 @@ class PaymentsData {
     required String userId,
     required int amount,
   }) async {
+    final userRef = _db.collection('users').doc(userId);
     final transactionsRef = _db.collection('transactions');
     final txDocRef = transactionsRef.doc();
     final txId = txDocRef.id;
 
-    final userDoc = await _db.collection('users').doc(userId).get();
-    final userName = userDoc.data()?['first_name'] ?? userDoc.data()?['email'] ?? userId;
+    await _db.runTransaction((transaction) async {
+      final userDoc = await transaction.get(userRef);
+      final userName = userDoc.data()?['first_name'] ?? userDoc.data()?['email'] ?? userId;
 
-    final txData = {
-      'transactionId': txId,
-      'fromUserId': userId,
-      'toUserId': userId,
-      'fromUserName': userName,
-      'toUserName': userName,
-      'amount': amount,
-      'status': 'Cash In',
-      'timestamp': Timestamp.now(),
-    };
+      final txData = {
+        'transactionId': txId,
+        'fromUserId': userId,
+        'toUserId': userId,
+        'fromUserName': userName,
+        'toUserName': userName,
+        'amount': amount,
+        'status': 'Cash In',
+        'timestamp': FieldValue.serverTimestamp(),
+      };
 
-    await txDocRef.set(txData);
+      transaction.set(txDocRef, txData);
 
-    final userRef = _db.collection('users').doc(userId);
-    await userRef.update({
-      'balance': FieldValue.increment(amount),
+      if (userDoc.exists) {
+        transaction.update(userRef, {
+          'balance': FieldValue.increment(amount),
+        });
+      } else {
+        transaction.set(userRef, {
+          'balance': amount,
+        });
+      }
     });
   }
 

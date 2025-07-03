@@ -63,7 +63,7 @@ Future<void> _bookAppointment() async {
         try {
           await registerEnhancedAppointment(
             widget.doctorId,
-            auth.user!.uid, // Your actual user ID
+            auth.user!.uid,
             booking,
           );
           

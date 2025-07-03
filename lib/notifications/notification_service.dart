@@ -53,12 +53,14 @@ class NotificationService {
     switch (type) {
       case 'appointment':
         return {
+          'id': body['id'],
           'appointmentID': body['appointmentID'],
           'doctorID': body['doctorID'],
           'appointmentDateTime': body['appointmentDateTime'],
         };
       case 'message':
         return {
+          'id': body['id'],
           'chatRoomID': body['chatRoomID'],
           'senderID': body['senderID'],
           'recipientID': body['recipientID'],

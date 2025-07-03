@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
 import 'package:nursejoyapp/notifications/notification_service.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 
@@ -137,13 +138,24 @@ class _ActivityListPageState extends State<ActivityListPage> {
   }
 
   void _handleActivityTap(
-      BuildContext context, Map<String, dynamic> body, String type) {
-    if (type == 'appointment' && body['appointmentID'] != null) {
-      // Navigate to appointment details
-      context.go('/appointment/${body['appointmentID']}');
+      BuildContext context, Map<String, dynamic> body, String type) async {
+    if (type == 'appointment' && body['id'] != null) {
+      final doctorData = await getUserDetails(body['doctorID']);
+      if (context.mounted) {
+        context.push(
+          '/user-appointment-detail/${body['id']}',
+          extra: {'doctorData': doctorData},
+        );
+      }
     } else if (type == 'message' && body['chatRoomId'] != null) {
-      // Navigate to chat
-      context.go('/chat/${body['chatRoomId']}');
+      final recipientUserDetails = await getUserDetails(body['senderID']);
+      final recipientFullName = recipientUserDetails['full_name'];
+      if (context.mounted) {
+        context.push(
+          '/chat/${body['chatRoomId']}',
+          extra: {'recipientID': body['senderID'], 'recipientFullName': recipientFullName},
+        );
+      }
     }
   }
 
