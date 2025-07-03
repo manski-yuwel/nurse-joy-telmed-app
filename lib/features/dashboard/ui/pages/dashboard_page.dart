@@ -11,7 +11,7 @@ class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
   @override
-  _DashboardPageState createState() => _DashboardPageState();
+  State<DashboardPage> createState() => _DashboardPageState();
 }
 
 class _DashboardPageState extends State<DashboardPage> {
@@ -28,7 +28,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Padding(
-        padding: EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0),
         child: ListView(
           children: [
 
@@ -45,31 +45,31 @@ class _DashboardPageState extends State<DashboardPage> {
                 },
                 borderRadius: BorderRadius.circular(15),
                 child: Padding(
-                  padding: EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(16.0),
                   child: Row(
                     children: [
                       CircleAvatar(
                         radius: 30,
                         backgroundColor: Colors.pink[100],
-                        child: Icon(
+                        child: const Icon(
                           Icons.medical_services,
                           size: 30,
                           color: Colors.pink,
                         ),
                       ),
-                      SizedBox(width: 16),
+                      const SizedBox(width: 16),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
+                            const Text(
                               "NurseJoy AI",
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(height: 4),
+                            const SizedBox(height: 4),
                             Text(
                               "Get instant health advice from our AI assistant",
                               style: TextStyle(
@@ -79,14 +79,14 @@ class _DashboardPageState extends State<DashboardPage> {
                           ],
                         ),
                       ),
-                      Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                      const Icon(Icons.arrow_forward_ios, color: Colors.grey),
                     ],
                   ),
                 ),
               ),
             ),
 
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
             // Recent Activities Card
             Card(
@@ -95,14 +95,14 @@ class _DashboardPageState extends State<DashboardPage> {
                 borderRadius: BorderRadius.circular(15),
               ),
               child: Padding(
-                padding: EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(16.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
+                        const Row(
                           children: [
                             Icon(Icons.history, size: 24, color: Colors.green),
                             SizedBox(width: 8),
@@ -131,7 +131,7 @@ class _DashboardPageState extends State<DashboardPage> {
                         ),
                       ],
                     ),
-                    SizedBox(height: 12),
+                    const SizedBox(height: 12),
                     if (user != null)
                       StreamBuilder<QuerySnapshot>(
                         stream: notificationService.getActivities(user!.uid),
@@ -146,8 +146,8 @@ class _DashboardPageState extends State<DashboardPage> {
                           }
 
                           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 16.0),
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16.0),
                               child: Text(
                                 'No recent activities',
                                 style: TextStyle(color: Colors.grey),
@@ -183,7 +183,7 @@ class _DashboardPageState extends State<DashboardPage> {
                                     activity['title'] ?? 'New Activity',
                                     style: const TextStyle(fontSize: 14),
                                   ),
-                                    subtitle: _getActivitySubtitle(activity['type'], body),
+                                  subtitle: _getActivitySubtitle(activity['type'], body),
                                   trailing: Text(
                                     _formatTimestamp(activity['timestamp']),
                                     style: const TextStyle(fontSize: 12, color: Colors.grey),
@@ -222,7 +222,7 @@ class _DashboardPageState extends State<DashboardPage> {
   Widget? _getActivitySubtitle(String type, Map<String, dynamic> body) {
     if (type == 'appointment') {
       return Text(
-        "Appointment Time: ${DateFormat('MMM d, yyyy – h:mm a').format(DateTime.parse(body['appointmentDateTime'])) ?? 'Not specified'}",
+        "Appointment Time: ${DateFormat('MMM d, yyyy – h:mm a').format(DateTime.parse(body['appointmentDateTime']))}",
         style: const TextStyle(fontSize: 14),
       );
     } else if (type == 'message') {
@@ -258,24 +258,6 @@ class _DashboardPageState extends State<DashboardPage> {
     return 'Recent';
   }
 
-  ListTile _buildActivityItem(Map<String, dynamic> activity) {
-    final body = notificationService.resolveActivityBody(activity['type'], activity['body']);
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.green[100],
-        child: Icon(
-          _getActivityIcon(activity['type']),
-          color: Colors.green,
-        ),
-      ),
-      title: Text(activity['title'] ?? 'New Activity'),
-      subtitle: _getActivitySubtitle(activity['type'], body),
-      trailing: Text(_formatTimestamp(activity['timestamp'])),
-      onTap: () {
-        _handleActivityTap(body, activity['type'], context);
-      },
-    );
-  }
 
 
 

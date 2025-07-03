@@ -10,7 +10,7 @@ import 'package:provider/provider.dart';
 
 class UserAppointmentDetail extends StatefulWidget {
   UserAppointmentDetail({super.key, required this.appointmentId, required this.doctorData});
-  late AuthService authService;
+  late final AuthService authService;
 
   final String appointmentId;
   final DocumentSnapshot doctorData;

@@ -27,7 +27,6 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
   // Form field names
   static const String bioField = 'bio';
   static const String workingHistoryField = 'working_history';
-  static const String availabilityScheduleField = 'availability_schedule';
   static const String languagesField = 'languages';
   static const String servicesOfferedField = 'services_offered';
 
@@ -57,20 +56,6 @@ class _DoctorProfileSetupState extends State<DoctorProfileSetup>
     'Other'
   ];
 
-  final List<String> _genderOptions = [
-    'Male',
-    'Female',
-    'Non-binary',
-    'Prefer not to say'
-  ];
-
-  final List<String> _civilStatusOptions = [
-    'Single',
-    'Married',
-    'Divorced',
-    'Widowed',
-    'Prefer not to say'
-  ];
 
   // Days of the week for availability
   final List<String> _daysOfWeek = [

@@ -94,32 +94,6 @@ class _VideoCallPageState extends State<VideoCallPage> {
     );
   }
 
-  Widget _buildVideoGrid() {
-    final views = <Widget>[];
-
-    // Add local view
-    views.add(buildVideoView(0));
-
-    // Add remote views
-    for (var uid in _users) {
-      views.add(buildVideoView(uid));
-    }
-
-    if (views.length == 1) {
-      return Container(child: views.first);
-    }
-
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: views.length <= 2 ? 1 : 2,
-        childAspectRatio: 1.0,
-        mainAxisSpacing: 4.0,
-        crossAxisSpacing: 4.0,
-      ),
-      itemCount: views.length,
-      itemBuilder: (context, index) => views[index],
-    );
-  }
 
   Widget _buildControlButtons() {
     return Container(

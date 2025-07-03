@@ -37,7 +37,6 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
     }
   }
   // Cache for doctor details to improve performance
-  final Map<String, DocumentSnapshot> _doctorDetailsCache = {};
   final ScrollController _scrollController = ScrollController();
   
   // Filter state
@@ -109,21 +108,21 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
 
       if (minFee != null && maxFee != null && minFee > maxFee) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Minimum fee cannot be greater than maximum fee')),
+          const SnackBar(content: Text('Minimum fee cannot be greater than maximum fee')),
         );
         return;
       }
 
       if (minFee != null && minFee < 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Minimum fee cannot be negative')),
+          const SnackBar(content: Text('Minimum fee cannot be negative')),
         );
         return;
       }
 
       if (maxFee != null && maxFee < 0) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Maximum fee cannot be negative')),
+          const SnackBar(content: Text('Maximum fee cannot be negative')),
         );
         return;
       }
@@ -172,19 +171,6 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
     super.dispose();
   }
 
-  Future<DocumentSnapshot> _getDoctorDetails(String doctorId) async {
-    if (_doctorDetailsCache.containsKey(doctorId)) {
-      return _doctorDetailsCache[doctorId]!;
-    }
-    
-    try {
-      final details = await getDoctorDetails(doctorId);
-      _doctorDetailsCache[doctorId] = details;
-      return details;
-    } catch (e) {
-      rethrow;
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -427,10 +413,10 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+              const BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.08),
                 blurRadius: 10,
-                offset: const Offset(0, 4),
+                offset: Offset(0, 4),
               ),
             ],
           ),
@@ -723,33 +709,6 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildDoctorCardError() {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.red.shade50,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.shade200),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.error_outline, color: Colors.red.shade600),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Text(
-              'Unable to load doctor details',
-              style: TextStyle(
-                color: Colors.red,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

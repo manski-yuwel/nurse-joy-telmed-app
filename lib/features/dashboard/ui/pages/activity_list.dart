@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -27,7 +26,6 @@ class _ActivityListPageState extends State<ActivityListPage> {
   }
   @override
   Widget build(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
     final notificationService = NotificationService();
 
     return AppScaffold(
@@ -102,7 +100,7 @@ class _ActivityListPageState extends State<ActivityListPage> {
   Widget? _getActivitySubtitle(String type, Map<String, dynamic> body) {
     if (type == 'appointment') {
       return Text(
-        "Appointment Time: ${DateFormat('MMM d, yyyy – h:mm a').format(DateTime.parse(body['appointmentDateTime'])) ?? 'Not specified'}",
+        "Appointment Time: ${DateFormat('MMM d, yyyy – h:mm a').format(DateTime.parse(body['appointmentDateTime']))}",
         style: const TextStyle(fontSize: 14),
       );
     } else if (type == 'message') {

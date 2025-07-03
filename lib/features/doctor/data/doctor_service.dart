@@ -104,7 +104,7 @@ class DoctorService {
 
   Future<void> registerAppointment(
       String doctorId, String patientId, DateTime appointmentDateTime) async {
-    DocumentReference appointmentRef = await firestore.collection('appointments').add({
+    await firestore.collection('appointments').add({
       'userID': patientId,
       'doctorID': doctorId,
       'appointmentDateTime': appointmentDateTime,

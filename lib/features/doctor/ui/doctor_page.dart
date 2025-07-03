@@ -28,13 +28,13 @@ class _DoctorPageState extends State<DoctorPage>
   bool _isFavorite = false;
   bool _isLoading = false;
   late AuthService auth;
-  DateTime? _selectedDateTime;
-  int _selectedIndex = 1; // Home is selected by default
+  late int _selectedIndex;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _selectedIndex = -1;
   }
 
   @override
@@ -293,7 +293,7 @@ Future<void> _bookAppointment() async {
                       const SizedBox(height: 8),
                       Row(
                         children: [
-                          Icon(Icons.star, color: Colors.amber, size: 20),
+                          const Icon(Icons.star, color: Colors.amber, size: 20),
                           const SizedBox(width: 4),
                           Text(
                             rating.toStringAsFixed(1),

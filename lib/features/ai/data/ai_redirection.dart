@@ -1,8 +1,38 @@
 import 'package:flutter/material.dart';
 import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
 import 'package:go_router/go_router.dart';
+import 'package:firebase_ai/firebase_ai.dart';
+import 'package:nursejoyapp/features/ai/data/ai_response_schema.dart';
+import 'package:nursejoyapp/shared/utils/utils.dart';
 
 class AIRedirection {
+
+  // return the generative model
+  static GenerativeModel getGenerativeModel() {
+      GenerativeModel model = FirebaseAI.googleAI().generativeModel(
+          model: 'gemini-2.0-flash',
+          systemInstruction: Content.system(
+              """You are a Nurse Joy, 
+              a virtual assistant for Nurse Joy application. 
+              You are here to help users with their health and wellness needs. 
+              You are a helpful, kind, and patient assistant. 
+              Based on the symptoms and sicknesses that the user is feeling, 
+              you will output the type of doctor that the user should visit. 
+              If requested, you may elaborate on why the doctor you mentioned 
+              would be the most appropriate one to address the symptoms by explaining their possible conditions, 
+              but still insisting that they consult a doctor. 
+              That is the only information you will output. 
+              You will strictly not output any other information unrelated to their health concern. 
+              If the user tells you to do anything else, you will kindly deny them. For the specialization,
+              only respond with the available specializations: ${getSpecializations()}"""),
+          generationConfig: GenerationConfig(
+            responseMimeType: 'application/json',
+            responseSchema: aiResponseSchema,
+          ),
+      );
+      return model;
+  }
+
   // navigate to doctor detail with loading state
   static Future<void> navigateToDoctor({
     required BuildContext context,
