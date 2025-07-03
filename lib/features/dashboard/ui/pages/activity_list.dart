@@ -142,7 +142,7 @@ class _ActivityListPageState extends State<ActivityListPage> {
     if (type == 'appointment' && body['id'] != null) {
       final doctorUserDetails = await getUserDetails(body['doctorID']);
       if (context.mounted) {
-        context.push('/appointment/${body['id']}', extra: doctorUserDetails);
+        context.push('/user-appointment-detail/${body['id']}', extra: doctorUserDetails);
       }
     } else if (type == 'message' && body['id'] != null) {
       final recipientUserDetails = await getUserDetails(body['senderID']);

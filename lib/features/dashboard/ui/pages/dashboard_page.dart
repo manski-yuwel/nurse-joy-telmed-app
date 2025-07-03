@@ -266,8 +266,8 @@ class _DashboardPageState extends State<DashboardPage> {
       final doctorUserDetails = await getUserDetails(body['doctorID']);
       if (context.mounted) {
         context.push(
-          '/appointment/${body['id']}',
-          extra: doctorUserDetails,
+          '/user-appointment-detail/${body['id']}',
+          extra: {'doctorData': doctorUserDetails},
         );
       }
     } else if (type == 'message' && body['id'] != null) {
