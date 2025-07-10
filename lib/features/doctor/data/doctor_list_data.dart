@@ -76,7 +76,7 @@ Future<DocumentSnapshot> getDoctorDetails(String doctorId) async {
 Future<QuerySnapshot> getAppointmentList(String doctorId) async {
   final appointmentList = await FirebaseFirestore.instance
       .collection('appointments')
-      .where('doctorId', isEqualTo: doctorId)
+      .where('doctorID', isEqualTo: doctorId)
       .get();
 
   return appointmentList;
@@ -101,9 +101,12 @@ Future<DocumentSnapshot> getAppointmentDetails(String appointmentId) async {
 
 // get user appointment list
 Future<QuerySnapshot> getUserAppointmentList(String userID) async {
-  final appointmentList = await FirebaseFirestore.instance.collection('appointments').where('userID', isEqualTo: userID).get();
-
-  return appointmentList;
+  try {
+    final appointmentList = await FirebaseFirestore.instance.collection('appointments').where('userID', isEqualTo: userID).orderBy('createdAt', descending: true).get();
+    return appointmentList;
+  } catch (e) {
+    throw Exception('Failed to get user appointment list: $e');
+  }
 }
 
 
@@ -208,3 +211,16 @@ Future<void> registerEnhancedAppointment(
   }
 
 }
+
+Future<void> updateAppointmentStatus(String appointmentId, String status) async {
+  await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({'status': status});
+}
+
+
+Future<void> saveDoctorNotes(String appointmentId, String notes) async {
+  await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({'doctor_notes': notes});
+} 
+
+Future<void> savePatientNotes(String appointmentId, String notes) async {
+  await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({'patient_notes': notes});
+} 

@@ -151,7 +151,7 @@ class AppRouter {
           if (extra != null) {
             return AppointmentDetail(
               appointmentId: state.pathParameters['appointmentId']!,
-              patientData: extra['patientData'] as DocumentSnapshot,
+              patientData: extra['patientData'] as Map<String, dynamic>,
             );
           }
           throw Exception('No extra data found');
@@ -170,7 +170,7 @@ class AppRouter {
           if (extra != null) {
             return UserAppointmentDetail(
               appointmentId: state.pathParameters['appointmentId']!,
-              doctorData: extra['doctorData'] as DocumentSnapshot,
+              doctorData: extra['doctorData'] as Map<String, dynamic>,
             );
           }
           throw Exception('No extra data found');
