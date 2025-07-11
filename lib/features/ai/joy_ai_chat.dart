@@ -182,6 +182,7 @@ class _JoyAIChatState extends State<JoyAIChat>
       // Generate response using schema
       final response = await _model.generateContent([Content.text(messageText)]);
 
+      print('AI Response: ${response.text}');
       // Parse the response
       final responseText = response.text ?? '{}';
       Map<String, dynamic> responseData = {'response': responseText};
@@ -476,15 +477,15 @@ class _JoyAIChatState extends State<JoyAIChat>
     setState(() => _isLoading = true);
     
     try {
+      
       // get user 
       final user = await FirebaseFirestore.instance.collection('users').doc(auth.user?.uid).get();
-
       // Use AI redirection to find and navigate to doctor
       await AIRedirection.navigateToDoctor(
         context: context,
         specialization: specialization ?? 'All Specializations',
-        minFee: int.tryParse(user['min_consultation_fee']) ?? 0,
-        maxFee: int.tryParse(user['max_consultation_fee']) ?? 2000,
+        minFee: user['min_consultation_fee'],
+        maxFee: user['max_consultation_fee'],
       );
     } catch (e) {
       if (mounted) {
