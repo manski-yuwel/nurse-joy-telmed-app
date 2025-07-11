@@ -40,6 +40,7 @@ class AIRedirection {
     int? minFee,
     int? maxFee,
   }) async {
+    print('Navigating to doctor for specialization: $specialization, minFee: $minFee, maxFee: $maxFee');
     // Show loading dialog
     showDialog(
       context: context,
@@ -110,6 +111,7 @@ class AIRedirection {
     int? minFee,
     int? maxFee,
   }) async {
+    print('Getting selected doctor for specialization: $specialization, minFee: $minFee, maxFee: $maxFee');
     try {
       final doctors = await getVerifiedFilteredDoctorList(
         specialization: specialization,
@@ -148,6 +150,7 @@ class AIRedirection {
 
       return bestDoctor;
     } catch (e) {
+      print('Error getting selected doctor: $e');
       rethrow;
     }
   }
