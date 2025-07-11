@@ -1052,7 +1052,12 @@ class _UserAppointmentListState extends State<UserAppointmentList>
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => context.go('/doctors'),
+              onPressed: () => context.go('/doctor-list', extra: {
+                'searchQuery': '',
+                'specialization': 'All Specializations',
+                'minFee': null,
+                'maxFee': null,
+              }),
               icon: const Icon(Icons.add_rounded),
               label: const Text('Book Appointment'),
               style: ElevatedButton.styleFrom(
