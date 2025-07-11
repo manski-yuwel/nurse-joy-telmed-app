@@ -136,7 +136,7 @@ class _TermsAndPrivacyDialogState extends State<TermsAndPrivacyDialog> {
                       ),
                       Divider(),
                       Text(
-                        "Disclaimer\n",
+                        "Disclaimer",
                         style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
                       ),
                       SizedBox(height: 12),
