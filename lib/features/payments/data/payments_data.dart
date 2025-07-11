@@ -28,11 +28,6 @@ class PaymentsData {
     final fromName = fromUserSnap.data()?['first_name'] ?? fromUserSnap.data()?['email'] ?? fromUserId;
     final toName = toUserSnap.data()?['first_name'] ?? toUserSnap.data()?['email'] ?? toUserId;
 
-    if (!skipRedirect) {
-      final redirectUrl = await PayMongoService.createGcashCheckout(amount, fromUserId);
-      throw {'redirectUrl': redirectUrl}; // Ask UI to open WebView before continuing
-    }
-
     await _db.runTransaction((transaction) async {
       final fromBalance = (fromUserSnap.data()?['balance'] ?? 0) as int;
       final toBalance = (toUserSnap.data()?['balance'] ?? 0) as int;
