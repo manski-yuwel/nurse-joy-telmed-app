@@ -180,15 +180,17 @@ class _JoyAIChatState extends State<JoyAIChat>
 
     try {
       // Generate response using schema
-      final response = await _model.generateContent([Content.text(messageText)]);
+      final response =
+          await _model.generateContent([Content.text(messageText)]);
 
       print('AI Response: ${response.text}');
       // Parse the response
       final responseText = response.text ?? '{}';
       Map<String, dynamic> responseData = {'response': responseText};
-      
+
       // Try to parse the response text as JSON if it looks like JSON
-      if (responseText.trim().startsWith('{') && responseText.trim().endsWith('}')) {
+      if (responseText.trim().startsWith('{') &&
+          responseText.trim().endsWith('}')) {
         try {
           responseData = Map<String, dynamic>.from(
             Map<dynamic, dynamic>.from(
@@ -202,7 +204,8 @@ class _JoyAIChatState extends State<JoyAIChat>
 
       // Extract specialization and response text
       _lastSpecialization = responseData['specialization']?.toString();
-      final messageContent = responseData['response']?.toString() ?? responseText;
+      final messageContent =
+          responseData['response']?.toString() ?? responseText;
 
       // Add AI response to chat
       final aiMessage = ChatMessage(
@@ -210,8 +213,8 @@ class _JoyAIChatState extends State<JoyAIChat>
         isUser: false,
         timestamp: DateTime.now(),
         messageId: 'ai_${DateTime.now().millisecondsSinceEpoch}',
-        metadata: _lastSpecialization != null 
-            ? {'specialization': _lastSpecialization} 
+        metadata: _lastSpecialization != null
+            ? {'specialization': _lastSpecialization}
             : {},
       );
 
@@ -421,7 +424,8 @@ class _JoyAIChatState extends State<JoyAIChat>
   Widget _buildQuickConsultButton() {
     return Positioned(
       right: 16,
-      bottom: 100, // Increased from 90 to 100 to provide more space above the input
+      bottom:
+          100, // Increased from 90 to 100 to provide more space above the input
       child: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -436,8 +440,10 @@ class _JoyAIChatState extends State<JoyAIChat>
           onPressed: _handleQuickConsult,
           backgroundColor: const Color(0xFF58f0d7),
           elevation: 0, // Using custom shadow from container
-          icon: const Icon(Icons.medical_services_rounded, color: Colors.white, size: 20),
-          label: const Text('Quick Consult', 
+          icon: const Icon(Icons.medical_services_rounded,
+              color: Colors.white, size: 20),
+          label: const Text(
+            'Quick Consult',
             style: TextStyle(
               color: Colors.white,
               fontSize: 14,
@@ -472,14 +478,16 @@ class _JoyAIChatState extends State<JoyAIChat>
     if (specialization == '') {
       specialization = 'All Specializations';
     }
-    
+
     // Show loading indicator
     setState(() => _isLoading = true);
-    
+
     try {
-      
-      // get user 
-      final user = await FirebaseFirestore.instance.collection('users').doc(auth.user?.uid).get();
+      // get user
+      final user = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(auth.user?.uid)
+          .get();
       // Use AI redirection to find and navigate to doctor
       await AIRedirection.navigateToDoctor(
         context: context,
@@ -738,7 +746,8 @@ class _JoyAIChatState extends State<JoyAIChat>
                                   ),
                                   itemCount: _messages.length,
                                   itemBuilder: (context, index) {
-                                    return _buildMessageBubble(_messages[index], index);
+                                    return _buildMessageBubble(
+                                        _messages[index], index);
                                   },
                                 ),
                               ),
@@ -759,7 +768,6 @@ class _JoyAIChatState extends State<JoyAIChat>
         ),
       ],
     );
-  
   }
 }
 

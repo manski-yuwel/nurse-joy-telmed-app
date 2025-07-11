@@ -372,14 +372,6 @@ class _SigninPageState extends State<SigninPage> with TickerProviderStateMixin {
               textColor: Colors.black87,
               borderColor: Colors.grey.shade300,
             ),
-            const SizedBox(height: 16),
-            _buildSocialButton(
-              onPressed: () {}, // TODO: Implement Facebook sign-in logic
-              text: "Continue with Facebook",
-              icon: Icons.facebook,
-              color: const Color(0xFF1877F2),
-              textColor: Colors.white,
-            ),
             const SizedBox(height: 32),
             Center(
               child: GestureDetector(
