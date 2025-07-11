@@ -85,7 +85,9 @@ class DebugButtons extends StatelessWidget {
                           fromUserId: currentUserId!,
                           toUserId: targetUserId!,
                           amount: amount,
+                          skipRedirect: true,
                         );
+
 
                         Navigator.of(context).pop();
                         ScaffoldMessenger.of(context).showSnackBar(

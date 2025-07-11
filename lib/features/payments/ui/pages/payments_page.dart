@@ -6,6 +6,7 @@ import 'package:nursejoyapp/features/payments/ui/widgets/payments_debug.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:webview_flutter/webview_flutter.dart';
 
 class PaymentsPage extends StatefulWidget {
   const PaymentsPage({Key? key}) : super(key: key);
@@ -59,14 +60,55 @@ class _PaymentsPageState extends State<PaymentsPage> {
             onPressed: () async {
               final amount = int.tryParse(_amountController.text.trim());
               if (amount != null && amount > 0 && currentUserId != null) {
-                await _paymentsData.addMoney(
-                  userId: currentUserId!,
-                  amount: amount,
-                );
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Money added!')),
-                );
+                try {
+                  await _paymentsData.addMoney(userId: currentUserId!, amount: amount);
+                } catch (e) {
+                  if (e is Map && e.containsKey('redirectUrl')) {
+                    final redirectUrl = e['redirectUrl'];
+                    Navigator.of(context).pop();
+
+                    final controller = WebViewController()
+                      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+                      ..loadRequest(Uri.parse(redirectUrl))
+                      ..setNavigationDelegate(
+                        NavigationDelegate(
+                          onNavigationRequest: (nav) {
+                            if (nav.url.contains('nursejoy/success')) {
+                              Navigator.of(context).pop();
+                              _paymentsData.addMoney(
+                                userId: currentUserId!,
+                                amount: amount,
+                                skipRedirect: true,
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Money added after successful payment!'),
+                                ),
+                              );
+                              return NavigationDecision.prevent;
+                            } else if (nav.url.contains('nursejoy/cancel')) {
+                              Navigator.of(context).pop();
+                              return NavigationDecision.prevent;
+                            }
+                            return NavigationDecision.navigate;
+                          },
+                        ),
+                      );
+
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => GCashWebViewPage(controller: controller),
+                      ),
+                    );
+
+
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Failed to initiate payment: $e')),
+                    );
+                  }
+                }
               }
             },
             child: const Text('Add'),
@@ -113,9 +155,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
               ],
             ),
             const SizedBox(height: 16),
-
             if (currentUserId != null) DebugButtons(currentUserId: currentUserId!),
-
             const Text('Transaction History',
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
@@ -196,7 +236,7 @@ class _PaymentsPageState extends State<PaymentsPage> {
                         title: Text('${tx['amountPrefix']}₱${tx['amount']}'),
                         subtitle: Text(tx['directionText']),
                         trailing: Column(
-                          mainAxisAlignment: MainAxisAlignment.center, // 🔧 Align vertically center
+                          mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
                             Text(
@@ -219,7 +259,6 @@ class _PaymentsPageState extends State<PaymentsPage> {
                 },
               ),
             ),
-
             const Divider(),
             const SizedBox(height: 8),
             Row(
@@ -263,3 +302,29 @@ class _PaymentsPageState extends State<PaymentsPage> {
     );
   }
 }
+
+class GCashWebViewPage extends StatelessWidget {
+  final WebViewController controller;
+
+  const GCashWebViewPage({super.key, required this.controller});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("GCash Payment"),
+        leading: BackButton(
+          onPressed: () async {
+            if (await controller.canGoBack()) {
+              controller.goBack();
+            } else {
+              Navigator.of(context).pop();
+            }
+          },
+        ),
+      ),
+      body: WebViewWidget(controller: controller),
+    );
+  }
+}
+
