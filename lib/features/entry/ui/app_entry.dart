@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:flutter/gestures.dart';
+import 'package:nursejoyapp/features/signing/ui/widgets/tos_widget.dart';
 
 class AppEntry extends StatefulWidget {
   const AppEntry({Key? key}) : super(key: key);
@@ -440,14 +442,34 @@ class _AppEntryState extends State<AppEntry> with TickerProviderStateMixin {
                       ],
                     ),
                     const SizedBox(height: 12), // Reduced from 16
-                    Text(
-                      'By continuing, you agree to our Terms & Privacy Policy',
-                      style: TextStyle(
-                        fontSize: 11, // Reduced from 12
-                        color: Colors.grey.shade500,
+                    Text.rich(
+                      TextSpan(
+                        text: 'By continuing, you agree to our ',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey.shade500,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'Terms & Privacy Policy',
+                            style: const TextStyle(
+                              color: Color(0xFF00BCD4), // cyan
+                              decorationColor: Color(0xFF00BCD4), // cyan
+                              decoration: TextDecoration.underline,
+                            ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
+                                showDialog(
+                                  context: context,
+                                  builder: (_) => const TermsAndPrivacyDialog(), // Your TOS widget
+                                );
+                              },
+                          ),
+                        ],
                       ),
                       textAlign: TextAlign.center,
                     ),
+
                   ],
                 ),
               ),

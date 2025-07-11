@@ -5,6 +5,8 @@ import 'package:flutter_form_builder/flutter_form_builder.dart';
 import 'package:form_builder_validators/form_builder_validators.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nursejoyapp/features/signing/ui/widgets/tos_widget.dart';
+
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -16,6 +18,7 @@ class RegisterPage extends StatefulWidget {
 class _RegisterPageState extends State<RegisterPage>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormBuilderState>();
+  bool _agreedToTOS = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
@@ -55,6 +58,11 @@ class _RegisterPageState extends State<RegisterPage>
   }
 
   Future<void> _register() async {
+    if (!_agreedToTOS) {
+      _showSnackBar("You must agree to the Terms and Privacy Policy", Colors.red);
+      return;
+    }
+
     if (!_formKey.currentState!.validate()) {
       return;
     }
@@ -273,6 +281,26 @@ class _RegisterPageState extends State<RegisterPage>
             }
             return null;
           },
+        ),
+        TextButton(
+          onPressed: () async {
+            final agreed = await showDialog<bool>(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => const TermsAndPrivacyDialog(),
+            );
+            setState(() {
+              _agreedToTOS = agreed ?? false;
+            });
+          },
+          child: const Text(
+            "View Terms & Privacy",
+            style: TextStyle(
+              decoration: TextDecoration.underline,
+              decorationColor: Color(0xFF58f0d7),
+              color: Color(0xFF58f0d7),
+            ),
+          ),
         ),
         const SizedBox(height: 20),
         SizedBox(

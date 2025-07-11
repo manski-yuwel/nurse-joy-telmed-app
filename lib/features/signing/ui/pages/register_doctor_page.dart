@@ -8,6 +8,7 @@ import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
+import 'package:nursejoyapp/features/signing/ui/widgets/tos_widget.dart';
 
 class RegisterDoctorPage extends StatefulWidget {
   const RegisterDoctorPage({Key? key}) : super(key: key);
@@ -19,6 +20,7 @@ class RegisterDoctorPage extends StatefulWidget {
 class _RegisterDoctorPageState extends State<RegisterDoctorPage>
     with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormBuilderState>();
+  bool _agreedToTOS = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
@@ -91,6 +93,10 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
   void _nextStep() {
     if (_currentStep == 0) {
       // Validate first page
+      if (!_agreedToTOS) {
+        _showSnackBar("You must agree to the Terms and Privacy Policy", Colors.red);
+        return;
+      }
       if (_formKey.currentState?.saveAndValidate() ?? false) {
         setState(() {
           _currentStep = 1;
@@ -440,6 +446,26 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
             }
             return null;
           },
+        ),
+        TextButton(
+          onPressed: () async {
+            final agreed = await showDialog<bool>(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => const TermsAndPrivacyDialog(),
+            );
+            setState(() {
+              _agreedToTOS = agreed ?? false;
+            });
+          },
+          child: const Text(
+            "View Terms & Privacy",
+            style: TextStyle(
+              decoration: TextDecoration.underline,
+              decorationColor: Color(0xFF58f0d7),
+              color: Color(0xFF58f0d7),
+            ),
+          ),
         ),
         const SizedBox(height: 20),
         SizedBox(
