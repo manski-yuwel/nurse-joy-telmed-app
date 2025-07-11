@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:nursejoyapp/features/payments/data/paymongo_service.dart';
 
 class PaymentsData {
   final FirebaseFirestore _db;
@@ -14,6 +15,7 @@ class PaymentsData {
     required String toUserId,
     required int amount,
     String? status,
+    bool skipRedirect = false,
   }) async {
     final fromUserRef = _db.collection('users').doc(fromUserId);
     final toUserRef = _db.collection('users').doc(toUserId);
@@ -25,6 +27,11 @@ class PaymentsData {
     final toUserSnap = await toUserRef.get();
     final fromName = fromUserSnap.data()?['first_name'] ?? fromUserSnap.data()?['email'] ?? fromUserId;
     final toName = toUserSnap.data()?['first_name'] ?? toUserSnap.data()?['email'] ?? toUserId;
+
+    if (!skipRedirect) {
+      final redirectUrl = await PayMongoService.createGcashCheckout(amount, fromUserId);
+      throw {'redirectUrl': redirectUrl}; // Ask UI to open WebView before continuing
+    }
 
     await _db.runTransaction((transaction) async {
       final fromBalance = (fromUserSnap.data()?['balance'] ?? 0) as int;
@@ -54,40 +61,39 @@ class PaymentsData {
   Future<void> addMoney({
     required String userId,
     required int amount,
+    bool skipRedirect = false,
   }) async {
+    if (!skipRedirect) {
+      final redirectUrl = await PayMongoService.createGcashCheckout(amount, userId);
+      throw {'redirectUrl': redirectUrl}; // Signal frontend to open WebView
+    }
+
+    // If redirected back successfully, add balance
     final userRef = _db.collection('users').doc(userId);
-    final transactionsRef = _db.collection('transactions');
-    final txDocRef = transactionsRef.doc();
-    final txId = txDocRef.id;
+    final txRef = _db.collection('transactions').doc();
+    final userDoc = await userRef.get();
+    final name = userDoc.data()?['first_name'] ?? userDoc.data()?['email'] ?? userId;
 
-    await _db.runTransaction((transaction) async {
-      final userDoc = await transaction.get(userRef);
-      final userName = userDoc.data()?['first_name'] ?? userDoc.data()?['email'] ?? userId;
-
-      final txData = {
-        'transactionId': txId,
+    await _db.runTransaction((txn) async {
+      txn.set(txRef, {
+        'transactionId': txRef.id,
         'fromUserId': userId,
         'toUserId': userId,
-        'fromUserName': userName,
-        'toUserName': userName,
+        'fromUserName': name,
+        'toUserName': name,
         'amount': amount,
         'status': 'Cash In',
         'timestamp': FieldValue.serverTimestamp(),
-      };
-
-      transaction.set(txDocRef, txData);
+      });
 
       if (userDoc.exists) {
-        transaction.update(userRef, {
-          'balance': FieldValue.increment(amount),
-        });
+        txn.update(userRef, {'balance': FieldValue.increment(amount)});
       } else {
-        transaction.set(userRef, {
-          'balance': amount,
-        });
+        txn.set(userRef, {'balance': amount});
       }
     });
   }
+
 
 
 
