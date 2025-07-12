@@ -58,10 +58,11 @@ class PaymentsData {
     required int amount,
     bool skipRedirect = false,
   }) async {
-    if (!skipRedirect) {
-      final redirectUrl = await PayMongoService.createGcashCheckout(amount, userId);
-      throw {'redirectUrl': redirectUrl}; // Signal frontend to open WebView
-    }
+    //TODO: uncomment to use paymongo
+    // if (!skipRedirect) {
+    //   final redirectUrl = await PayMongoService.createGcashCheckout(amount, userId);
+    //   throw {'redirectUrl': redirectUrl}; // Signal frontend to open WebView
+    // }
 
     // If redirected back successfully, add balance
     final userRef = _db.collection('users').doc(userId);
