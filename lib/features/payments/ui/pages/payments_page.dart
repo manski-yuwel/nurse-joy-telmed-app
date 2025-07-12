@@ -7,6 +7,8 @@ import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:nursejoyapp/features/payments/data/payments_data.dart';
 import 'package:nursejoyapp/features/payments/ui/widgets/payments_debug.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'dart:math';
 
 class PaymentsPage extends StatefulWidget {
   const PaymentsPage({super.key});
@@ -21,6 +23,44 @@ class _PaymentsPageState extends State<PaymentsPage>
   final PaymentsData _paymentsData = PaymentsData();
   late final TabController _mainTabController;
   late final Stream<List<Map<String, dynamic>>> _transactionStream;
+
+  String _shortenCurrency(double value) {
+    if (value >= 1000000) return '${(value / 1000000).toStringAsFixed(1)}M';
+    if (value >= 1000) return '${(value / 1000).toStringAsFixed(0)}k';
+    return value.toStringAsFixed(0);
+  }
+
+
+  String _selectedRange = '1W';
+
+  List<Map<String, dynamic>> _filterTransactionsByRange(List<Map<String, dynamic>> txs) {
+    final now = DateTime.now();
+    DateTime cutoff;
+
+    switch (_selectedRange) {
+      case '1D':
+        cutoff = now.subtract(const Duration(days: 1));
+        break;
+      case '1W':
+        cutoff = now.subtract(const Duration(days: 7));
+        break;
+      case '1M':
+        cutoff = DateTime(now.year, now.month - 1, now.day);
+        break;
+      case '1Y':
+        cutoff = DateTime(now.year - 1, now.month, now.day);
+        break;
+      default:
+        cutoff = now.subtract(const Duration(days: 7));
+    }
+
+    return txs.where((tx) {
+      final ts = tx['timestamp'];
+      final dt = ts is Timestamp ? ts.toDate() : ts is DateTime ? ts : null;
+      return dt != null && dt.isAfter(cutoff);
+    }).toList();
+  }
+
 
 
   @override
@@ -136,42 +176,267 @@ class _PaymentsPageState extends State<PaymentsPage>
           Tab(icon: Icon(Icons.replay_circle_filled), text: 'Refunds'),
           Tab(icon: Icon(Icons.bug_report), text: 'Debug'),
         ],
-        labelColor: const Color(0xFF58f0d7),
-        unselectedLabelColor: Colors.grey,
-        indicatorColor: const Color(0xFF58f0d7),
+        labelColor: Color(0xFF58f0d7),       // Cyan for selected
+        unselectedLabelColor: Colors.grey,   // Grey for unselected
+        indicatorColor: Color(0xFF58f0d7),
         indicatorWeight: 3,
-        labelStyle: const TextStyle(fontWeight: FontWeight.w600),
+        labelStyle: TextStyle(fontWeight: FontWeight.w600),
       ),
     );
   }
-
+  
   Widget _buildWalletView() {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          StreamBuilder<int>(
+          // Wallet Box
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color.fromARGB(255, 0, 56, 49), // Teal
+                  Color.fromARGB(255, 12, 131, 115), // Teal
+                  Color(0xFF64FFDA), // Light mint
+                ],
+              ),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Balance
+                StreamBuilder<int>(
+                  stream: currentUserId != null
+                      ? _paymentsData.getBalance(currentUserId!)
+                      : const Stream.empty(),
+                  builder: (context, snapshot) {
+                    final balance = (snapshot.data ?? 0).toDouble();
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Balance text
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Wallet Balance',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.white70,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              '₱${balance.toStringAsFixed(2)}',
+                              style: const TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 1),
+                        // Mini line graph
+                        SizedBox(
+                          height: 40,
+                          width: 100,
+                          child: StreamBuilder<List<Map<String, dynamic>>>(
+                            stream: currentUserId != null
+                                ? _paymentsData.getUserTransactions(currentUserId!)
+                                : const Stream.empty(),
+                            builder: (context, snapshot) {
+                              if (!snapshot.hasData || snapshot.data!.isEmpty) return const SizedBox();
+                              final txs = snapshot.data!;
+                              txs.sort((a, b) => (a['timestamp'] as Timestamp).compareTo(b['timestamp'] as Timestamp));
+                              final spots = <FlSpot>[];
+                              double runningTotal = 0;
+
+                              for (int i = 0; i < txs.length; i++) {
+                                final tx = txs[i];
+                                final amount = (tx['amount'] ?? 0).toDouble();
+                                final isCashIn = tx['status'] == 'Cash In';
+                                final isSent = tx['fromUserId'] == currentUserId;
+                                final delta = isCashIn || !isSent ? amount : -amount;
+                                runningTotal += delta;
+                                spots.add(FlSpot(i.toDouble(), runningTotal));
+                              }
+
+                              final yVals = spots.map((e) => e.y).toList();
+                              final minY = yVals.reduce(min);
+                              final maxY = yVals.reduce(max);
+                              final midY = (minY + maxY) / 2;
+
+                              return LineChart(
+                                LineChartData(
+                                  minY: minY,
+                                  maxY: maxY,
+                                  gridData: FlGridData(
+                                    show: true,
+                                    drawHorizontalLine: true,
+                                    drawVerticalLine: false,
+                                    getDrawingHorizontalLine: (value) => FlLine(
+                                      color: (value - midY).abs() < 1
+                                          ? Colors.grey.withOpacity(0.3)
+                                          : Colors.transparent,
+                                      strokeWidth: 1,
+                                      dashArray: [4, 3],
+                                    ),
+                                  ),
+                                  borderData: FlBorderData(show: false),
+                                  titlesData: FlTitlesData(show: false),
+                                  lineBarsData: [
+                                    LineChartBarData(
+                                      spots: spots,
+                                      isCurved: true,
+                                      barWidth: 3,
+                                      color: const Color(0xFF58f0d7),
+                                      belowBarData: BarAreaData(
+                                        show: true,
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            const Color(0xFF58f0d7).withOpacity(0.3),
+                                            Colors.transparent,
+                                          ],
+                                          begin: Alignment.topCenter,
+                                          end: Alignment.bottomCenter,
+                                        ),
+                                      ),
+                                      dotData: FlDotData(
+                                        show: true,
+                                        checkToShowDot: (spot, _) => spot == spots.last,
+                                        getDotPainter: (_, __, ___, ____) => FlDotCirclePainter(
+                                          radius: 3,
+                                          color: Colors.black,
+                                          strokeWidth: 2,
+                                          strokeColor: const Color(0xFF58f0d7),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 1),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 12),
+
+                // Add Money button
+                ElevatedButton.icon(
+                  onPressed: _showAddMoneyDialog,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Cash In'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF58f0d7),
+                    foregroundColor: Colors.black87,
+                  ),
+                ),
+                    
+                const SizedBox(height: 8),
+
+                // Powered by PayMongo
+                Align(
+                  alignment: Alignment.bottomRight,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Powered by  ',
+                        style: TextStyle(fontSize: 12, color: Color.fromARGB(255, 211, 211, 211)),
+                      ),
+                      Image.asset(
+                        'assets/img/paymongo_logo.png',
+                        height: 14,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 24),
+          const Text(
+            'Recent Activity',
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          StreamBuilder<List<Map<String, dynamic>>>(
             stream: currentUserId != null
-                ? _paymentsData.getBalance(currentUserId!)
+                ? _paymentsData.getUserTransactions(currentUserId!)
                 : const Stream.empty(),
             builder: (context, snapshot) {
-              return Text(
-                'Balance: ₱${snapshot.data ?? '--'}',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Text("No recent activity");
+              }
+
+              final recent = snapshot.data!.take(3).toList();
+              return Padding(
+                padding: const EdgeInsets.only(top: 8, bottom: 0),
+                child: Column(
+                  children: recent.map((tx) {
+                    final isCashIn = tx['status'] == 'Cash In';
+                    final isSent = tx['fromUserId'] == currentUserId;
+                    final amount = tx['amount'];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: Icon(
+                          isCashIn
+                              ? Icons.account_balance_wallet
+                              : isSent
+                                  ? Icons.arrow_upward
+                                  : Icons.arrow_downward,
+                          color: isCashIn
+                              ? Colors.green
+                              : isSent
+                                  ? Colors.red
+                                  : Colors.green,
+                        ),
+                        title: Text(
+                          '${isCashIn || !isSent ? '+' : '-'}₱$amount',
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        subtitle: Text(
+                          isCashIn
+                              ? 'Cash In'
+                              : isSent
+                                  ? 'Sent to ${tx['toUserName']}'
+                                  : 'Received from ${tx['fromUserName']}',
+                        ),
+                        trailing: Text(
+                          tx['timestamp'] != null
+                              ? DateFormat('MMM d').format((tx['timestamp'] as Timestamp).toDate())
+                              : '--',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
               );
             },
           ),
-          const SizedBox(height: 16),
-          ElevatedButton.icon(
-            onPressed: _showAddMoneyDialog,
-            icon: const Icon(Icons.add),
-            label: const Text('Add Money'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF58f0d7),
-              foregroundColor: Colors.black87,
-            ),
-          ),
+
         ],
       ),
     );
@@ -277,45 +542,181 @@ class _PaymentsPageState extends State<PaymentsPage>
     );
   }
 
-
-  Widget _buildRefundsView() {
-    // Placeholder: Replace with your actual refund stream/list
-    final mockRefunds = [
-      {'amount': 300, 'status': 'Pending'},
-      {'amount': 200, 'status': 'Approved'},
-      {'amount': 150, 'status': 'Rejected'},
-    ];
-
-    Color getStatusColor(String status) {
-      switch (status) {
-        case 'Approved':
-          return Colors.green;
-        case 'Rejected':
-          return Colors.red;
-        default:
-          return Colors.orange;
-      }
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(12),
-      itemCount: mockRefunds.length,
-      separatorBuilder: (_, __) => const Divider(),
-      itemBuilder: (context, index) {
-        final refund = mockRefunds[index];
-        return ListTile(
-          leading: const Icon(Icons.money_off, color: Colors.blueGrey),
-          title: Text('₱${refund['amount']}'),
-          subtitle: Text(refund['status'] as String),
-          trailing: Chip(
-            label: Text(refund['status'] as String),
-            backgroundColor: getStatusColor(refund['status'] as String),
-            labelStyle: const TextStyle(color: Colors.white),
-          ),
-        );
-      },
+  Widget _buildRefundSummaryCounter({
+  required int pending,
+  required int approved,
+  required int rejected,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      children: [
+        _buildStatItem('Pending', pending.toString(), Colors.orange),
+        _buildStatItem('Approved', approved.toString(), Colors.green),
+        _buildStatItem('Rejected', rejected.toString(), Colors.red),
+      ],
     );
   }
+
+
+  Widget _buildStatItem(String label, String count, Color boxColor) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: boxColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.08),
+              blurRadius: 6,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              label == 'Approved'
+                  ? Icons.verified
+                  : label == 'Rejected'
+                      ? Icons.block
+                      : Icons.hourglass_top,
+              color: Colors.black,
+              size: 26,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              count,
+              style: const TextStyle(
+                color: Colors.black,
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.black87,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+
+      ),
+    );
+  }
+
+
+
+  Widget _divider() {
+    return Container(
+      width: 1,
+      height: 40,
+      color: Colors.white.withOpacity(0.4),
+    );
+  }
+
+  Widget _buildRefundsView() {
+  final statuses = ['Pending', 'Approved', 'Rejected'];
+  
+  final mockRefunds = List.generate(10, (i) {
+    return {
+      'amount': (i + 1) * 100,
+      'status': statuses[i % statuses.length],
+      'transactionId': 'TXN${DateTime.now().millisecondsSinceEpoch + i}',
+      'timestamp': DateTime.now().subtract(Duration(days: i * 2)),
+    };
+  });
+
+  // Count summary
+  final pendingCount = mockRefunds.where((e) => e['status'] == 'Pending').length;
+  final approvedCount = mockRefunds.where((e) => e['status'] == 'Approved').length;
+  final rejectedCount = mockRefunds.where((e) => e['status'] == 'Rejected').length;
+
+  Color getStatusColor(String status) {
+    switch (status) {
+      case 'Approved':
+        return Colors.green.shade600;
+      case 'Rejected':
+        return Colors.red.shade300;
+      default:
+        return Colors.orange.shade400;
+    }
+  }
+
+  return ListView.builder(
+    padding: const EdgeInsets.all(12),
+    itemCount: mockRefunds.length + 2, // +2 for counter + Divider
+    itemBuilder: (context, index) {
+      if (index == 0) {
+        final pending = mockRefunds.where((r) => r['status'] == 'Pending').length;
+        final approved = mockRefunds.where((r) => r['status'] == 'Approved').length;
+        final rejected = mockRefunds.where((r) => r['status'] == 'Rejected').length;
+
+        return _buildRefundSummaryCounter(
+          pending: pending,
+          approved: approved,
+          rejected: rejected,
+        );
+      }
+
+      if (index == 1) return const SizedBox(height: 8);
+
+      final Map<String, dynamic> refund = mockRefunds[index - 2];
+      final amount = refund['amount'] is int ? refund['amount'] as int : 0;
+      final status = refund['status']?.toString() ?? 'Pending';
+      final txnId = refund['transactionId']?.toString() ?? '--';
+      final timestamp = refund['timestamp'];
+      final formattedDate = timestamp is Timestamp
+        ? DateFormat('MMM d, y – h:mm a').format((timestamp as Timestamp).toDate())
+        : timestamp is DateTime
+            ? DateFormat('MMM d, y – h:mm a').format(timestamp as DateTime)
+            : '--';
+
+      return ListTile(
+        leading: const Icon(Icons.money_off, color: Colors.blueGrey),
+        title: Text('₱$amount'),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: getStatusColor(status),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                status,
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+        trailing: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              formattedDate,
+              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Ref: $txnId',
+              style: const TextStyle(fontSize: 10, color: Colors.grey),
+            ),
+          ],
+        ),
+
+      );
+    }
+  );
+}
+
 
   @override
   Widget build(BuildContext context) {
@@ -330,7 +731,10 @@ class _PaymentsPageState extends State<PaymentsPage>
             child: TabBarView(
               controller: _mainTabController,
               children: [
-                _buildWalletView(),
+                Builder(
+                  key: ValueKey<int>(_mainTabController.index),
+                  builder: (_) => _buildWalletView(),
+                ),
                 Builder(
                   key: ValueKey<int>(_mainTabController.index),
                   builder: (_) => _buildTransactionsView(),
