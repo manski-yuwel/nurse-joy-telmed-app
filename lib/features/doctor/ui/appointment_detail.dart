@@ -35,11 +35,14 @@ class _AppointmentDetailState extends State<AppointmentDetail>
   late Animation<Offset> _slideAnimation;
   bool _isUpdating = false;
   final TextEditingController _notesController = TextEditingController();
+  Map<String, dynamic>? _appointmentData;
+  String _medicalHistory = '';
 
   @override
   void initState() {
     super.initState();
     _initializeAnimations();
+    _loadAppointmentDetails();
   }
 
   void _initializeAnimations() {
@@ -87,6 +90,32 @@ class _AppointmentDetailState extends State<AppointmentDetail>
     widget.authService = Provider.of<AuthService>(context, listen: false);
   }
 
+  Future<void> _loadAppointmentDetails() async {
+    try {
+      final appointmentDoc = await getAppointmentDetails(widget.appointmentId);
+      if (mounted) {
+        setState(() {
+          _appointmentData = appointmentDoc.data() as Map<String, dynamic>;
+        });
+        
+        // Load medical history if patient ID is available
+        if (_appointmentData?['userID'] != null) {
+          final history = await getUserMedicalHistory(_appointmentData!['userID']);
+          if (mounted) {
+            setState(() {
+              _medicalHistory = history;
+            });
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Failed to load appointment details');
+      }
+    }
+  }
+  
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -101,6 +130,87 @@ class _AppointmentDetailState extends State<AppointmentDetail>
     }
   }
 
+  Future<void> _rescheduleAppointment() async {
+    try {
+      if (_appointmentData == null || _appointmentData!['appointmentDateTime'] == null) {
+        _showErrorSnackBar('Appointment data is not available');
+        return;
+      }
+
+      // Get current appointment date or use current time as fallback
+      final now = DateTime.now();
+      final currentAppointmentDate = _appointmentData!['appointmentDateTime'] is Timestamp
+          ? (_appointmentData!['appointmentDateTime'] as Timestamp).toDate()
+          : now;
+
+      // Ensure the initial date is not in the past
+      final initialDate = currentAppointmentDate.isAfter(now) ? currentAppointmentDate : now;
+
+      // Show date picker
+      final DateTime? pickedDate = await showDatePicker(
+        context: context,
+        initialDate: initialDate,
+        firstDate: now,
+        lastDate: now.add(const Duration(days: 365)),
+        selectableDayPredicate: (DateTime date) {
+          // Only allow future dates
+          return date.isAfter(now.subtract(const Duration(days: 1)));
+        },
+      );
+
+      if (pickedDate == null) return;
+
+      // Show time picker
+      final TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(initialDate),
+      );
+
+      if (pickedTime == null) return;
+
+      // Combine date and time
+      final newDateTime = DateTime(
+        pickedDate.year,
+        pickedDate.month,
+        pickedDate.day,
+        pickedTime.hour,
+        pickedTime.minute,
+      );
+
+      // Ensure the selected datetime is in the future
+      if (newDateTime.isBefore(now)) {
+        _showErrorSnackBar('Please select a future date and time');
+        return;
+      }
+
+      if (mounted) {
+        setState(() => _isUpdating = true);
+      }
+
+      // Call the reschedule function
+      await rescheduleAppointment(
+        appointmentId: widget.appointmentId,
+        newDateTime: newDateTime,
+        doctorId: _appointmentData!['doctorID'],
+        patientId: _appointmentData!['userID'],
+      );
+
+      if (mounted) {
+        _showSuccessSnackBar('Appointment rescheduled successfully');
+        // Refresh the appointment data
+        await _loadAppointmentDetails();
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Failed to reschedule: ${e.toString()}');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUpdating = false);
+      }
+    }
+  }
+
   Future<void> _updateAppointmentStatus(String newStatus) async {
     setState(() {
       _isUpdating = true;
@@ -112,11 +222,13 @@ class _AppointmentDetailState extends State<AppointmentDetail>
       if (mounted) {
         HapticFeedback.lightImpact();
         _showSuccessSnackBar('Appointment status updated to $newStatus');
-        setState(() {});
+        // Refresh the appointment data
+        await _loadAppointmentDetails();
       }
     } catch (e) {
       if (mounted) {
         HapticFeedback.heavyImpact();
+        print(e);
         _showErrorSnackBar('Failed to update status: ${e.toString()}');
       }
     } finally {
@@ -253,22 +365,61 @@ class _AppointmentDetailState extends State<AppointmentDetail>
     );
   }
 
+  Future<void> savePatientMedicalHistory(String userId, String medicalHistory) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('medical_history')
+          .doc('current')
+          .set({
+            'medical_history': medicalHistory,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('Error saving medical history: $e');
+      rethrow;
+    }
+  }
+
   void _navigateToChat() {
-    HapticFeedback.lightImpact();
-    final chat = Chat();
-    final chatRoomID = chat.generateChatRoomID(
-      widget.authService.currentUser!.uid, 
-      widget.patientData['id']
-    );
-    chat.generateChatRoom(
-      chatRoomID, 
-      widget.authService.currentUser!.uid, 
-      widget.patientData['id']
-    );
-    context.go('/chat/$chatRoomID', extra: {
-      'recipientID': widget.patientData['id'],
-      'recipientFullName': '${widget.patientData['first_name']} ${widget.patientData['last_name']}',
-    });
+    try {
+      HapticFeedback.lightImpact();
+      
+      // Ensure we have a valid current user
+      final currentUserId = widget.authService.currentUser?.uid;
+      if (currentUserId == null) {
+        _showErrorSnackBar('You must be logged in to start a chat');
+        return;
+      }
+      
+      // Ensure we have patient data
+      final patientId = _appointmentData!['userID'];
+      if (patientId == null) {
+        _showErrorSnackBar('Patient information is not available');
+        return;
+      }
+      
+      final chat = Chat();
+      final chatRoomID = chat.generateChatRoomID(currentUserId, patientId);
+      
+      chat.generateChatRoom(chatRoomID, currentUserId, patientId);
+      
+      final firstName = widget.patientData['first_name'] ?? 'Patient';
+      final lastName = widget.patientData['last_name'] ?? '';
+      
+      if (context.mounted) {
+        context.push('/chat/$chatRoomID', extra: {
+          'recipientID': patientId,
+          'recipientFullName': '$firstName $lastName'.trim(),
+        });
+      }
+    } catch (e) {
+      debugPrint('Error navigating to chat: $e');
+      if (context.mounted) {
+        _showErrorSnackBar('Failed to start chat: ${e.toString()}');
+      }
+    }
   }
 
   @override
@@ -470,100 +621,152 @@ class _AppointmentDetailState extends State<AppointmentDetail>
     );
   }
 
-  Widget _buildPatientCard() {
-    final patientData = widget.patientData;
-    final imageUrl = patientData['profile_pic'] ?? '';
-    
-    return Container(
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF58f0d7), Color(0xFF4dd0e1)],
-        ),
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF58f0d7).withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
-          ),
-        ],
+  Widget _buildMedicalHistorySection() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Row(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 80,
-              height: 80,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipOval(
-                child: imageUrl.isNotEmpty
-                    ? CachedNetworkImage(
-                        imageUrl: imageUrl,
-                        fit: BoxFit.cover,
-                        placeholder: (context, url) => Container(
-                          color: Colors.white,
-                          child: const Icon(Icons.person, size: 40),
-                        ),
-                        errorWidget: (context, url, error) => Container(
-                          color: Colors.white,
-                          child: const Icon(Icons.person, size: 40),
-                        ),
-                      )
-                    : Container(
-                        color: Colors.white,
-                        child: const Icon(Icons.person, size: 40),
-                      ),
+            const Text(
+              'Medical History',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${patientData['first_name']} ${patientData['last_name']}',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  if (patientData['email'] != null)
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        patientData['email'],
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ),
-                ],
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade300),
               ),
+              child: _medicalHistory.isNotEmpty
+                  ? Text(
+                      _medicalHistory,
+                      style: const TextStyle(fontSize: 15, height: 1.5),
+                    )
+                  : Text(
+                      'No medical history available',
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildPatientCard() {
+    final patientData = widget.patientData;
+    final imageUrl = patientData['profile_pic'] ?? '';
+    
+    return Column(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [Color(0xFF58f0d7), Color(0xFF4dd0e1)],
+            ),
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF58f0d7).withOpacity(0.3),
+                blurRadius: 15,
+                offset: const Offset(0, 8),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: Colors.white, width: 3),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipOval(
+                    child: imageUrl.isNotEmpty
+                        ? CachedNetworkImage(
+                            imageUrl: imageUrl,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              color: Colors.white,
+                              child: const Icon(Icons.person, size: 40),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              color: Colors.white,
+                              child: const Icon(Icons.person, size: 40),
+                            ),
+                          )
+                        : Container(
+                            color: Colors.white,
+                            child: const Icon(Icons.person, size: 40),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '${patientData['first_name']} ${patientData['last_name']}',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      if (patientData['email'] != null)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            patientData['email'],
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildMedicalHistorySection(),
+      ],
     );
   }
 
@@ -990,14 +1193,18 @@ class _AppointmentDetailState extends State<AppointmentDetail>
             const SizedBox(width: 12),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () {
-                  _showSuccessSnackBar('Reschedule feature coming soon');
-                },
+                onPressed: _isUpdating ? null : _rescheduleAppointment,
                 icon: const Icon(Icons.schedule_rounded),
-                label: const Text('Reschedule'),
+                label: _isUpdating 
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Reschedule'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.grey.shade700,
-                  side: BorderSide(color: Colors.grey.shade300),
+                  foregroundColor: Colors.blue.shade700,
+                  side: BorderSide(color: Colors.blue.shade300),
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),

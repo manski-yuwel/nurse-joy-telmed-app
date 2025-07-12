@@ -401,7 +401,7 @@ class _AppointmentListState extends State<AppointmentList>
         tabs: const [
           Tab(text: 'All'),
           Tab(text: 'Today'),
-          Tab(text: 'Upcoming'),
+          Tab(text: 'Scheduled'),
           Tab(text: 'Completed'),
         ],
         labelColor: const Color(0xFF58f0d7),
@@ -453,7 +453,7 @@ class _AppointmentListState extends State<AppointmentList>
           ),
           Expanded(
             child: _buildStatItem(
-              'Upcoming',
+              'Scheduled',
               upcomingAppointments.toString(),
               Icons.schedule_rounded,
             ),
@@ -543,8 +543,8 @@ class _AppointmentListState extends State<AppointmentList>
         icon = Icons.today_rounded;
         break;
       case 2:
-        title = 'No Upcoming Appointments';
-        subtitle = 'All caught up! No upcoming appointments scheduled';
+        title = 'No Scheduled Appointments';
+        subtitle = 'All caught up! No scheduled appointments scheduled';
         icon = Icons.schedule_rounded;
         break;
       case 3:
