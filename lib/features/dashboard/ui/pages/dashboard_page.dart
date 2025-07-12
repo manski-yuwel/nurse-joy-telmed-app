@@ -264,10 +264,12 @@ class _DashboardPageState extends State<DashboardPage> {
   void _handleActivityTap(Map<String, dynamic> body, String type, BuildContext context) async {
     if (type == 'appointment' && body['id'] != null) {
       final doctorUserDetails = await getUserDetails(body['doctorID']);
+      // convert to map
+      final doctorUserDetailsMap = doctorUserDetails.data() as Map<String, dynamic>;
       if (context.mounted) {
         context.push(
           '/user-appointment-detail/${body['id']}',
-          extra: {'doctorData': doctorUserDetails},
+          extra: {'doctorData': doctorUserDetailsMap},
         );
       }
     } else if (type == 'message' && body['id'] != null) {

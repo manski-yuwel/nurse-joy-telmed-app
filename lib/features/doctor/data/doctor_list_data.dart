@@ -214,6 +214,69 @@ Future<void> registerEnhancedAppointment(
 
 Future<void> updateAppointmentStatus(String appointmentId, String status) async {
   await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({'status': status});
+
+  // notify user
+  final appointmentDoc = await getAppointmentDetails(appointmentId);
+  final appointmentData = appointmentDoc.data() as Map<String, dynamic>;
+  final userId = appointmentData['userID'];
+  final doctorId = appointmentData['doctorID'];
+  final appointmentDateTime = appointmentData['appointmentDateTime'];
+
+  // Get doctor details
+  final doctorDoc = await getDoctorDetails(doctorId);
+  final doctorData = doctorDoc.data() as Map<String, dynamic>;
+
+  // Convert Firestore Timestamp to DateTime before converting to ISO string
+  final dateTime = appointmentDateTime is Timestamp 
+      ? appointmentDateTime.toDate() 
+      : appointmentDateTime;
+
+  // determine if the doctor is the current user
+  final currentUser = await getDoctorDetails(doctorId);
+  final currentUserData = currentUser.data() as Map<String, dynamic>;
+  final isDoctor = currentUserData['role'] == 'doctor';
+
+  if (isDoctor) {
+    // get user details
+    final userDoc = await getUserDetails(userId);
+    final userData = userDoc.data() as Map<String, dynamic>;
+    final userFullName = '${userData['first_name']} ${userData['last_name']}';
+    NotificationService().registerActivity(
+      doctorId,
+      'Your appointment with $userFullName has been updated to $status',
+      {
+        'id': appointmentId,
+        'doctorID': doctorId,
+        'patientID': userId,
+        'appointmentDateTime': dateTime.toIso8601String(),
+      },
+      'appointment',
+    );
+  } else {
+    NotificationService().registerActivity(
+      userId,
+      'Your appointment with ${doctorData['first_name']} ${doctorData['last_name']} has been updated to $status',
+      {
+        'id': appointmentId,
+        'doctorID': doctorId,
+        'patientID': userId,
+        'appointmentDateTime': dateTime.toIso8601String(),
+      },
+      'appointment',
+    );
+  }
+      
+  NotificationService().registerActivity(
+    userId,
+    'Your appointment with ${doctorData['first_name']} ${doctorData['last_name']} has been updated to $status',
+    {
+      'id': appointmentId,
+      'doctorID': doctorId,
+      'patientID': userId,
+      'appointmentDateTime': dateTime.toIso8601String(),
+    },
+    'appointment',
+  );
 }
 
 
@@ -222,5 +285,88 @@ Future<void> saveDoctorNotes(String appointmentId, String notes) async {
 } 
 
 Future<void> savePatientNotes(String appointmentId, String notes) async {
-  await FirebaseFirestore.instance.collection('appointments').doc(appointmentId).update({'patient_notes': notes});
-} 
+  await FirebaseFirestore.instance
+      .collection('appointments')
+      .doc(appointmentId)
+      .update({'patientNotes': notes});
+}
+
+// Get user's medical history
+Future<String> getUserMedicalHistory(String userId) async {
+  try {
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
+        
+    final userDetails = doc.data() as Map<String, dynamic>;
+    final medicalHistory = userDetails['medical_history'];
+    if (doc.exists) {
+      return medicalHistory;
+    }
+    return '';
+  } catch (e) {
+    return '';
+  }
+}
+
+Future<void> rescheduleAppointment({
+  required String appointmentId,
+  required DateTime newDateTime,
+  required String doctorId,
+  required String patientId,
+}) async {
+  final appointmentRef = FirebaseFirestore.instance.collection('appointments').doc(appointmentId);
+  
+  // Get the current appointment data
+  final appointmentDoc = await appointmentRef.get();
+  if (!appointmentDoc.exists) {
+    throw Exception('Appointment not found');
+  }
+  
+  final appointmentData = appointmentDoc.data() as Map<String, dynamic>;
+  final oldDateTime = (appointmentData['appointmentDateTime'] as Timestamp).toDate();
+  
+  // Update the appointment with new date/time
+  await appointmentRef.update({
+    'appointmentDateTime': Timestamp.fromDate(newDateTime),
+    'status': 'rescheduled',
+    'previousDate': Timestamp.fromDate(oldDateTime),
+    'updatedAt': FieldValue.serverTimestamp(),
+  });
+  
+  // Get user details for notification
+  final doctorDoc = await getDoctorDetails(doctorId);
+  final patientDoc = await getUserDetails(patientId);
+  
+  if (doctorDoc.exists && patientDoc.exists) {
+    final doctorData = doctorDoc.data() as Map<String, dynamic>;
+    final patientData = patientDoc.data() as Map<String, dynamic>;
+    
+    // Notify patient
+    await NotificationService().registerActivity(
+      patientId,
+      'Your appointment with Dr. ${doctorData['last_name']} has been rescheduled',
+      {
+        'appointmentId': appointmentId,
+        'doctorId': doctorId,
+        'patientId': patientId,
+        'appointmentDateTime': newDateTime.toIso8601String(),
+      },
+      'appointment',
+    );
+    
+    // Notify doctor
+    await NotificationService().registerActivity(
+      doctorId,
+      'Appointment with ${patientData['first_name']} ${patientData['last_name']} has been rescheduled',
+      {
+        'appointmentId': appointmentId,
+        'doctorId': doctorId,
+        'patientId': patientId,
+        'appointmentDateTime': newDateTime.toIso8601String(),
+      },
+      'appointment',
+    );
+  }
+}

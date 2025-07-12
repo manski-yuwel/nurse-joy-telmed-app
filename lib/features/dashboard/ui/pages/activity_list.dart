@@ -141,8 +141,9 @@ class _ActivityListPageState extends State<ActivityListPage> {
       BuildContext context, Map<String, dynamic> body, String type) async {
     if (type == 'appointment' && body['id'] != null) {
       final doctorUserDetails = await getUserDetails(body['doctorID']);
+      final doctorData = doctorUserDetails.data() as Map<String, dynamic>;
       if (context.mounted) {
-        context.push('/user-appointment-detail/${body['id']}', extra: doctorUserDetails);
+        context.push('/user-appointment-detail/${body['id']}', extra: doctorData);
       }
     } else if (type == 'message' && body['id'] != null) {
       final recipientUserDetails = await getUserDetails(body['senderID']);
