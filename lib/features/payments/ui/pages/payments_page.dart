@@ -374,69 +374,156 @@ class _PaymentsPageState extends State<PaymentsPage>
           ),
 
           const SizedBox(height: 24),
-          const Text(
-            'Recent Activity',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 8),
+
           StreamBuilder<List<Map<String, dynamic>>>(
             stream: currentUserId != null
                 ? _paymentsData.getUserTransactions(currentUserId!)
                 : const Stream.empty(),
             builder: (context, snapshot) {
               if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return const Text("No recent activity");
+                return SizedBox(
+                  height: 200, // or adjust as needed based on layout
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.access_time, size: 48, color: Colors.grey),
+                        SizedBox(height: 12),
+                        Text(
+                          "No Recent Activity",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
               }
 
               final recent = snapshot.data!.take(3).toList();
-              return Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 0),
+              return Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
                 child: Column(
-                  children: recent.map((tx) {
-                    final isCashIn = tx['status'] == 'Cash In';
-                    final isSent = tx['fromUserId'] == currentUserId;
-                    final amount = tx['amount'];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      child: ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: Icon(
-                          isCashIn
-                              ? Icons.account_balance_wallet
-                              : isSent
-                                  ? Icons.arrow_upward
-                                  : Icons.arrow_downward,
-                          color: isCashIn
-                              ? Colors.green
-                              : isSent
-                                  ? Colors.red
-                                  : Colors.green,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Title Row: Icon + Text + View All
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: const [
+                            Icon(Icons.access_time, size: 20, color: Colors.black87),
+                            SizedBox(width: 8),
+                            Text(
+                              'Recent Activity',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
                         ),
-                        title: Text(
-                          '${isCashIn || !isSent ? '+' : '-'}₱$amount',
-                          style: const TextStyle(fontWeight: FontWeight.bold),
+                        GestureDetector(
+                          onTap: () => _mainTabController.animateTo(1),
+                          child: const Text(
+                            'View All',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Color(0xFF00BFA6), // Dark cyan
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
                         ),
-                        subtitle: Text(
-                          isCashIn
-                              ? 'Cash In'
-                              : isSent
-                                  ? 'Sent to ${tx['toUserName']}'
-                                  : 'Received from ${tx['fromUserName']}',
-                        ),
-                        trailing: Text(
-                          tx['timestamp'] != null
-                              ? DateFormat('MMM d').format((tx['timestamp'] as Timestamp).toDate())
-                              : '--',
-                          style: const TextStyle(fontSize: 12),
-                        ),
-                      ),
-                    );
-                  }).toList(),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Recent Activity List
+                    StreamBuilder<List<Map<String, dynamic>>>(
+                      stream: currentUserId != null
+                          ? _paymentsData.getUserTransactions(currentUserId!)
+                          : const Stream.empty(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                          return const Text("No recent activity");
+                        }
+
+                        final recent = snapshot.data!.take(3).toList();
+                        return Column(
+                          children: recent.map((tx) {
+                            final isCashIn = tx['status'] == 'Cash In';
+                            final isSent = tx['fromUserId'] == currentUserId;
+                            final amount = tx['amount'];
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                leading: Icon(
+                                  isCashIn
+                                      ? Icons.account_balance_wallet
+                                      : isSent
+                                          ? Icons.arrow_upward
+                                          : Icons.arrow_downward,
+                                  color: isCashIn
+                                      ? Colors.green
+                                      : isSent
+                                          ? Colors.red
+                                          : Colors.green,
+                                ),
+                                title: Text(
+                                  '${isCashIn || !isSent ? '+' : '-'}₱$amount',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Text(
+                                  isCashIn
+                                      ? 'Cash In'
+                                      : isSent
+                                          ? 'Sent to ${tx['toUserName']}'
+                                          : 'Received from ${tx['fromUserName']}',
+                                ),
+                                trailing: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      tx['timestamp'] != null
+                                          ? DateFormat('MMM d, y - h:mm a').format((tx['timestamp'] as Timestamp).toDate())
+                                          : '--',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                    if (tx['transactionId'] != null)
+                                      Text(
+                                        'Ref: ${tx['transactionId']}',
+                                        style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ],
                 ),
               );
             },
           ),
-
         ],
       ),
     );
@@ -480,63 +567,78 @@ class _PaymentsPageState extends State<PaymentsPage>
             return Center(child: _buildEmptyTransactionState());
           }
 
-          return ListView.separated(
+          return ListView.builder(
             itemCount: transactions.length,
-            separatorBuilder: (_, __) => const Divider(),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             itemBuilder: (context, index) {
               final tx = transactions[index];
               final isCashIn = tx['status'] == 'Cash In';
               final isSent = tx['fromUserId'] == userId;
               final amount = tx['amount'];
 
-              return ListTile(
-                leading: Icon(
-                  isCashIn
-                      ? Icons.account_balance_wallet
-                      : isSent
-                          ? Icons.arrow_upward
-                          : Icons.arrow_downward,
-                  color: isCashIn
-                      ? Colors.green
-                      : isSent
-                          ? Colors.red
-                          : Colors.green,
-                ),
-                title: Text(
-                  '${isCashIn || !isSent ? '+' : '-'}₱$amount',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  isCashIn
-                      ? 'Cash In'
-                      : isSent
-                          ? 'Sent to ${tx['toUserName']}'
-                          : 'Received from ${tx['fromUserName']}',
-                ),
-                trailing: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      tx['timestamp'] != null
-                          ? DateFormat('MMM d, y - h:mm a')
-                              .format((tx['timestamp'] as Timestamp).toDate())
-                          : '--',
-                      style: const TextStyle(fontSize: 12),
+              return Container(
+                margin: const EdgeInsets.symmetric(vertical: 6),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 6,
+                      offset: const Offset(0, 3),
                     ),
-                    if (tx['transactionId'] != null)
-                      Text(
-                        'Ref: ${tx['transactionId']}',
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey,
-                        ),
-                      ),
                   ],
+                ),
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: Icon(
+                    isCashIn
+                        ? Icons.account_balance_wallet
+                        : isSent
+                            ? Icons.arrow_upward
+                            : Icons.arrow_downward,
+                    color: isCashIn
+                        ? Colors.green
+                        : isSent
+                            ? Colors.red
+                            : Colors.green,
+                  ),
+                  title: Text(
+                    '${isCashIn || !isSent ? '+' : '-'}₱$amount',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(
+                    isCashIn
+                        ? 'Cash In'
+                        : isSent
+                            ? 'Sent to ${tx['toUserName']}'
+                            : 'Received from ${tx['fromUserName']}',
+                  ),
+                  trailing: Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        tx['timestamp'] != null
+                            ? DateFormat('MMM d, y - h:mm a').format(
+                                (tx['timestamp'] as Timestamp).toDate(),
+                              )
+                            : '--',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      if (tx['transactionId'] != null)
+                        Text(
+                          'Ref: ${tx['transactionId']}',
+                          style: const TextStyle(fontSize: 10, color: Colors.grey),
+                        ),
+                    ],
+                  ),
                 ),
               );
             },
           );
+
         },
       ),
     );
