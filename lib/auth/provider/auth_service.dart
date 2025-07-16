@@ -17,15 +17,24 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
   BuildContext? context;
   User? get currentUser => user;
 
+  /// Session timeout tracking
+  DateTime? _lastActivity;
+  bool _isSessionActive = false;
+
   AuthService() {
     WidgetsBinding.instance.addObserver(this);
     auth.authStateChanges().listen((User? user) async {
       this.user = user;
       if (user == null) {
         logger.i("User is signed out!");
+        _isSessionActive = false;
+        _lastActivity = null;
       } else {
         // check if the user is setup
         logger.i("User is signed in!");
+        _isSessionActive = true;
+        _lastActivity = DateTime.now();
+
         // get fcm token
         final fcmToken = await fcm.getToken();
         await fcm.requestPermission();
@@ -42,6 +51,52 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
       }
       notifyListeners();
     });
+  }
+
+  /// Check if user session is still valid (for session timeout feature)
+  bool get isSessionValid {
+    if (!_isSessionActive || _lastActivity == null || user == null) {
+      return false;
+    }
+
+    final now = DateTime.now();
+    final timeSinceLastActivity = now.difference(_lastActivity!);
+    const sessionTimeout = Duration(minutes: 10); // TC38 requirement
+
+    return timeSinceLastActivity < sessionTimeout;
+  }
+
+  /// Update last activity timestamp
+  void updateLastActivity() {
+    if (_isSessionActive && user != null) {
+      _lastActivity = DateTime.now();
+      logger.d('User activity updated for session management');
+    }
+  }
+
+  /// Check if user should be forced to re-authenticate for secure operations
+  bool shouldRequireReauth() {
+    if (!_isSessionActive || _lastActivity == null || user == null) {
+      return true;
+    }
+
+    final now = DateTime.now();
+    final timeSinceLastActivity = now.difference(_lastActivity!);
+    const reauthThreshold = Duration(
+        minutes: 5); // Require reauth after 5 minutes for sensitive operations
+
+    return timeSinceLastActivity > reauthThreshold;
+  }
+
+  /// Get session information for debugging
+  Map<String, dynamic> getSessionInfo() {
+    return {
+      'isSessionActive': _isSessionActive,
+      'isSessionValid': isSessionValid,
+      'lastActivity': _lastActivity?.toIso8601String(),
+      'shouldRequireReauth': shouldRequireReauth(),
+      'userId': user?.uid,
+    };
   }
 
   Future<Map<String, dynamic>> isUserSetup() async {
