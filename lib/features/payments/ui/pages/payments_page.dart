@@ -9,6 +9,7 @@ import 'package:nursejoyapp/features/payments/ui/widgets/payments_debug.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math';
+import 'package:rxdart/rxdart.dart'; // Add this import at the top
 
 class PaymentsPage extends StatefulWidget {
   const PaymentsPage({super.key});
@@ -375,136 +376,229 @@ class _PaymentsPageState extends State<PaymentsPage>
 
           const SizedBox(height: 24),
 
-          StreamBuilder<List<Map<String, dynamic>>>(
-            stream: currentUserId != null
-                ? _paymentsData.getUserTransactions(currentUserId!)
-                : const Stream.empty(),
-            builder: (context, snapshot) {
-              if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return SizedBox(
-                  height: 200, // or adjust as needed based on layout
-                  child: const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.access_time, size: 48, color: Colors.grey),
-                        SizedBox(height: 12),
-                        Text(
-                          "No Recent Activity",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
+          Container(
+            margin: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 6,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Title row
+                Row(
+                  children: [
+                    const Icon(Icons.history, color: Color(0xFF58f0d7), size: 22),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Recent Activity',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                     ),
-                  ),
-                );
-              }
-
-              final recent = snapshot.data!.take(3).toList();
-              return Container(
-                margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 6,
-                      offset: const Offset(0, 3),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () {
+                        _mainTabController.animateTo(1); // 1 is the index for Transactions tab
+                      },
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.cyan,
+                        textStyle: const TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      child: const Text('View All', style: TextStyle(color: Color(0xFF58f0d7))),
                     ),
                   ],
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Title Row: Icon + Text + View All
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: const [
-                            Icon(Icons.access_time, size: 20, color: Colors.black87),
-                            SizedBox(width: 8),
-                            Text(
-                              'Recent Activity',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        GestureDetector(
-                          onTap: () => _mainTabController.animateTo(1),
-                          child: const Text(
-                            'View All',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Color(0xFF00BFA6), // Dark cyan
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
+                const SizedBox(height: 10),
+                // Recent items
+                StreamBuilder<List<Map<String, dynamic>>>(
+                  stream: currentUserId != null
+                      ? Rx.combineLatest2(
+                          _paymentsData.getUserTransactions(currentUserId!),
+                          _paymentsData.getAllRefunds(currentUserId!),
+                          (List<Map<String, dynamic>> txs, List<Map<String, dynamic>> refunds) {
+                            for (final r in refunds) {
+                              r['isRefund'] = true;
+                            }
+                            return [...txs, ...refunds];
+                          },
+                        )
+                      : const Stream.empty(),
+                  builder: (context, snapshot) {
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16),
+                        child: Text("No recent activity", style: TextStyle(color: Colors.grey)),
+                      );
+                    }
+                    final items = snapshot.data!;
+                    items.sort((a, b) {
+                      final aTime = a['timestamp'] as Timestamp?;
+                      final bTime = b['timestamp'] as Timestamp?;
+                      return (bTime?.millisecondsSinceEpoch ?? 0)
+                          .compareTo(aTime?.millisecondsSinceEpoch ?? 0);
+                    });
+                    final recent = items.take(3).toList();
 
-                    // Recent Activity List
-                    StreamBuilder<List<Map<String, dynamic>>>(
-                      stream: currentUserId != null
-                          ? _paymentsData.getUserTransactions(currentUserId!)
-                          : const Stream.empty(),
-                      builder: (context, snapshot) {
-                        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                          return const Text("No recent activity");
+                    return Column(
+                      children: recent.map((tx) {
+                        final isRefund = tx['isRefund'] == true;
+                        final isCashIn = tx['status'] == 'Cash In';
+                        final isSent = tx['fromUserId'] == currentUserId;
+                        final isReceived = tx['toUserId'] == currentUserId;
+                        final amount = tx['amount'];
+                        final status = tx['status'] ?? '';
+                        final refundId = tx['refundId'] ?? '';
+                        final fromUserName = tx['fromUserName'] ?? '';
+                        final toUserName = tx['toUserName'] ?? '';
+                        final timestamp = tx['timestamp'];
+                        final formattedDate = timestamp != null && timestamp is Timestamp
+                            ? DateFormat('MMM d, y - h:mm a').format(timestamp.toDate())
+                            : '--';
+
+                        if (isRefund) {
+                          final isIncoming = tx['toUserId'] == currentUserId;
+                          final amountPrefix = isIncoming ? '+' : '-';
+                          final otherUserName = isIncoming ? fromUserName : toUserName;
+                          final refundLabel = (status == 'Approved'
+                            ? (isIncoming ? 'Refunded from $otherUserName' : 'Refunded to $otherUserName')
+                            : (isIncoming ? 'Refund from $otherUserName' : 'Refund to $otherUserName'));
+                          Color statusColor;
+                          IconData icon;
+                          switch (status) {
+                            case 'Approved':
+                              statusColor = Colors.green;
+                              icon = Icons.verified;
+                              break;
+                            case 'Rejected':
+                              statusColor = Colors.red;
+                              icon = Icons.block;
+                              break;
+                            default:
+                              statusColor = Colors.orange;
+                              icon = Icons.hourglass_top;
+                          }
+
+                          return Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Icon(icon, color: statusColor, size: 26),
+                                const SizedBox(width: 10),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Text(
+                                          amountPrefix,
+                                          style: const TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        Text(
+                                          '₱$amount',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: statusColor,
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        status,
+                                        style: const TextStyle(color: Colors.white, fontSize: 12),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      Text(
+                                        refundLabel,
+                                        style: const TextStyle(fontSize: 13, color: Colors.black87),
+                                      ),
+                                      Text(
+                                        formattedDate,
+                                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                                      ),
+                                      Text(
+                                        'Ref: $refundId',
+                                        style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
                         }
 
-                        final recent = snapshot.data!.take(3).toList();
-                        return Column(
-                          children: recent.map((tx) {
-                            final isCashIn = tx['status'] == 'Cash In';
-                            final isSent = tx['fromUserId'] == currentUserId;
-                            final amount = tx['amount'];
-                            return Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 4),
-                              child: ListTile(
-                                contentPadding: EdgeInsets.zero,
-                                leading: Icon(
-                                  isCashIn
-                                      ? Icons.account_balance_wallet
-                                      : isSent
-                                          ? Icons.arrow_upward
-                                          : Icons.arrow_downward,
-                                  color: isCashIn
-                                      ? Colors.green
-                                      : isSent
-                                          ? Colors.red
-                                          : Colors.green,
-                                ),
-                                title: Text(
-                                  '${isCashIn || !isSent ? '+' : '-'}₱$amount',
-                                  style: const TextStyle(fontWeight: FontWeight.bold),
-                                ),
-                                subtitle: Text(
-                                  isCashIn
-                                      ? 'Cash In'
-                                      : isSent
-                                          ? 'Sent to ${tx['toUserName']}'
-                                          : 'Received from ${tx['fromUserName']}',
-                                ),
-                                trailing: Column(
+                        // Regular transaction
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(
+                                isCashIn
+                                    ? Icons.account_balance_wallet
+                                    : isSent
+                                        ? Icons.arrow_upward
+                                        : Icons.arrow_downward,
+                                color: isCashIn
+                                    ? Colors.green
+                                    : isSent
+                                        ? Colors.red
+                                        : Colors.green,
+                                size: 26,
+                              ),
+                              const SizedBox(width: 10),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${isCashIn || !isSent ? '+' : '-'}₱$amount',
+                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    isCashIn
+                                        ? 'Cash In'
+                                        : isSent
+                                            ? 'Sent to $toUserName'
+                                            : 'Received from $fromUserName',
+                                    style: const TextStyle(fontSize: 13, color: Colors.black87),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.end,
-                                  mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     Text(
-                                      tx['timestamp'] != null
-                                          ? DateFormat('MMM d, y - h:mm a').format((tx['timestamp'] as Timestamp).toDate())
-                                          : '--',
-                                      style: const TextStyle(fontSize: 12),
+                                      formattedDate,
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
                                     ),
                                     if (tx['transactionId'] != null)
                                       Text(
@@ -514,16 +608,69 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   ],
                                 ),
                               ),
-                            );
-                          }).toList(),
+                            ],
+                          ),
                         );
-                      },
-                    ),
-                  ],
+
+                        // Regular transaction
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 6),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: [
+                              Icon(
+                                isCashIn
+                                    ? Icons.account_balance_wallet
+                                    : isSent
+                                        ? Icons.arrow_upward
+                                        : Icons.arrow_downward,
+                                color: isCashIn
+                                    ? Colors.green
+                                    : isSent
+                                        ? Colors.red
+                                        : Colors.green,
+                                size: 26,
+                              ),
+                              const SizedBox(width: 10),
+                              Text(
+                                '${isCashIn || !isSent ? '+' : '-'}₱$amount',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      isCashIn
+                                          ? 'Cash In'
+                                          : isSent
+                                              ? 'Sent to $toUserName'
+                                              : 'Received from $fromUserName',
+                                      style: const TextStyle(fontSize: 13, color: Colors.black87),
+                                    ),
+                                    Text(
+                                      formattedDate,
+                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                                    ),
+                                    if (tx['transactionId'] != null)
+                                      Text(
+                                        'Ref: ${tx['transactionId']}',
+                                        style: const TextStyle(fontSize: 10, color: Colors.grey),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    );
+                  },
                 ),
-              );
-            },
-          ),
+              ],
+            ),
+          )
         ],
       ),
     );
@@ -555,30 +702,165 @@ class _PaymentsPageState extends State<PaymentsPage>
       padding: const EdgeInsets.all(8),
       child: StreamBuilder<List<Map<String, dynamic>>>(
         stream: userId != null
-            ? _paymentsData.getUserTransactions(userId)
+            ? Rx.combineLatest2(
+                _paymentsData.getUserTransactions(userId),
+                _paymentsData.getApprovedRefunds(userId),
+                (List<Map<String, dynamic>> txs, List<Map<String, dynamic>> refunds) {
+                  for (final r in refunds) {
+                    r['isRefund'] = true;
+                  }
+                  return [...txs, ...refunds];
+                },
+              )
             : const Stream.empty(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final transactions = snapshot.data!;
-          if (transactions.isEmpty) {
+          final items = snapshot.data!;
+          if (items.isEmpty) {
             return Center(child: _buildEmptyTransactionState());
           }
 
+          // Sort by timestamp descending
+          items.sort((a, b) {
+            final aTime = a['timestamp'] as Timestamp?;
+            final bTime = b['timestamp'] as Timestamp?;
+            return (bTime?.millisecondsSinceEpoch ?? 0)
+                .compareTo(aTime?.millisecondsSinceEpoch ?? 0);
+          });
+
           return ListView.builder(
-            itemCount: transactions.length,
+            itemCount: items.length,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             itemBuilder: (context, index) {
-              final tx = transactions[index];
+              final tx = items[index];
+              final isRefund = tx['isRefund'] == true;
               final isCashIn = tx['status'] == 'Cash In';
               final isSent = tx['fromUserId'] == userId;
+              final isReceived = tx['toUserId'] == userId;
               final amount = tx['amount'];
+              final status = tx['status'] ?? '';
+              final refundId = tx['refundId'] ?? '';
+              final fromUserName = tx['fromUserName'] ?? '';
+              final toUserName = tx['toUserName'] ?? '';
+              final timestamp = tx['timestamp'];
+              final formattedDate = timestamp != null && timestamp is Timestamp
+                  ? DateFormat('MMM d, y - h:mm a').format(timestamp.toDate())
+                  : '--';
 
+              if (isRefund) {
+                final isIncoming = tx['toUserId'] == userId;
+                final amountPrefix = isIncoming ? '+' : '-';
+                final otherUserName = isIncoming ? (tx['fromUserName'] ?? '--') : (tx['toUserName'] ?? '--');
+                final refundLabel = isIncoming
+                    ? 'Refunded from $otherUserName'
+                    : 'Refunded to $otherUserName';
+                final statusColor = Colors.green; // Approved
+
+                return Container(
+                  margin: const EdgeInsets.symmetric(vertical: 6),
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.05),
+                        blurRadius: 6,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Vertically centered icon
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.verified,
+                              color: isIncoming ? Colors.green : Colors.red,
+                              size: 28,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 10),
+                        // Amount and status
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
+                              children: [
+                                Text(
+                                  amountPrefix,
+                                  style: const TextStyle(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                Text(
+                                  '₱$amount',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: statusColor,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Text(
+                                'Approved',
+                                style: TextStyle(color: Colors.white, fontSize: 12),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(width: 16),
+                        // Trailing info
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                refundLabel,
+                                style: const TextStyle(fontSize: 13, color: Colors.black87),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                formattedDate,
+                                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                              ),
+                              Text(
+                                'Ref: $refundId',
+                                style: const TextStyle(fontSize: 10, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+                // ...existing code...
+              }
+
+              // Regular transactions
               return Container(
                 margin: const EdgeInsets.symmetric(vertical: 6),
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(12),
@@ -612,18 +894,16 @@ class _PaymentsPageState extends State<PaymentsPage>
                     isCashIn
                         ? 'Cash In'
                         : isSent
-                            ? 'Sent to ${tx['toUserName']}'
-                            : 'Received from ${tx['fromUserName']}',
+                            ? 'Sent to $toUserName'
+                            : 'Received from $fromUserName',
                   ),
                   trailing: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        tx['timestamp'] != null
-                            ? DateFormat('MMM d, y - h:mm a').format(
-                                (tx['timestamp'] as Timestamp).toDate(),
-                              )
+                        timestamp != null && timestamp is Timestamp
+                            ? DateFormat('MMM d, y - h:mm a').format(timestamp.toDate())
                             : '--',
                         style: const TextStyle(fontSize: 12),
                       ),
@@ -638,7 +918,6 @@ class _PaymentsPageState extends State<PaymentsPage>
               );
             },
           );
-
         },
       ),
     );
@@ -722,103 +1001,113 @@ class _PaymentsPageState extends State<PaymentsPage>
   }
 
   Widget _buildRefundsView() {
-    final statuses = ['Pending', 'Approved', 'Rejected'];
-    
-    final mockRefunds = List.generate(10, (i) {
-      return {
-        'amount': (i + 1) * 100,
-        'status': statuses[i % statuses.length],
-        'transactionId': 'TXN${DateTime.now().millisecondsSinceEpoch + i}',
-        'timestamp': DateTime.now().subtract(Duration(days: i * 2)),
-      };
-    });
-
-    // Count summary
-    final pendingCount = mockRefunds.where((e) => e['status'] == 'Pending').length;
-    final approvedCount = mockRefunds.where((e) => e['status'] == 'Approved').length;
-    final rejectedCount = mockRefunds.where((e) => e['status'] == 'Rejected').length;
-
-    Color getStatusColor(String status) {
-      switch (status) {
-        case 'Approved':
-          return Colors.green.shade600;
-        case 'Rejected':
-          return Colors.red.shade300;
-        default:
-          return Colors.orange.shade400;
-      }
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+    if (currentUserId == null) {
+      return const Center(child: Text('User not logged in.'));
     }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(12),
-      itemCount: mockRefunds.length + 2, // +2 for counter + Divider
-      itemBuilder: (context, index) {
-        if (index == 0) {
-          final pending = mockRefunds.where((r) => r['status'] == 'Pending').length;
-          final approved = mockRefunds.where((r) => r['status'] == 'Approved').length;
-          final rejected = mockRefunds.where((r) => r['status'] == 'Rejected').length;
-
-          return _buildRefundSummaryCounter(
-            pending: pending,
-            approved: approved,
-            rejected: rejected,
-          );
+    
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('refunds')
+          .where('toUserId', isEqualTo: currentUserId) // optional: filter
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
         }
 
-        if (index == 1) return const SizedBox(height: 8);
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-        final Map<String, dynamic> refund = mockRefunds[index - 2];
-        final amount = refund['amount'] is int ? refund['amount'] as int : 0;
-        final status = refund['status']?.toString() ?? 'Pending';
-        final txnId = refund['transactionId']?.toString() ?? '--';
-        final timestamp = refund['timestamp'];
-        final formattedDate = timestamp is Timestamp
-          ? DateFormat('MMM d, y – h:mm a').format((timestamp as Timestamp).toDate())
-          : timestamp is DateTime
-              ? DateFormat('MMM d, y – h:mm a').format(timestamp as DateTime)
-              : '--';
+        final docs = snapshot.data!.docs;
+        if (docs.isEmpty) {
+          return const Center(child: Text('No refund records.'));
+        }
 
-        return ListTile(
-          leading: const Icon(Icons.money_off, color: Colors.blueGrey),
-          title: Text('₱$amount'),
-          subtitle: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: getStatusColor(status),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  status,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-            ],
-          ),
-          trailing: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                formattedDate,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Ref: $txnId',
-                style: const TextStyle(fontSize: 10, color: Colors.grey),
-              ),
-            ],
-          ),
+        final refunds = docs.map((d) => d.data() as Map<String, dynamic>).toList();
 
+        final pending = refunds.where((r) => r['status'] == 'Pending').length;
+        final approved = refunds.where((r) => r['status'] == 'Approved').length;
+        final rejected = refunds.where((r) => r['status'] == 'Rejected').length;
+
+        Color getStatusColor(String status) {
+          switch (status) {
+            case 'Approved':
+              return Colors.green.shade600;
+            case 'Rejected':
+              return Colors.red.shade300;
+            default:
+              return Colors.orange.shade400;
+          }
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: refunds.length + 2,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return _buildRefundSummaryCounter(
+                pending: pending,
+                approved: approved,
+                rejected: rejected,
+              );
+            }
+
+            if (index == 1) return const SizedBox(height: 8);
+
+            final refund = refunds[index - 2];
+            final amount = refund['amount'] ?? 0;
+            final status = refund['status'] ?? 'Pending';
+            final txnId = refund['refundId'] ?? '--';
+            final timestamp = (refund['timestamp'] as Timestamp?)?.toDate();
+            final formattedDate = timestamp != null
+                ? DateFormat('MMM d, y – h:mm a').format(timestamp)
+                : '--';
+
+            return ListTile(
+              leading: const Icon(Icons.money_off, color: Colors.blueGrey),
+              title: Text('₱$amount'),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: getStatusColor(status),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      status,
+                      style: const TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                ],
+              ),
+              trailing: Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    status == 'Approved'
+                        ? 'Refunded from ${refund['fromUserName'] ?? '--'}'
+                        : 'Refund from ${refund['fromUserName'] ?? '--'}',
+                    style: const TextStyle(fontSize: 13, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(formattedDate, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 2),
+                  Text('Ref: $txnId', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                ],
+              ),
+            );
+          },
         );
-      }
+      },
     );
   }
-
 
   @override
   Widget build(BuildContext context) {

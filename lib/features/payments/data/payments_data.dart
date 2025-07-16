@@ -175,4 +175,75 @@ class PaymentsData {
     await batch.commit();
   }
 
+  Stream<List<Map<String, dynamic>>> getApprovedRefunds(String userId) {
+    final toUserStream = FirebaseFirestore.instance
+        .collection('refunds')
+        .where('status', isEqualTo: 'Approved')
+        .where('toUserId', isEqualTo: userId)
+        .snapshots();
+
+    final fromUserStream = FirebaseFirestore.instance
+        .collection('refunds')
+        .where('status', isEqualTo: 'Approved')
+        .where('fromUserId', isEqualTo: userId)
+        .snapshots();
+
+    return Rx.combineLatest2(
+      toUserStream,
+      fromUserStream,
+      (QuerySnapshot toSnap, QuerySnapshot fromSnap) {
+        final all = [
+          ...toSnap.docs.map((doc) => doc.data() as Map<String, dynamic>),
+          ...fromSnap.docs.map((doc) => doc.data() as Map<String, dynamic>),
+        ];
+        // Remove duplicates by refundId
+        final seen = <String>{};
+        final unique = <Map<String, dynamic>>[];
+        for (final r in all) {
+          final id = r['refundId']?.toString() ?? '';
+          if (!seen.contains(id)) {
+            seen.add(id);
+            unique.add(r);
+          }
+        }
+        return unique;
+      },
+    );
+  }
+
+  Stream<List<Map<String, dynamic>>> getAllRefunds(String userId) {
+    final toUserStream = FirebaseFirestore.instance
+        .collection('refunds')
+        .where('toUserId', isEqualTo: userId)
+        .snapshots();
+
+    final fromUserStream = FirebaseFirestore.instance
+        .collection('refunds')
+        .where('fromUserId', isEqualTo: userId)
+        .snapshots();
+
+    return Rx.combineLatest2(
+      toUserStream,
+      fromUserStream,
+      (QuerySnapshot toSnap, QuerySnapshot fromSnap) {
+        final all = [
+          ...toSnap.docs.map((doc) => doc.data() as Map<String, dynamic>),
+          ...fromSnap.docs.map((doc) => doc.data() as Map<String, dynamic>),
+        ];
+        // Remove duplicates by refundId
+        final seen = <String>{};
+        final unique = <Map<String, dynamic>>[];
+        for (final r in all) {
+          final id = r['refundId']?.toString() ?? '';
+          if (!seen.contains(id)) {
+            seen.add(id);
+            unique.add(r);
+          }
+        }
+        return unique;
+      },
+    );
+  }
 }
+
+

@@ -261,7 +261,7 @@ class DebugButtons extends StatelessWidget {
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 16),
           child: Text(
-            'Refund Requests (Admin Only)',
+            'All Refund Requests (Admin Only)',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
         ),
@@ -318,6 +318,10 @@ class DebugButtons extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text('₱$amount • $status'),
+                              Text('Refunded from ${data['fromUserName'] ?? 'Unknown'}',
+                              style: const TextStyle(fontSize: 13),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 1),
                               Text('Ref: $refundId', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                               Text(formattedDate, style: const TextStyle(fontSize: 11, color: Colors.grey)),
                             ],
