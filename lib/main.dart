@@ -1,6 +1,8 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:nursejoyapp/auth/provider/session_timeout_service.dart';
+import 'package:nursejoyapp/auth/provider/session_activity_detector.dart';
 import 'features/chat/ui/pages/chat_list_page.dart';
 import 'features/dashboard/ui/pages/dashboard_page.dart';
 import 'features/profile/ui/pages/profile_page.dart';
@@ -64,9 +66,21 @@ class StartUpApp extends StatelessWidget {
               home: ErrorScreen(error: snapshot.error.toString()));
         } else {
           final authService = snapshot.data!['authService'] as AuthService;
-          return MultiProvider(providers: [
-            ChangeNotifierProvider<AuthService>.value(value: authService),
-          ], child: MyApp(authService: authService));
+
+          // Create session timeout service
+          final sessionTimeoutService = SessionTimeoutService(authService);
+
+          return MultiProvider(
+            providers: [
+              ChangeNotifierProvider<AuthService>.value(value: authService),
+              ChangeNotifierProvider<SessionTimeoutService>.value(
+                  value: sessionTimeoutService),
+            ],
+            child: MyApp(
+              authService: authService,
+              sessionTimeoutService: sessionTimeoutService,
+            ),
+          );
         }
       },
     );
@@ -92,28 +106,45 @@ class ErrorScreen extends StatelessWidget {
 
 class MyApp extends StatelessWidget {
   final AuthService authService;
+  final SessionTimeoutService sessionTimeoutService;
 
-  const MyApp({super.key, required this.authService});
+  const MyApp({
+    super.key,
+    required this.authService,
+    required this.sessionTimeoutService,
+  });
 
   @override
   Widget build(BuildContext context) {
-    // Create router configuration
-    final appRouter = AppRouter(authService);
+    // Create router configuration with session timeout service
+    final appRouter =
+        AppRouter(authService, sessionTimeoutService: sessionTimeoutService);
 
-    return MaterialApp.router(
-      title: 'NurseJoy',
-      routerConfig: appRouter.router,
-      theme: ThemeData(
-        textTheme: const TextTheme(
-          titleLarge: TextStyle(
-              color: Colors.white,
-              fontSize: 30,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                    color: Colors.black45, offset: Offset(1, 1), blurRadius: 1)
-              ]),
+    return SessionActivityDetector(
+      child: MaterialApp.router(
+        title: 'NurseJoy',
+        routerConfig: appRouter.router,
+        theme: ThemeData(
+          textTheme: const TextTheme(
+            titleLarge: TextStyle(
+                color: Colors.white,
+                fontSize: 30,
+                fontWeight: FontWeight.bold,
+                shadows: [
+                  Shadow(
+                      color: Colors.black45,
+                      offset: Offset(1, 1),
+                      blurRadius: 1)
+                ]),
+          ),
         ),
+        builder: (context, child) {
+          // Initialize session timeout service with context
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            sessionTimeoutService.initialize(context);
+          });
+          return child ?? Container();
+        },
       ),
     );
   }
@@ -194,5 +225,3 @@ Widget buildPage(int index, User? user) {
       return const SizedBox.shrink();
   }
 }
-
-

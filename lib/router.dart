@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/auth/provider/auth_service.dart';
+import 'package:nursejoyapp/auth/provider/session_activity_detector.dart';
+import 'package:nursejoyapp/auth/provider/session_timeout_service.dart';
 import 'package:nursejoyapp/features/chat/ui/pages/chat_list_page.dart';
 import 'package:nursejoyapp/features/chat/ui/pages/chat_room_page.dart';
 import 'package:nursejoyapp/features/dashboard/ui/pages/activity_list.dart';
@@ -28,8 +30,9 @@ import 'package:nursejoyapp/features/payments/ui/pages/payments_page.dart';
 
 class AppRouter {
   final AuthService authService;
+  final SessionTimeoutService? sessionTimeoutService;
 
-  AppRouter(this.authService);
+  AppRouter(this.authService, {this.sessionTimeoutService});
 
   // get the user doc
 
@@ -38,6 +41,11 @@ class AppRouter {
     debugLogDiagnostics: kDebugMode,
     redirect: (context, state) async {
       final isLoggedIn = authService.user != null;
+
+      // Update current route in session timeout service
+      if (sessionTimeoutService != null) {
+        sessionTimeoutService!.setCurrentRoute(state.uri.toString());
+      }
 
       // 1. If the user isn’t logged-in go to /entry (unless they’re already on an auth page)
       final isOnAuthPage = [
@@ -62,6 +70,9 @@ class AppRouter {
           return '/profile-setup';
         }
       }
+
+      // No redirect needed
+      return null;
     },
     routes: [
       // Auth routes
@@ -121,19 +132,24 @@ class AppRouter {
         path: '/viewmap',
         builder: (context, state) => const ViewMapPage(),
       ),
+      // Secure routes - require session validation (TC38 implementation)
       GoRoute(
         path: '/chat',
-        builder: (context, state) => const ChatListPage(),
+        builder: (context, state) => SessionGuard(
+          child: const ChatListPage(),
+        ),
       ),
       GoRoute(
         path: '/chat/:chatRoomID',
         builder: (context, state) {
           final extra = state.extra as Map<String, dynamic>?;
           if (extra != null) {
-            return ChatRoomPage(
-              chatRoomID: state.pathParameters['chatRoomID']!,
-              recipientID: extra['recipientID'] as String,
-              recipientFullName: extra['recipientFullName'] as String,
+            return SessionGuard(
+              child: ChatRoomPage(
+                chatRoomID: state.pathParameters['chatRoomID']!,
+                recipientID: extra['recipientID'] as String,
+                recipientFullName: extra['recipientFullName'] as String,
+              ),
             );
           }
           throw Exception('No extra data found');
@@ -182,7 +198,8 @@ class AppRouter {
       ),
       GoRoute(
         path: '/doctor-list',
-        builder: (context, state) => DoctorList(initialData: state.extra as Map<String, dynamic>),
+        builder: (context, state) =>
+            DoctorList(initialData: state.extra as Map<String, dynamic>),
       ),
       GoRoute(
         path: '/doctor/:doctorId',
@@ -198,18 +215,27 @@ class AppRouter {
         },
       ),
 
-      // Individual feature routes
+      // Profile route - requires re-authentication for sensitive data access
       GoRoute(
         path: '/profile/:userId',
         builder: (context, state) {
           final userId =
               state.pathParameters['userId'] ?? authService.user!.uid;
-          return ProfilePage(userID: userId);
+          return SessionGuard(
+            requireReauth:
+                true, // Require recent authentication for profile access
+            child: ProfilePage(userID: userId),
+          );
         },
       ),
+
+      // Payments route - highly sensitive, requires re-authentication
       GoRoute(
         path: '/payments',
-        builder: (context, state) => const PaymentsPage(),
+        builder: (context, state) => SessionGuard(
+          requireReauth: true,
+          child: const PaymentsPage(),
+        ),
       ),
     ],
   );
