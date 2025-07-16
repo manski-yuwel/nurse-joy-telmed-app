@@ -722,102 +722,102 @@ class _PaymentsPageState extends State<PaymentsPage>
   }
 
   Widget _buildRefundsView() {
-  final statuses = ['Pending', 'Approved', 'Rejected'];
-  
-  final mockRefunds = List.generate(10, (i) {
-    return {
-      'amount': (i + 1) * 100,
-      'status': statuses[i % statuses.length],
-      'transactionId': 'TXN${DateTime.now().millisecondsSinceEpoch + i}',
-      'timestamp': DateTime.now().subtract(Duration(days: i * 2)),
-    };
-  });
+    final statuses = ['Pending', 'Approved', 'Rejected'];
+    
+    final mockRefunds = List.generate(10, (i) {
+      return {
+        'amount': (i + 1) * 100,
+        'status': statuses[i % statuses.length],
+        'transactionId': 'TXN${DateTime.now().millisecondsSinceEpoch + i}',
+        'timestamp': DateTime.now().subtract(Duration(days: i * 2)),
+      };
+    });
 
-  // Count summary
-  final pendingCount = mockRefunds.where((e) => e['status'] == 'Pending').length;
-  final approvedCount = mockRefunds.where((e) => e['status'] == 'Approved').length;
-  final rejectedCount = mockRefunds.where((e) => e['status'] == 'Rejected').length;
+    // Count summary
+    final pendingCount = mockRefunds.where((e) => e['status'] == 'Pending').length;
+    final approvedCount = mockRefunds.where((e) => e['status'] == 'Approved').length;
+    final rejectedCount = mockRefunds.where((e) => e['status'] == 'Rejected').length;
 
-  Color getStatusColor(String status) {
-    switch (status) {
-      case 'Approved':
-        return Colors.green.shade600;
-      case 'Rejected':
-        return Colors.red.shade300;
-      default:
-        return Colors.orange.shade400;
+    Color getStatusColor(String status) {
+      switch (status) {
+        case 'Approved':
+          return Colors.green.shade600;
+        case 'Rejected':
+          return Colors.red.shade300;
+        default:
+          return Colors.orange.shade400;
+      }
     }
-  }
 
-  return ListView.builder(
-    padding: const EdgeInsets.all(12),
-    itemCount: mockRefunds.length + 2, // +2 for counter + Divider
-    itemBuilder: (context, index) {
-      if (index == 0) {
-        final pending = mockRefunds.where((r) => r['status'] == 'Pending').length;
-        final approved = mockRefunds.where((r) => r['status'] == 'Approved').length;
-        final rejected = mockRefunds.where((r) => r['status'] == 'Rejected').length;
+    return ListView.builder(
+      padding: const EdgeInsets.all(12),
+      itemCount: mockRefunds.length + 2, // +2 for counter + Divider
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          final pending = mockRefunds.where((r) => r['status'] == 'Pending').length;
+          final approved = mockRefunds.where((r) => r['status'] == 'Approved').length;
+          final rejected = mockRefunds.where((r) => r['status'] == 'Rejected').length;
 
-        return _buildRefundSummaryCounter(
-          pending: pending,
-          approved: approved,
-          rejected: rejected,
+          return _buildRefundSummaryCounter(
+            pending: pending,
+            approved: approved,
+            rejected: rejected,
+          );
+        }
+
+        if (index == 1) return const SizedBox(height: 8);
+
+        final Map<String, dynamic> refund = mockRefunds[index - 2];
+        final amount = refund['amount'] is int ? refund['amount'] as int : 0;
+        final status = refund['status']?.toString() ?? 'Pending';
+        final txnId = refund['transactionId']?.toString() ?? '--';
+        final timestamp = refund['timestamp'];
+        final formattedDate = timestamp is Timestamp
+          ? DateFormat('MMM d, y – h:mm a').format((timestamp as Timestamp).toDate())
+          : timestamp is DateTime
+              ? DateFormat('MMM d, y – h:mm a').format(timestamp as DateTime)
+              : '--';
+
+        return ListTile(
+          leading: const Icon(Icons.money_off, color: Colors.blueGrey),
+          title: Text('₱$amount'),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 4),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: getStatusColor(status),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  status,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            ],
+          ),
+          trailing: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                formattedDate,
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Ref: $txnId',
+                style: const TextStyle(fontSize: 10, color: Colors.grey),
+              ),
+            ],
+          ),
+
         );
       }
-
-      if (index == 1) return const SizedBox(height: 8);
-
-      final Map<String, dynamic> refund = mockRefunds[index - 2];
-      final amount = refund['amount'] is int ? refund['amount'] as int : 0;
-      final status = refund['status']?.toString() ?? 'Pending';
-      final txnId = refund['transactionId']?.toString() ?? '--';
-      final timestamp = refund['timestamp'];
-      final formattedDate = timestamp is Timestamp
-        ? DateFormat('MMM d, y – h:mm a').format((timestamp as Timestamp).toDate())
-        : timestamp is DateTime
-            ? DateFormat('MMM d, y – h:mm a').format(timestamp as DateTime)
-            : '--';
-
-      return ListTile(
-        leading: const Icon(Icons.money_off, color: Colors.blueGrey),
-        title: Text('₱$amount'),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: getStatusColor(status),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                status,
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ),
-          ],
-        ),
-        trailing: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              formattedDate,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Ref: $txnId',
-              style: const TextStyle(fontSize: 10, color: Colors.grey),
-            ),
-          ],
-        ),
-
-      );
-    }
-  );
-}
+    );
+  }
 
 
   @override

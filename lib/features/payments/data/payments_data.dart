@@ -149,4 +149,30 @@ class PaymentsData {
       return data;
     }).toList();
   }
+
+  //refund a transaction
+  Future<void> processRefund(String docId, {required bool approve}) async {
+    final doc = await FirebaseFirestore.instance.collection('refunds').doc(docId).get();
+    if (!doc.exists) return;
+
+    final data = doc.data()!;
+    final amount = data['amount'];
+    final fromUserId = data['fromUserId'];
+    final toUserId = data['toUserId'];
+
+    final batch = FirebaseFirestore.instance.batch();
+    final refundRef = FirebaseFirestore.instance.collection('refunds').doc(docId);
+
+    if (approve) {
+      final fromRef = FirebaseFirestore.instance.collection('users').doc(fromUserId);
+      final toRef = FirebaseFirestore.instance.collection('users').doc(toUserId);
+
+      batch.update(fromRef, {'balance': FieldValue.increment(-amount)});
+      batch.update(toRef, {'balance': FieldValue.increment(amount)});
+    }
+
+    batch.update(refundRef, {'status': approve ? 'Approved' : 'Rejected'});
+    await batch.commit();
+  }
+
 }
