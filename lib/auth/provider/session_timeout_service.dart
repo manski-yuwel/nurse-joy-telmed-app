@@ -12,9 +12,9 @@ import 'package:go_router/go_router.dart';
 ///
 /// Test Case TC38: Validate session expiration and security after user inactivity
 class SessionTimeoutService extends ChangeNotifier with WidgetsBindingObserver {
-  static const Duration _timeoutDuration = Duration(seconds: 15);
+  static const Duration _timeoutDuration = Duration(minutes: 10);
   static const Duration _warningDuration =
-      Duration(seconds: 10); // Warning at 8 minutes
+      Duration(minutes: 8); // Warning at 8 minutes
 
   final Logger _logger = Logger();
   final AuthService _authService;
