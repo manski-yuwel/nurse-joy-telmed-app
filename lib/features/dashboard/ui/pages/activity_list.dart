@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/doctor/data/doctor_list_data.dart';
 import 'package:nursejoyapp/notifications/notification_service.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
+import 'package:provider/provider.dart';
 
 class ActivityListPage extends StatefulWidget {
   const ActivityListPage({super.key});
@@ -28,13 +30,14 @@ class _ActivityListPageState extends State<ActivityListPage> {
   @override
   Widget build(BuildContext context) {
     final notificationService = NotificationService();
+    final userID = Provider.of<AuthService>(context).user!.uid;
 
     return AppScaffold(
       selectedIndex: 0,
       onItemTapped: _onItemTapped,
       title: 'All Activities',
       body: StreamBuilder<QuerySnapshot>(
-              stream: notificationService.getAllActivities(),
+              stream: notificationService.getActivities(userID),
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   return Center(child: Text('Error: ${snapshot.error}'));

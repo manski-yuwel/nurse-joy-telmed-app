@@ -417,7 +417,16 @@ class _AppEntryState extends State<AppEntry> with TickerProviderStateMixin {
                       isPrimary: true,
                       onPressed: () => context.go('/signin'),
                     ),
-                    const SizedBox(height: 12), // Reduced from 16
+                    const SizedBox(height: 16),
+                    Text(
+                      'New to Nurse Joy? Sign up as:',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
                         Expanded(
