@@ -12,7 +12,6 @@ import 'package:nursejoyapp/auth/provider/auth_service.dart';
 import 'package:nursejoyapp/features/video_call/ui/video_call_page.dart';
 import 'package:nursejoyapp/features/chat/ui/widgets/message_types.dart';
 
-
 class ChatRoomPage extends StatefulWidget {
   final String chatRoomID;
   final String recipientID;
@@ -197,28 +196,37 @@ class _ChatRoomPageState extends State<ChatRoomPage>
     if (timestamp == null) {
       return '';
     }
+
     final now = DateTime.now();
+
     final messageTime = timestamp.toDate();
+
     final difference = now.difference(messageTime);
 
     if (difference.inDays == 0) {
       // Today, show time
+
       return DateFormat('h:mm a').format(messageTime);
     } else if (difference.inDays == 1) {
       // Yesterday
+
       return 'Yesterday, ${DateFormat('h:mm a').format(messageTime)}';
     } else if (difference.inDays < 7) {
       // Within a week
+
       return DateFormat('E, h:mm a').format(messageTime);
     } else {
       // Older
+
       return DateFormat('MMM d, h:mm a').format(messageTime);
     }
   }
 
   Widget _buildMessageItem(DocumentSnapshot message, bool isMe) {
     final messageType = message['message_type'] as String? ?? 'text';
+
     final timestamp = message['timestamp'] as Timestamp?;
+
     final formattedTime = _formatTime(timestamp);
 
     if (messageType == 'video_call') {
@@ -378,8 +386,11 @@ class _ChatRoomPageState extends State<ChatRoomPage>
 
   Widget _buildCallNotificationMessage(DocumentSnapshot message, bool isMe) {
     final callStatus = message['call_status'] ?? 'pending';
+
     final isCaller = message['senderID'] == user!.uid;
+
     final timestamp = message['timestamp'] as Timestamp?;
+
     final formattedTime = _formatTime(timestamp);
 
     return Container(
@@ -461,6 +472,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                       ElevatedButton.icon(
                         onPressed: () {
                           // Update status to accepted
+
                           chatInstance.updateCallStatus(
                               widget.chatRoomID, message.id, 'accepted');
 
@@ -477,6 +489,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                             ),
                           ).then((_) {
                             // Update call status when returning from call
+
                             chatInstance.updateCallStatus(
                                 widget.chatRoomID, message.id, 'ended');
                           });
@@ -495,6 +508,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                       OutlinedButton.icon(
                         onPressed: () {
                           // Decline call
+
                           chatInstance.updateCallStatus(
                               widget.chatRoomID, message.id, 'declined');
                         },
@@ -553,39 +567,6 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildAttachmentOption(
-                      icon: Icons.image,
-                      color: Colors.green,
-                      label: 'Photo',
-                      onTap: () {
-                        // Handle photo attachment
-                        setState(() {
-                          _showAttachmentOptions = false;
-                        });
-                      },
-                    ),
-                    _buildAttachmentOption(
-                      icon: Icons.camera_alt,
-                      color: Colors.purple,
-                      label: 'Camera',
-                      onTap: () {
-                        // Handle camera
-                        setState(() {
-                          _showAttachmentOptions = false;
-                        });
-                      },
-                    ),
-                    _buildAttachmentOption(
-                      icon: Icons.mic,
-                      color: Colors.orange,
-                      label: 'Audio',
-                      onTap: () {
-                        // Handle audio recording
-                        setState(() {
-                          _showAttachmentOptions = false;
-                        });
-                      },
-                    ),
-                    _buildAttachmentOption(
                       icon: Icons.file_present,
                       color: Colors.purple,
                       label: 'Prescription',
@@ -595,16 +576,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                             chatRoomId: widget.chatRoomID,
                             senderId: user!.uid,
                             recipientId: widget.recipientID);
-                        setState(() {
-                          _showAttachmentOptions = false;
-                        });
-                      },
-                    ),
-                    _buildAttachmentOption(
-                      icon: Icons.location_on,
-                      color: Colors.blue,
-                      label: 'Location',
-                      onTap: () {
+
                         setState(() {
                           _showAttachmentOptions = false;
                         });
@@ -665,13 +637,6 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                               // You could implement typing indicator here
                             },
                           ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.emoji_emotions_outlined),
-                          color: Colors.grey.shade700,
-                          onPressed: () {
-                            // Show emoji picker
-                          },
                         ),
                       ],
                     ),
@@ -785,12 +750,15 @@ class _ChatRoomPageState extends State<ChatRoomPage>
   @override
   Widget build(BuildContext context) {
     final auth = Provider.of<AuthService>(context, listen: false);
+
     user = auth.user;
 
     return GestureDetector(
       onTap: () {
         // Dismiss keyboard when tapping outside of text field
+
         FocusScope.of(context).unfocus();
+
         if (_showAttachmentOptions) {
           setState(() {
             _showAttachmentOptions = false;
@@ -870,51 +838,6 @@ class _ChatRoomPageState extends State<ChatRoomPage>
               icon: const Icon(Icons.videocam, color: Colors.black87),
               onPressed: _initiateVideoCall,
             ),
-            IconButton(
-              icon: const Icon(Icons.more_vert, color: Colors.black87),
-              onPressed: () {
-                // Show more options
-                showModalBottomSheet(
-                  context: context,
-                  shape: const RoundedRectangleBorder(
-                    borderRadius:
-                        BorderRadius.vertical(top: Radius.circular(20)),
-                  ),
-                  builder: (context) => Container(
-                    padding: const EdgeInsets.symmetric(vertical: 20),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        ListTile(
-                          leading: const Icon(Icons.person),
-                          title: const Text('View Profile'),
-                          onTap: () {
-                            context.pop();
-                            // Navigate to profile
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.block),
-                          title: const Text('Block User'),
-                          onTap: () {
-                            Navigator.pop(context);
-                            // Block user
-                          },
-                        ),
-                        ListTile(
-                          leading: const Icon(Icons.delete_outline),
-                          title: const Text('Clear Chat'),
-                          onTap: () {
-                            Navigator.pop(context);
-                            // Clear chat
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            ),
           ],
         ),
         body: AnimatedSwitcher(
@@ -922,6 +845,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
           child: Column(
             children: [
               // Date header
+
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 alignment: Alignment.center,
@@ -943,6 +867,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
               ),
 
               // Messages
+
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: Chat().getChatRoomMessages(widget.chatRoomID),
@@ -989,11 +914,16 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                     return AnimationLimiter(
                       child: ListView.builder(
                         controller: _scrollController,
+
                         reverse: true, // Show latest message at bottom
+
                         padding: const EdgeInsets.only(bottom: 8),
+
                         itemCount: messages.length,
+
                         itemBuilder: (context, index) {
                           var message = messages[index];
+
                           bool isMe = message['senderID'] == auth.user!.uid;
 
                           return AnimationConfiguration.staggeredList(
@@ -1014,6 +944,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
               ),
 
               // Typing indicator (placeholder)
+
               if (_isTyping)
                 Container(
                   padding:
@@ -1081,6 +1012,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                 ),
 
               // Message input
+
               _buildMessageInput(),
             ],
           ),
