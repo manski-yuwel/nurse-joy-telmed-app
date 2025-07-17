@@ -27,6 +27,20 @@ class SessionTimeoutService extends ChangeNotifier with WidgetsBindingObserver {
   BuildContext? _context;
   String _currentRoute = '';
 
+  static const List<String> _excludedRoutes = [
+    '/signin',
+    '/entry',
+    '/register',
+    '/securitycheck',
+    '/forgot-password',
+    '/wait-verification',
+    '/profile-setup',
+  ];
+
+  bool get isExcludedRoute {
+    return _excludedRoutes.any((route) => _currentRoute.startsWith(route));
+  }
+
   /// Callback for when session expires
   VoidCallback? onSessionExpired;
 
@@ -75,6 +89,8 @@ class SessionTimeoutService extends ChangeNotifier with WidgetsBindingObserver {
 
     _lastActivity = DateTime.now();
     _isWarningShown = false;
+
+    // Reset timers (which will check if route is excluded)
     _resetTimers();
 
     // Log activity (only in debug mode to avoid spam)
@@ -105,10 +121,16 @@ class SessionTimeoutService extends ChangeNotifier with WidgetsBindingObserver {
   void _resetTimers() {
     _cancelTimers();
 
-    // Set warning timer (8 minutes)
+    // Don't set timers if on excluded routes
+    if (isExcludedRoute) {
+      _logger.d('Route $_currentRoute is excluded from timeout');
+      return;
+    }
+
+    // Set warning timer
     _warningTimer = Timer(_warningDuration, _showSessionWarning);
 
-    // Set session timeout timer (10 minutes)
+    // Set session timeout timer
     _sessionTimer = Timer(_timeoutDuration, _handleSessionTimeout);
   }
 
