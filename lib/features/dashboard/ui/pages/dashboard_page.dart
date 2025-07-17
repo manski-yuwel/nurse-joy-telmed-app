@@ -266,6 +266,7 @@ class _DashboardPageState extends State<DashboardPage> {
       final doctorUserDetails = await getUserDetails(body['doctorID']);
       // convert to map
       final doctorUserDetailsMap = doctorUserDetails.data() as Map<String, dynamic>;
+      print(doctorUserDetailsMap);
       if (context.mounted) {
         context.push(
           '/user-appointment-detail/${body['id']}',
