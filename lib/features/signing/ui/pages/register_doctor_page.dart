@@ -19,7 +19,9 @@ class RegisterDoctorPage extends StatefulWidget {
 
 class _RegisterDoctorPageState extends State<RegisterDoctorPage>
     with TickerProviderStateMixin {
-  final _formKey = GlobalKey<FormBuilderState>();
+  final _formKeyStep1 = GlobalKey<FormBuilderState>();
+  final _formKeyStep2 = GlobalKey<FormBuilderState>();
+  Map<String, dynamic> _formData = {};
   bool _agreedToTOS = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -97,7 +99,8 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
         _showSnackBar("You must agree to the Terms and Privacy Policy", Colors.red);
         return;
       }
-      if (_formKey.currentState?.saveAndValidate() ?? false) {
+      if (_formKeyStep1.currentState?.saveAndValidate() ?? false) {
+        _formData.addAll(_formKeyStep1.currentState!.value);
         setState(() {
           _currentStep = 1;
         });
@@ -107,6 +110,8 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
 
   void _previousStep() {
     if (_currentStep > 0) {
+      _formKeyStep2.currentState?.save();
+      _formData.addAll(_formKeyStep2.currentState!.value);
       setState(() {
         _currentStep--;
       });
@@ -131,6 +136,7 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
     }
   }
 
+
   Future<void> _pickEducationFile() async {
     try {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
@@ -149,8 +155,11 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
     }
   }
 
+
+
+
   Future<void> _registerDoctor() async {
-    if (!(_formKey.currentState?.saveAndValidate() ?? false)) {
+    if (!(_formKeyStep2.currentState?.saveAndValidate() ?? false)) {
       return;
     }
 
@@ -171,28 +180,26 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
 
     try {
       final auth = Provider.of<AuthService>(context, listen: false);
-      final formData = _formKey.currentState!.value;
+      _formData.addAll(_formKeyStep2.currentState!.value);
 
       // Get form values
-      final email = formData[emailField]?.toString() ?? '';
-      final password = formData[passwordField]?.toString() ?? '';
-      final firstName = formData[firstNameField]?.toString() ?? '';
-      final lastName = formData[lastNameField]?.toString() ?? '';
+      final email = _formData[emailField]?.toString() ?? '';
+      final password = _formData[passwordField]?.toString() ?? '';
+      final firstName = _formData[firstNameField]?.toString() ?? '';
+      final lastName = _formData[lastNameField]?.toString() ?? '';
 
       // Doctor specific details
       final doctorDetails = {
-        'specialization': formData[specializationField],
-        'license_number': formData[licenseNumberField],
+        'specialization': _formData[specializationField],
+        'license_number': _formData[licenseNumberField],
         'years_of_experience':
-            int.tryParse(formData[yearsOfExperienceField]?.toString() ?? '0') ??
+            int.tryParse(_formData[yearsOfExperienceField]?.toString() ?? '0') ??
                 0,
-        'education': formData[educationField],
-        'hospital_affiliation': formData[hospitalAffiliationField],
+        'education': _formData[educationField],
+        'hospital_affiliation': _formData[hospitalAffiliationField],
         'consultation_fee': double.tryParse(
-                formData[consultationFeeField]?.toString() ?? '0') ??
+                _formData[consultationFeeField]?.toString() ?? '0') ??
             0,
-        'license_file': _licenseFile?.path,
-        'education_file': _educationFile?.path,
       };
 
       if (email.isEmpty || password.isEmpty) {
@@ -207,6 +214,8 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
         firstName: firstName,
         lastName: lastName,
         doctorDetails: doctorDetails,
+        licenseFile: _licenseFile!,
+        educationFile: _educationFile!,
       );
 
       if (res == 'Success') {
@@ -364,7 +373,10 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
   }
 
   Widget _buildCredentialsForm() {
-    return Column(
+    return FormBuilder(
+      key: _formKeyStep1,
+      initialValue: _formData,
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
@@ -441,7 +453,7 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
             });
           },
           validator: (value) {
-            if (value != _formKey.currentState?.fields[passwordField]?.value) {
+            if (value != _formKeyStep1.currentState?.fields[passwordField]?.value) {
               return 'Passwords do not match';
             }
             return null;
@@ -525,12 +537,15 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
           ),
         ),
       ],
-    );
+    ));
   }
 
   Widget _buildProfessionalDetailsForm() {
     final specializations = getSpecializations();
-    return Column(
+    return FormBuilder(
+      key: _formKeyStep2,
+      initialValue: _formData,
+      child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
@@ -720,7 +735,7 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
             ),
           ],
         ),
-      ],
+      ]),
     );
   }
 
@@ -797,9 +812,7 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
                           topRight: Radius.circular(30),
                         ),
                       ),
-                      child: FormBuilder(
-                        key: _formKey,
-                        child: SingleChildScrollView(
+                      child: SingleChildScrollView(
                           padding: const EdgeInsets.all(24.0),
                           child: AnimationLimiter(
                             child: Column(
@@ -819,7 +832,6 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
                             ),
                           ),
                         ),
-                      ),
                     ),
                   ),
                 ],

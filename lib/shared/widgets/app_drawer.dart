@@ -198,6 +198,12 @@ class _AppDrawerState extends State<AppDrawer> with TickerProviderStateMixin {
                                   onTap: () => context.go('/profile-setup/doctor'),
                                 ),
                                 _buildModernMenuItem(
+                                  icon: Icons.verified_user_outlined,
+                                  title: 'Doctor Applications',
+                                  subtitle: 'Review and approve doctors',
+                                  onTap: () => context.go('/admin/applications'),
+                                ),
+                                _buildModernMenuItem(
                                   icon: Icons.attach_money_rounded,
                                   title: 'Payments',
                                   subtitle: 'Manage Transactions',

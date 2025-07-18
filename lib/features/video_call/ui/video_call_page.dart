@@ -31,13 +31,24 @@ class _VideoCallPageState extends State<VideoCallPage> {
   bool _videoDisabled = false;
   bool _isInitialized = false;
   final logger = Logger();
+  String _otherUserName = 'Loading...'; // New state variable
+
   @override
   void initState() {
     super.initState();
-    // Set up callbacks first to avoid race conditions
     _setupCallbacks();
-    // Then, start the call
+    _loadOtherUserName(); // Load the other user's name
     _startCall();
+  }
+
+  Future<void> _loadOtherUserName() async {
+    final String userIdToFetch = widget.isInitiator ? widget.calleeID : widget.callerID;
+    final String? name = await _videoCallService.getUserDetails(userIdToFetch);
+    if (mounted) {
+      setState(() {
+        _otherUserName = name ?? 'Unknown User';
+      });
+    }
   }
 
   void _setupCallbacks() {
@@ -187,8 +198,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-            'Call with ${widget.isInitiator ? widget.calleeID : widget.callerID}'),
+        title: Text('Call with $_otherUserName'),
         backgroundColor: const Color(0xFF58f0d7),
         centerTitle: true,
       ),

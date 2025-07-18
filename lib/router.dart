@@ -26,7 +26,10 @@ import 'package:nursejoyapp/features/entry/ui/app_entry.dart';
 import 'package:nursejoyapp/features/ai/joy_ai_chat.dart';
 import 'package:nursejoyapp/main.dart';
 import 'package:flutter/foundation.dart';
-import 'package:nursejoyapp/features/payments/ui/pages/payments_page.dart';
+import 'package:nursejoyapp/features/admin/ui/pages/doctor_application_details_page.dart';
+import 'package:nursejoyapp/features/admin/ui/pages/doctor_applications_page.dart';
+
+import 'features/payments/ui/pages/payments_page.dart';
 
 class AppRouter {
   final AuthService authService;
@@ -57,6 +60,14 @@ class AppRouter {
       if (!isLoggedIn && !isOnAuthPage) return '/entry';
 
       if (isLoggedIn) {
+        final userDoc = await FirebaseFirestore.instance.collection('users').doc(authService.user!.uid).get();
+        final userData = userDoc.data();
+        final userRole = userData?['role'];
+
+        if (state.uri.toString().startsWith('/admin') && userRole != 'admin') {
+          return '/home'; // Or any other non-admin page
+        }
+
         final setup = await authService.isUserSetup();
 
         if (setup['is_doctor'] == true) {
@@ -227,6 +238,17 @@ class AppRouter {
             child: ProfilePage(userID: userId),
           );
         },
+      ),
+
+      GoRoute(
+        path: '/admin/applications',
+        builder: (context, state) => const DoctorApplicationsPage(),
+      ),
+      GoRoute(
+        path: '/admin/applications/:doctorId',
+        builder: (context, state) => DoctorApplicationDetailsPage(
+          doctorId: state.pathParameters['doctorId']!,
+        ),
       ),
 
       // Payments route - highly sensitive, requires re-authentication
