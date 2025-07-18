@@ -633,69 +633,12 @@ class _JoyAIChatState extends State<JoyAIChat>
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            _buildSuggestedQuestions(),
           ],
         ),
       ),
     );
   }
 
-  /// Build suggested questions for better UX
-  Widget _buildSuggestedQuestions() {
-    final suggestions = [
-      'What are you feeling?',
-      'What are your symptoms?',
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Try asking:',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: Colors.grey.shade700,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: suggestions.map((suggestion) {
-            return GestureDetector(
-              onTap: () {
-                _messageController.text = suggestion;
-                _sendMessage();
-              },
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF58f0d7).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: const Color(0xFF58f0d7).withOpacity(0.3),
-                  ),
-                ),
-                child: Text(
-                  suggestion,
-                  style: const TextStyle(
-                    color: Color(0xFF58f0d7),
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
-        ),
-      ],
-    );
-  }
 
   /// Format timestamp for display
   String _formatTimestamp(DateTime timestamp) {

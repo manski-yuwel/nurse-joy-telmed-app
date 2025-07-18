@@ -101,18 +101,13 @@ class _AppScaffoldState extends State<AppScaffold> {
       toolbarHeight: 65,
       // `leading` is the conventional place for a menu or back button.
       // AppBar will automatically show a back button on navigation if this is null.
-      leading: Builder(
-        builder: (BuildContext innerContext) { // <-- This is a new context UNDER the Scaffold
-          return _buildAppBarButton(
-            icon: widget.showBackButton
-                ? Icons.arrow_back_ios_new_rounded
-                : Icons.menu_rounded,
-            onPressed: widget.showBackButton
-                ? (widget.onBackPressed ?? () => context.pop())
-            // Use the new `innerContext` to find the Scaffold
-                : () => Scaffold.of(innerContext).openDrawer(),
-          );
-        },
+      leading: _buildAppBarButton(
+        icon: widget.showBackButton
+            ? Icons.arrow_back_ios_new_rounded
+            : Icons.menu_rounded,
+        onPressed: widget.showBackButton
+            ? (widget.onBackPressed ?? () => context.pop())
+            : () => Scaffold.of(context).openDrawer(),
       ),
       leadingWidth: _responsiveSize(80),
       title: Text(
