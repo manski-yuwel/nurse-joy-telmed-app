@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import 'package:nursejoyapp/features/admin/data/admin_service.dart';
 import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
 
 class DoctorApplicationDetailsPage extends StatefulWidget {
   final String doctorId;
@@ -18,6 +21,16 @@ class _DoctorApplicationDetailsPageState
     extends State<DoctorApplicationDetailsPage> {
   final AdminService _adminService = AdminService();
   bool _isLoading = false;
+
+  void _onItemTapped(int index) {
+    if (index == 0) {
+      context.go('/chat');
+    } else if (index == 1) {
+      context.go('/home');
+    } else if (index == 2) {
+      context.go('/profile');
+    }
+  }
 
   Future<void> _updateStatus(String status) async {
     setState(() {
@@ -40,6 +53,36 @@ class _DoctorApplicationDetailsPageState
     }
   }
 
+  Future<void> _downloadFile(String url, String fileName) async {
+    setState(() {
+      _isLoading = true;
+    });
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode == 200) {
+        final directory = await getApplicationDocumentsDirectory();
+        final filePath = '${directory.path}/$fileName';
+        final file = File(filePath);
+        await file.writeAsBytes(response.bodyBytes);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Downloaded $fileName to ${directory.path}')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to download $fileName: ${response.statusCode}')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error downloading file: $e')),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return AppScaffold(
@@ -47,6 +90,7 @@ class _DoctorApplicationDetailsPageState
        selectedIndex: 0,
       onItemTapped: (index) {
         // Handle navigation
+        _onItemTapped(index);
       },
       body: FutureBuilder<DocumentSnapshot>(
         future: FirebaseFirestore.instance
@@ -76,8 +120,10 @@ class _DoctorApplicationDetailsPageState
                 Center(
                   child: CircleAvatar(
                     radius: 50,
-                    backgroundImage: NetworkImage(data['profile_pic'] ?? ''),
-                    child: data['profile_pic'] == null || data['profile_pic'].isEmpty
+                    backgroundImage: (data['profile_pic'] != null && data['profile_pic'].isNotEmpty)
+                        ? NetworkImage(data['profile_pic']) as ImageProvider<Object>?
+                        : null,
+                    child: (data['profile_pic'] == null || data['profile_pic'].isEmpty)
                         ? const Icon(Icons.person, size: 50)
                         : null,
                   ),
@@ -157,18 +203,16 @@ class _DoctorApplicationDetailsPageState
           InkWell(
             onTap: () async {
               if (url.isNotEmpty) {
-                final uri = Uri.parse(url);
-                if (await canLaunchUrl(uri)) {
-                  await launchUrl(uri);
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Could not launch $url')),
-                  );
-                }
+                final fileName = url.split('/').last;
+                await _downloadFile(url, fileName);
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Document not provided.')),
+                );
               }
             },
             child: Text(
-              url.isNotEmpty ? 'View Document' : 'Not Provided',
+              url.isNotEmpty ? 'Download Document' : 'Not Provided',
               style: TextStyle(
                 color: url.isNotEmpty ? Colors.blue : Colors.grey,
                 decoration: url.isNotEmpty ? TextDecoration.underline : null,

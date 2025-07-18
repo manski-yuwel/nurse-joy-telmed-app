@@ -7,8 +7,21 @@ import 'package:nursejoyapp/shared/widgets/app_scaffold.dart';
 class DoctorApplicationsPage extends StatelessWidget {
   const DoctorApplicationsPage({super.key});
 
+
+
+
   @override
   Widget build(BuildContext context) {
+    void onItemTapped(int index) {
+      if (index == 0) {
+        context.go('/chat');
+      } else if (index == 1) {
+        context.go('/home');
+      } else if (index == 2) {
+        context.go('/profile');
+      }
+    }
+
     final AdminService adminService = AdminService();
 
     return AppScaffold(
@@ -16,6 +29,7 @@ class DoctorApplicationsPage extends StatelessWidget {
       selectedIndex: 0,
       onItemTapped: (index) {
         // Handle navigation
+        onItemTapped(index);
       },
       body: StreamBuilder<QuerySnapshot>(
         stream: adminService.getPendingDoctorApplications(),

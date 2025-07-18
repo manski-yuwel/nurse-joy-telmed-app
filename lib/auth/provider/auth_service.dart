@@ -373,7 +373,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
     final filePath = '$userId/${docType}_${DateTime.now().millisecondsSinceEpoch}$fileExt';
     final bytes = await file.readAsBytes();
     await supabase.Supabase.instance.client.storage
-        .from('doctor_documents')
+        .from('doctor-documents')
         .uploadBinary(
           filePath,
           bytes,
@@ -382,7 +382,7 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
             upsert: true,
           ),
         );
-    return supabase.Supabase.instance.client.storage.from('doctor_documents').getPublicUrl(filePath);
+    return supabase.Supabase.instance.client.storage.from('doctor-documents').getPublicUrl(filePath);
   }
 
   Future<void> signOut() async {
