@@ -98,13 +98,21 @@ class _PaymentsPageState extends State<PaymentsPage>
           ElevatedButton(
             onPressed: () async {
               final amount = int.tryParse(_amountController.text.trim());
+
               if (amount != null && amount > 0 && currentUserId != null) {
                 try {
                   await _paymentsData.addMoney(userId: currentUserId!, amount: amount);
+
+                  // Success – close dialog and show snackbar
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Money added successfully!')),
+                  );
                 } catch (e) {
                   if (e is Map && e.containsKey('redirectUrl')) {
                     final redirectUrl = e['redirectUrl'];
-                    Navigator.of(context).pop();
+
+                    Navigator.of(context).pop(); // Close dialog
 
                     final controller = WebViewController()
                       ..setJavaScriptMode(JavaScriptMode.unrestricted)
@@ -113,7 +121,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                         NavigationDelegate(
                           onNavigationRequest: (nav) {
                             if (nav.url.contains('nursejoy/success')) {
-                              Navigator.of(context).pop();
+                              Navigator.of(context).pop(); // Close WebView
                               _paymentsData.addMoney(
                                 userId: currentUserId!,
                                 amount: amount,
@@ -124,7 +132,10 @@ class _PaymentsPageState extends State<PaymentsPage>
                               );
                               return NavigationDecision.prevent;
                             } else if (nav.url.contains('nursejoy/cancel')) {
-                              Navigator.of(context).pop();
+                              Navigator.of(context).pop(); // Close WebView
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Payment cancelled.')),
+                              );
                               return NavigationDecision.prevent;
                             }
                             return NavigationDecision.navigate;
@@ -142,11 +153,17 @@ class _PaymentsPageState extends State<PaymentsPage>
                       ),
                     );
                   } else {
+                    Navigator.of(context).pop(); // Close dialog on non-redirect error
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('Failed to initiate payment: $e')),
                     );
                   }
                 }
+              } else {
+                // Invalid input
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Enter a valid amount.')),
+                );
               }
             },
             child: const Text('Add'),

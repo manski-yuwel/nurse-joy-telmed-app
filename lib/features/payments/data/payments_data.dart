@@ -3,11 +3,14 @@ import 'package:rxdart/rxdart.dart';
 import 'package:nursejoyapp/features/payments/data/paymongo_service.dart';
 
 class PaymentsData {
+  static final PaymentsData _instance = PaymentsData._internal();
+  factory PaymentsData() => _instance;
+
   final FirebaseFirestore _db;
 
-  // Constructor with dependency injection
-  PaymentsData({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
+  bool paymongoEnabled = false;
 
+  PaymentsData._internal({FirebaseFirestore? db}) : _db = db ?? FirebaseFirestore.instance;
 
   // Add a new transaction (stores both user IDs and names)
   Future<void> addTransaction({
@@ -59,10 +62,10 @@ class PaymentsData {
     bool skipRedirect = false,
   }) async {
     //TODO: uncomment to use paymongo
-    // if (!skipRedirect) {
-    //   final redirectUrl = await PayMongoService.createGcashCheckout(amount, userId);
-    //   throw {'redirectUrl': redirectUrl}; // Signal frontend to open WebView
-    // }
+    if (paymongoEnabled && !skipRedirect) {
+      final redirectUrl = await PayMongoService.createGcashCheckout(amount, userId);
+      throw {'redirectUrl': redirectUrl}; // Signal frontend to open WebView
+    }
 
     // If redirected back successfully, add balance
     final userRef = _db.collection('users').doc(userId);
