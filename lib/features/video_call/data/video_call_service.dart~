@@ -30,7 +30,7 @@ class VideoCallService {
 
   // Generate channel name using the chat room id
   String generateChannelName(String chatRoomID) {
-    return chatRoomID;
+    return 'nursejoy_$chatRoomID';
   }
 
   // generate token for the call
