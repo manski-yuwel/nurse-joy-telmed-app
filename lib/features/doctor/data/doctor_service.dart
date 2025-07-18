@@ -103,11 +103,12 @@ class DoctorService {
   }
 
   Future<void> registerAppointment(
-      String doctorId, String patientId, DateTime appointmentDateTime) async {
+      String doctorId, String patientId, DateTime appointmentDateTime, int fee) async {
     await firestore.collection('appointments').add({
       'userID': patientId,
       'doctorID': doctorId,
       'appointmentDateTime': appointmentDateTime,
+      'fee': fee,
     });
 
     await dio.post(
@@ -132,6 +133,7 @@ class DoctorService {
     String doctorId,
     String patientId,
     AppointmentBooking booking,
+    int fee,
   ) async {
     try {
       final appointmentData = {
@@ -150,6 +152,7 @@ class DoctorService {
             booking.selectedTimeSlot.startTime.minute,
         'timeSlotEnd': booking.selectedTimeSlot.endTime.hour * 60 +
             booking.selectedTimeSlot.endTime.minute,
+        'fee': fee,
       };
 
       final docRef = await firestore.collection('appointments').add(appointmentData);

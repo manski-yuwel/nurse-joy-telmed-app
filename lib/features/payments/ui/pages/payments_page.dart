@@ -535,7 +535,8 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     children: [
                                       Text(
                                         refundLabel,
-                                        style: const TextStyle(fontSize: 13, color: Colors.black87),
+                                        style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                        textAlign: TextAlign.right,
                                       ),
                                       Text(
                                         formattedDate,
@@ -580,61 +581,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                     '${isCashIn || !isSent ? '+' : '-'}₱$amount',
                                     style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                                   ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    isCashIn
-                                        ? 'Cash In'
-                                        : isSent
-                                            ? 'Sent to $toUserName'
-                                            : 'Received from $fromUserName',
-                                    style: const TextStyle(fontSize: 13, color: Colors.black87),
-                                  ),
                                 ],
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.end,
-                                  children: [
-                                    Text(
-                                      formattedDate,
-                                      style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
-                                    ),
-                                    if (tx['transactionId'] != null)
-                                      Text(
-                                        'Ref: ${tx['transactionId']}',
-                                        style: const TextStyle(fontSize: 10, color: Colors.grey),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        );
-
-                        // Regular transaction
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 6),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Icon(
-                                isCashIn
-                                    ? Icons.account_balance_wallet
-                                    : isSent
-                                        ? Icons.arrow_upward
-                                        : Icons.arrow_downward,
-                                color: isCashIn
-                                    ? Colors.green
-                                    : isSent
-                                        ? Colors.red
-                                        : Colors.green,
-                                size: 26,
-                              ),
-                              const SizedBox(width: 10),
-                              Text(
-                                '${isCashIn || !isSent ? '+' : '-'}₱$amount',
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
@@ -647,7 +594,8 @@ class _PaymentsPageState extends State<PaymentsPage>
                                           : isSent
                                               ? 'Sent to $toUserName'
                                               : 'Received from $fromUserName',
-                                      style: const TextStyle(fontSize: 13, color: Colors.black87),
+                                      style: const TextStyle(fontSize: 12, color: Colors.black87),
+                                      textAlign: TextAlign.right, // <-- add this
                                     ),
                                     Text(
                                       formattedDate,
@@ -808,7 +756,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                                   '₱$amount',
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
-                                    fontSize: 18,
+                                    fontSize: 16,
                                   ),
                                 ),
                               ],
@@ -836,7 +784,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                             children: [
                               Text(
                                 refundLabel,
-                                style: const TextStyle(fontSize: 13, color: Colors.black87),
+                                style: const TextStyle(fontSize: 12, color: Colors.black87),
                               ),
                               const SizedBox(height: 2),
                               Text(
@@ -854,7 +802,6 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ),
                   ),
                 );
-                // ...existing code...
               }
 
               // Regular transactions
@@ -888,19 +835,20 @@ class _PaymentsPageState extends State<PaymentsPage>
                   ),
                   title: Text(
                     '${isCashIn || !isSent ? '+' : '-'}₱$amount',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  subtitle: Text(
-                    isCashIn
-                        ? 'Cash In'
-                        : isSent
-                            ? 'Sent to $toUserName'
-                            : 'Received from $fromUserName',
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16), // ensure fontSize is 16
                   ),
                   trailing: Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      Text(
+                        isCashIn
+                            ? 'Cash In'
+                            : isSent
+                                ? 'Sent to $toUserName'
+                                : 'Received from $fromUserName',
+                        style: const TextStyle(fontSize: 12, color: Colors.black87),
+                      ),
                       Text(
                         timestamp != null && timestamp is Timestamp
                             ? DateFormat('MMM d, y - h:mm a').format(timestamp.toDate())
@@ -915,8 +863,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     ],
                   ),
                 ),
-              );
-            },
+              );            },
           );
         },
       ),
@@ -985,12 +932,9 @@ class _PaymentsPageState extends State<PaymentsPage>
             ),
           ],
         ),
-
       ),
     );
   }
-
-
 
   Widget _divider() {
     return Container(
@@ -1067,7 +1011,18 @@ class _PaymentsPageState extends State<PaymentsPage>
                 : '--';
 
             return ListTile(
-              leading: const Icon(Icons.money_off, color: Colors.blueGrey),
+              leading: Icon(
+                status == 'Approved'
+                    ? Icons.verified
+                    : status == 'Rejected'
+                        ? Icons.block
+                        : Icons.hourglass_top,
+                color: status == 'Approved'
+                    ? Colors.green
+                    : status == 'Rejected'
+                        ? Colors.red
+                        : Colors.orange,
+              ),
               title: Text('₱$amount'),
               subtitle: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -1094,7 +1049,7 @@ class _PaymentsPageState extends State<PaymentsPage>
                     status == 'Approved'
                         ? 'Refunded from ${refund['fromUserName'] ?? '--'}'
                         : 'Refund from ${refund['fromUserName'] ?? '--'}',
-                    style: const TextStyle(fontSize: 13, color: Colors.black87),
+                    style: const TextStyle(fontSize: 12, color: Colors.black87),
                   ),
                   const SizedBox(height: 2),
                   Text(formattedDate, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),

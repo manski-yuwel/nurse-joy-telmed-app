@@ -148,6 +148,7 @@ Future<void> registerEnhancedAppointment(
   String doctorId, 
   String patientId, 
   AppointmentBooking booking,
+  int fee,
 ) async {
   try {
     final appointmentData = {
@@ -165,6 +166,7 @@ Future<void> registerEnhancedAppointment(
       'dayOfWeek': booking.selectedDay.date.weekday,
       'timeSlotStart': booking.selectedTimeSlot.startTime.hour * 60 + booking.selectedTimeSlot.startTime.minute,
       'timeSlotEnd': booking.selectedTimeSlot.endTime.hour * 60 + booking.selectedTimeSlot.endTime.minute,
+      'fee': fee,
     };
 
     print(appointmentData);
