@@ -5,9 +5,9 @@ import 'package:intl/intl.dart';
 
 class DebugButtons extends StatelessWidget {
   final String? currentUserId;
-
+  final ValueNotifier<bool> paymongoToggle = ValueNotifier(PaymentsData().paymongoEnabled);
   DebugButtons({super.key, required this.currentUserId});
-
+  
   final PaymentsData _paymentsData = PaymentsData();
 
   @override
@@ -295,6 +295,20 @@ class DebugButtons extends StatelessWidget {
           },
         ),
         const SizedBox(height: 16),
+        ValueListenableBuilder<bool>(
+          valueListenable: paymongoToggle,
+          builder: (context, value, _) {
+            return SwitchListTile(
+              title: const Text('Enable PayMongo (GCash Checkout)'),
+              subtitle: Text(value ? 'Payments will go through WebView' : 'Debug/manual top-up only'),
+              value: value,
+              onChanged: (newValue) {
+                PaymentsData().paymongoEnabled = newValue;
+                paymongoToggle.value = newValue;
+              },
+            );
+          },
+        ),
 
         const Padding(
           padding: EdgeInsets.symmetric(vertical: 16),
