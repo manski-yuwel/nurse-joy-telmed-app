@@ -165,6 +165,8 @@ class _DashboardPageState extends State<DashboardPage> {
                             itemBuilder: (context, index) {
                               var activity = recentActivities[index].data()
                                   as Map<String, dynamic>;
+                              print(activity['body']);
+                              print(activity['type']);
                               final body = notificationService.resolveActivityBody(
                                   activity['type'], activity['body']);
 
@@ -264,14 +266,18 @@ class _DashboardPageState extends State<DashboardPage> {
   void _handleActivityTap(Map<String, dynamic> body, String type, BuildContext context) async {
     if (type == 'appointment' && body['appointmentId'] != null) {
       final doctorUserDetails = await getUserDetails(body['doctorID']);
-      // convert to map
-      final doctorUserDetailsMap = doctorUserDetails.data() as Map<String, dynamic>;
-      print(doctorUserDetailsMap);
+      final doctorUserDetailsMap = doctorUserDetails.data() as Map<String, dynamic>?;
       if (context.mounted) {
-        context.push(
-          '/user-appointment-detail/${body['appointmentId']}',
-          extra: {'doctorData': doctorUserDetailsMap},
-        );
+        if (doctorUserDetailsMap != null) {
+          context.push(
+            '/user-appointment-detail/${body['appointmentId']}',
+            extra: {'doctorData': doctorUserDetailsMap},
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Doctor details not found.')),
+          );
+        }
       }
     } else if (type == 'message' && body['chatRoomID'] != null) {
       final recipientUserDetails = await getUserDetails(body['senderID']);

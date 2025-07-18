@@ -63,8 +63,10 @@ class _ActivityListPageState extends State<ActivityListPage> {
                   itemCount: activities.length,
                   itemBuilder: (context, index) {
                     final activity = activities[index].data() as Map<String, dynamic>;
+                    print(activity);
                     final body = notificationService.resolveActivityBody(
                         activity['type'], activity['body']);
+                    print(body);
 
                     return Card(
                       margin: const EdgeInsets.only(bottom: 12),
@@ -144,9 +146,18 @@ class _ActivityListPageState extends State<ActivityListPage> {
       BuildContext context, Map<String, dynamic> body, String type) async {
     if (type == 'appointment' && body['appointmentId'] != null) {
       final doctorUserDetails = await getUserDetails(body['doctorID']);
-      final doctorData = doctorUserDetails.data() as Map<String, dynamic>;
+      print(doctorUserDetails);
+      final doctorData = doctorUserDetails.data() as Map<String, dynamic>?; // Make doctorData nullable
+      print(doctorData);
       if (context.mounted) {
-        context.push('/user-appointment-detail/${body['appointmentId']}', extra: {'doctorData': doctorData});
+        if (doctorData != null) {
+          context.push('/user-appointment-detail/${body['appointmentId']}', extra: {'doctorData': doctorData});
+        } else {
+          // Handle the case where doctorData is null, e.g., show an error or a snackbar
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Doctor details not found.')),
+          );
+        }
       }
     } else if (type == 'message' && body['chatRoomID'] != null) {
       debugPrint(body['id']);

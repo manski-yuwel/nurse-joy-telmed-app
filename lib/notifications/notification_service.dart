@@ -54,7 +54,7 @@ class NotificationService {
       case 'appointment':
         return {
           'id': body['id'],
-          'appointmentID': body['appointmentID'],
+          'appointmentId': body['appointmentId'],
           'doctorID': body['doctorID'],
           'appointmentDateTime': body['appointmentDateTime'],
         };
