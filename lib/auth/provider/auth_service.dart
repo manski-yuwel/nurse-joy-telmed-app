@@ -55,6 +55,11 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'is_setup': userData['is_setup'],
         'is_doctor': false,
       };
+    } else if (userData['role'] == 'admin') {
+      return {
+        'is_setup': userData['is_setup'],
+        'is_doctor': false,
+      };
     } else {
       return {
         'is_setup': userData['is_setup'],
