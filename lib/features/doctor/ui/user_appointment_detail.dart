@@ -433,7 +433,7 @@ class _UserAppointmentDetailState extends State<UserAppointmentDetail>
       widget.authService.currentUser!.uid, 
       widget.doctorData['id']
     );
-    context.go('/chat/$chatRoomID', extra: {
+    context.push('/chat/$chatRoomID', extra: {
       'recipientID': widget.doctorData['id'],
       'recipientFullName': '${widget.doctorData['first_name']} ${widget.doctorData['last_name']}',
     });
