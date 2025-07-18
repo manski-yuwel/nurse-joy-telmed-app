@@ -294,7 +294,74 @@ class _UserAppointmentDetailState extends State<UserAppointmentDetail>
 
     try {
       await updateAppointmentStatus(widget.appointmentId, 'cancelled');
-      
+
+      // Fetch appointment details for refund logic
+      final appointmentSnap = await FirebaseFirestore.instance
+          .collection('appointments')
+          .doc(widget.appointmentId)
+          .get();
+      final appointmentData = appointmentSnap.data();
+      if (appointmentData != null) {
+        final status = appointmentData['status'] ?? '';
+        final doctorId = appointmentData['doctorID'] ?? widget.doctorData['id'];
+        final doctorName = widget.doctorData['first_name'] ?? 'Doctor';
+        final patientId = widget.authService.currentUser!.uid;
+        final patientName = widget.authService.currentUser?.displayName ?? 'Patient';
+        final amount = appointmentData['fee'] ?? 0;
+        final appointmentDateTime = (appointmentData['appointmentDateTime'] as Timestamp).toDate();
+        final now = DateTime.now();
+        final diff = appointmentDateTime.difference(now);
+
+        // Only create refund if not a no-show
+        if (status != 'no-show') {
+          int refundAmount = amount;
+          int doctorDeduct = amount;
+          int fee = 0;
+
+          if (diff.inHours < 24) {
+            fee = 15;
+            refundAmount = amount - fee;
+          }
+
+          // Check doctor's balance
+          final docSnap = await FirebaseFirestore.instance.collection('users').doc(doctorId).get();
+          final docBalance = (docSnap.data()?['balance'] ?? 0) as int;
+
+          print('Full doc snapshot: ${docSnap.data()}');
+          print('Doctor balance: $docBalance');
+          print('Doctor ID: $doctorId');
+          print('Refund amount: $refundAmount');
+
+          if (docBalance < doctorDeduct) {
+            _showErrorSnackBar('Doctor\'s balance is insufficient for refund. Please contact support.');
+          } else {
+            try {
+              // Create refund request (pending)
+              final refundRef = FirebaseFirestore.instance.collection('refunds').doc();
+              final refundDoc = {
+                'refundId': refundRef.id,
+                'fromUserId': doctorId,
+                'fromUserName': doctorName,
+                'toUserId': patientId,
+                'toUserName': patientName,
+                'amount': refundAmount,
+                'doctorDeduct': doctorDeduct,
+                'fee': fee,
+                'status': 'Pending',
+                'timestamp': FieldValue.serverTimestamp(),
+                'appointmentId': widget.appointmentId,
+              };
+              await refundRef.set(refundDoc);
+
+              // Show refund request success
+              _showSuccessSnackBar('Refund request submitted successfully');
+            } catch (e) {
+              _showErrorSnackBar('Refund request failed: ${e.toString()}');
+            }
+          }
+        }
+      }
+
       if (mounted) {
         HapticFeedback.lightImpact();
         _showSuccessSnackBar('Appointment cancelled successfully');

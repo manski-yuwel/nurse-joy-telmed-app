@@ -65,6 +65,7 @@ Future<void> _bookAppointment() async {
             widget.doctorId,
             auth.user!.uid,
             booking,
+            widget.doctorDetails['consultation_fee'] ?? 0,
           );
           
           if (!context.mounted) return;

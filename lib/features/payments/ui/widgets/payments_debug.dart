@@ -111,6 +111,25 @@ class DebugButtons extends StatelessWidget {
           label: const Text('Debug: Reset Database Balances'),
           style: ElevatedButton.styleFrom(backgroundColor: const Color.fromARGB(255, 32, 143, 163)),
           onPressed: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Are you sure?'),
+                content: const Text('This action cannot be undone.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('No'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Yes'),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed != true) return;
+
             final users = await FirebaseFirestore.instance.collection('users').get();
             final batch = FirebaseFirestore.instance.batch();
 
@@ -132,6 +151,25 @@ class DebugButtons extends StatelessWidget {
           label: const Text('Debug: Clear All Database Transactions'),
           style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
           onPressed: () async {
+            final confirmed = await showDialog<bool>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: const Text('Are you sure?'),
+                content: const Text('This action cannot be undone.'),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(false),
+                    child: const Text('No'),
+                  ),
+                  ElevatedButton(
+                    onPressed: () => Navigator.of(context).pop(true),
+                    child: const Text('Yes'),
+                  ),
+                ],
+              ),
+            );
+            if (confirmed != true) return;
+
             final txs = await FirebaseFirestore.instance.collection('transactions').get();
             final batch = FirebaseFirestore.instance.batch();
 

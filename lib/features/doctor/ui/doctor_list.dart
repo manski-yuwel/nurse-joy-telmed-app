@@ -404,7 +404,8 @@ class _DoctorListState extends State<DoctorList> with AutomaticKeepAliveClientMi
         final reviewCount = doctorInfo['num_of_ratings'] ?? 0;
         final bio = doctorInfo['bio'] ?? '';
         final consultationFee = doctorInfo['consultation_fee'] ?? 0;
-        final currency = doctorInfo['consultation_currency'] ?? 'PHP';
+        // final currency = doctorInfo['consultation_currency'] ?? 'PHP';
+        const currency = 'PHP';
         final experience = doctorInfo['years_of_experience'] ?? 0;
 
         return Container(

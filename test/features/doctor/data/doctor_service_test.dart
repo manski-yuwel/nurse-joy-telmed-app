@@ -211,7 +211,9 @@ void main() {
         'search_index': ['john', 'doe', 'cardiology'],
       });
 
-      await doctorService.registerEnhancedAppointment(doctorId, patientId, booking);
+      final doctorSnap = await fakeFirestore.collection('users').doc(doctorId).get();
+      final fee = doctorSnap.data()?['consultation_fee'] ?? 0;
+      await doctorService.registerEnhancedAppointment(doctorId, patientId, booking, fee);
 
       final appointments = await fakeFirestore.collection('appointments').get();
       expect(appointments.docs.length, 1);
@@ -310,7 +312,7 @@ void main() {
           options: anyNamed('options'),
         )).thenAnswer((_) async => Response(requestOptions: RequestOptions(path: ''), statusCode: 200));
 
-        await doctorService.registerAppointment(doctorId, patientId, appointmentDateTime);
+        await doctorService.registerAppointment(doctorId, patientId, appointmentDateTime, 500);
 
         final appointments = await fakeFirestore.collection('appointments').get();
         expect(appointments.docs.length, 1);
@@ -332,7 +334,7 @@ void main() {
         );
 
         expect(
-          () => doctorService.registerEnhancedAppointment('non_existent_doctor', 'patient1', booking),
+          () => doctorService.registerEnhancedAppointment('non_existent_doctor', 'patient1', booking, 500),
           throwsA(isA<Exception>()),
         );
       });
