@@ -188,7 +188,7 @@ class _VideoCallPageState extends State<VideoCallPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-            'Call with ${widget.isInitiator ? widget.calleeID : widget.callerID}'),
+            'Call with ${widget.isInitiator ? _videoCallService.getUserDetails(widget.calleeID) : _videoCallService.getUserDetails(widget.callerID)}'),
         backgroundColor: const Color(0xFF58f0d7),
         centerTitle: true,
       ),

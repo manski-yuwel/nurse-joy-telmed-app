@@ -149,6 +149,9 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
     }
   }
 
+
+
+
   Future<void> _registerDoctor() async {
     if (!(_formKey.currentState?.saveAndValidate() ?? false)) {
       return;
@@ -191,8 +194,6 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
         'consultation_fee': double.tryParse(
                 formData[consultationFeeField]?.toString() ?? '0') ??
             0,
-        'license_file': _licenseFile?.path,
-        'education_file': _educationFile?.path,
       };
 
       if (email.isEmpty || password.isEmpty) {
@@ -207,6 +208,8 @@ class _RegisterDoctorPageState extends State<RegisterDoctorPage>
         firstName: firstName,
         lastName: lastName,
         doctorDetails: doctorDetails,
+        licenseFile: _licenseFile!,
+        educationFile: _educationFile!,
       );
 
       if (res == 'Success') {

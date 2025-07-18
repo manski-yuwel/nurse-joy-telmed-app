@@ -268,4 +268,11 @@ class VideoCallService {
       rethrow;
     }
   }
+
+  // get user full name
+  Future<String?> getUserDetails(String userID) async {
+    final userDoc = await _firestore.collection('users').doc(userID).get();
+    final userFullName = userDoc.data()?['full_name'];
+    return userFullName;
+  }
 }

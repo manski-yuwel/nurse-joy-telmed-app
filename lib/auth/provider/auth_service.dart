@@ -1,10 +1,14 @@
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import 'package:nursejoyapp/shared/utils/utils.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' as supabase;
+import 'package:path/path.dart' as path;
 
 final logger = Logger();
 
@@ -251,6 +255,8 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
     required String firstName,
     required String lastName,
     required Map<String, dynamic> doctorDetails,
+    required File licenseFile,
+    required File educationFile,
   }) async {
     try {
       // First register the user account
@@ -265,6 +271,10 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
       final userID = result.user!.uid;
       final fullName = '$firstName $lastName';
       final fullNameLowercase = fullName.toLowerCase();
+
+      // Upload files to Supabase
+      final licenseFileUrl = await _uploadFile(licenseFile, userID, 'license');
+      final educationFileUrl = await _uploadFile(educationFile, userID, 'education');
 
       // Update the user role to doctor
       await db.collection('users').doc(userID).set({
@@ -305,8 +315,8 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'certificates': [],
         'profile_visibility': true,
         'last_active': FieldValue.serverTimestamp(),
-        'license_file_path': doctorDetails['license_file'] ?? '',
-        'education_file_path': doctorDetails['education_file'] ?? '',
+        'license_file': licenseFileUrl,
+        'education_file': educationFileUrl,
       });
 
       await db
@@ -341,8 +351,8 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
         'certificates': [],
         'profile_visibility': true,
         'last_active': FieldValue.serverTimestamp(),
-        'license_file_path': doctorDetails['license_file'] ?? '',
-        'education_file_path': doctorDetails['education_file'] ?? '',
+        'license_file': licenseFileUrl,
+        'education_file': educationFileUrl,
       });
 
       logger.i('Doctor registration completed for user: $userID');
@@ -351,6 +361,23 @@ class AuthService extends ChangeNotifier with WidgetsBindingObserver {
       logger.e('Error registering doctor: $e');
       return e.toString();
     }
+  }
+
+  Future<String> _uploadFile(File file, String userId, String docType) async {
+    final fileExt = path.extension(file.path);
+    final filePath = '$userId/${docType}_${DateTime.now().millisecondsSinceEpoch}$fileExt';
+    final bytes = await file.readAsBytes();
+    await supabase.Supabase.instance.client.storage
+        .from('doctor_documents')
+        .uploadBinary(
+          filePath,
+          bytes,
+          fileOptions: const supabase.FileOptions(
+            cacheControl: '3600',
+            upsert: true,
+          ),
+        );
+    return supabase.Supabase.instance.client.storage.from('doctor_documents').getPublicUrl(filePath);
   }
 
   Future<void> signOut() async {
