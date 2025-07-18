@@ -655,9 +655,7 @@ class _ChatRoomPageState extends State<ChatRoomPage>
                         ),
                         child: IconButton(
                           icon: Icon(
-                            _messageController.text.isEmpty
-                                ? Icons.mic
-                                : Icons.send,
+                            Icons.send_rounded,
                             color: Colors.black87,
                           ),
                           onPressed: _messageController.text.isEmpty
