@@ -441,6 +441,7 @@ class _UserAppointmentDetailState extends State<UserAppointmentDetail>
 
   @override
   Widget build(BuildContext context) {
+    print(widget.doctorData);
     return AppScaffold(
       title: 'Appointment Details',
       selectedIndex: _selectedIndex,
