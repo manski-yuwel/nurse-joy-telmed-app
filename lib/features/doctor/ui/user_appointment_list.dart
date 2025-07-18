@@ -26,6 +26,13 @@ class _UserAppointmentListState extends State<UserAppointmentList>
   late AnimationController _fadeController;
   late AnimationController _calendarController;
   late Animation<double> _fadeAnimation;
+
+  double _responsiveSize(double size) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    // Base screen width for scaling (e.g., iPhone 8 width)
+    const double baseWidth = 375.0;
+    return size * (screenWidth / baseWidth);
+  }
   
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
@@ -620,22 +627,22 @@ class _UserAppointmentListState extends State<UserAppointmentList>
     final specialization = doctorData['specialization'] ?? 'General Practitioner';
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: _responsiveSize(16)),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(_responsiveSize(16)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.08),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: _responsiveSize(10),
+            offset: Offset(0, _responsiveSize(4)),
           ),
         ],
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(_responsiveSize(16)),
           onTap: () {
             HapticFeedback.lightImpact();
             context.push(
@@ -644,13 +651,13 @@ class _UserAppointmentListState extends State<UserAppointmentList>
             );
           },
           child: Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(_responsiveSize(16)),
             child: Column(
               children: [
                 Row(
                   children: [
                     _buildDoctorAvatar(imageUrl),
-                    const SizedBox(width: 16),
+                    SizedBox(width: _responsiveSize(16)),
                     Expanded(
                       child: _buildAppointmentInfo(
                         doctorName,
@@ -659,10 +666,10 @@ class _UserAppointmentListState extends State<UserAppointmentList>
                         status,
                       ),
                     ),
-                    _buildStatusBadge(status),
+
                   ],
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: _responsiveSize(16)),
                 _buildActionButtons(appointment, doctorData, doctorName),
               ],
             ),
@@ -674,26 +681,26 @@ class _UserAppointmentListState extends State<UserAppointmentList>
 
   Widget _buildDoctorAvatar(String imageUrl) {
     return Container(
-      width: 60,
-      height: 60,
+      width: _responsiveSize(60),
+      height: _responsiveSize(60),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(_responsiveSize(12)),
         color: Colors.grey.shade200,
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(_responsiveSize(12)),
         child: imageUrl.isNotEmpty
             ? CachedNetworkImage(
                 imageUrl: imageUrl,
                 fit: BoxFit.cover,
                 placeholder: (context, url) => Container(
                   color: Colors.grey.shade200,
-                  child: const Icon(Icons.person, size: 30),
+                  child: Icon(Icons.person, size: _responsiveSize(30)),
                 ),
                 errorWidget: (context, url, error) => 
-                    const Icon(Icons.person, size: 30),
+                    Icon(Icons.person, size: _responsiveSize(30)),
               )
-            : const Icon(Icons.person, size: 30),
+            : Icon(Icons.person, size: _responsiveSize(30)),
       ),
     );
   }
@@ -709,50 +716,50 @@ class _UserAppointmentListState extends State<UserAppointmentList>
       children: [
         Text(
           'Dr. $doctorName',
-          style: const TextStyle(
-            fontSize: 16,
+          style: TextStyle(
+            fontSize: _responsiveSize(16),
             fontWeight: FontWeight.bold,
             color: Colors.black87,
           ),
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        const SizedBox(height: 4),
+        SizedBox(height: _responsiveSize(4)),
         Text(
           specialization,
-          style: const TextStyle(
+          style: TextStyle(
             color: Color(0xFF58f0d7),
-            fontSize: 14,
+            fontSize: _responsiveSize(14),
             fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: _responsiveSize(8)),
         Row(
           children: [
             Icon(
               Icons.calendar_today_rounded,
-              size: 14,
+              size: _responsiveSize(14),
               color: Colors.grey.shade600,
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: _responsiveSize(4)),
             Text(
               DateFormat('MMM d, y').format(appointmentDateTime),
               style: TextStyle(
-                fontSize: 13,
+                fontSize: _responsiveSize(13),
                 color: Colors.grey.shade600,
               ),
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: _responsiveSize(12)),
             Icon(
               Icons.access_time_rounded,
-              size: 14,
+              size: _responsiveSize(14),
               color: Colors.grey.shade600,
             ),
-            const SizedBox(width: 4),
+            SizedBox(width: _responsiveSize(4)),
             Text(
               DateFormat('h:mm a').format(appointmentDateTime),
               style: TextStyle(
-                fontSize: 13,
+                fontSize: _responsiveSize(13),
                 color: Colors.grey.shade600,
               ),
             ),
@@ -785,19 +792,21 @@ class _UserAppointmentListState extends State<UserAppointmentList>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      padding: EdgeInsets.symmetric(horizontal: _responsiveSize(12), vertical: _responsiveSize(6)),
       decoration: BoxDecoration(
         color: statusColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(_responsiveSize(20)),
         border: Border.all(color: statusColor.withOpacity(0.3)),
       ),
       child: Text(
         statusText,
         style: TextStyle(
           color: statusColor,
-          fontSize: 12,
+          fontSize: _responsiveSize(12),
           fontWeight: FontWeight.w600,
         ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
       ),
     );
   }
@@ -823,19 +832,19 @@ class _UserAppointmentListState extends State<UserAppointmentList>
                 'recipientFullName': doctorName,
               });
             },
-            icon: const Icon(Icons.chat_rounded, size: 18),
-            label: const Text('Chat'),
+            icon: Icon(Icons.chat_rounded, size: _responsiveSize(18)),
+            label: Text('Chat', style: TextStyle(fontSize: _responsiveSize(14))),
             style: OutlinedButton.styleFrom(
               foregroundColor: const Color(0xFF58f0d7),
               side: const BorderSide(color: Color(0xFF58f0d7)),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(_responsiveSize(12)),
               ),
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: EdgeInsets.symmetric(vertical: _responsiveSize(8)),
             ),
           ),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: _responsiveSize(12)),
         Expanded(
           child: ElevatedButton.icon(
             onPressed: () async {
@@ -847,15 +856,15 @@ class _UserAppointmentListState extends State<UserAppointmentList>
                 'userDetails': doctorData,
               });
             },
-            icon: const Icon(Icons.person_rounded, size: 18),
-            label: const Text('Profile'),
+            icon: Icon(Icons.person_rounded, size: _responsiveSize(18)),
+            label: Text('Profile', style: TextStyle(fontSize: _responsiveSize(14))),
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFF58f0d7),
               foregroundColor: Colors.black87,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(_responsiveSize(12)),
               ),
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: EdgeInsets.symmetric(vertical: _responsiveSize(8)),
               elevation: 0,
             ),
           ),
