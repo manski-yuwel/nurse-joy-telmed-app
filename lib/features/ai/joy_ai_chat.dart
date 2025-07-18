@@ -695,14 +695,14 @@ class _JoyAIChatState extends State<JoyAIChat>
                                 ),
                               ),
                       ),
-                      // Message input with top margin for the quick consult button
-                      Container(
-                        margin: const EdgeInsets.only(top: 12),
-                        child: _buildMessageInput(),
-                      ),
-                    ],
+                      ],
                   ),
                 ),
+              ),
+              // Message input with top margin for the quick consult button
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: _buildMessageInput(),
               ),
               // Positioned quick consult button
               if (_messages.isNotEmpty) _buildQuickConsultButton(),
