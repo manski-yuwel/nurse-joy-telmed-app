@@ -146,9 +146,9 @@ class AppRouter {
           if (extra != null) {
             return SessionGuard(
               child: ChatRoomPage(
-                chatRoomID: state.pathParameters['chatRoomID']!,
-                recipientID: extra['recipientID'] as String,
-                recipientFullName: extra['recipientFullName'] as String,
+                  chatRoomID: state.pathParameters['chatRoomID']!,
+                  recipientID: extra['recipientID'] as String,
+                  recipientFullName: extra['recipientFullName'] as String,
               ),
             );
           }

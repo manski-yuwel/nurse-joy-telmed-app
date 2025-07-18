@@ -262,18 +262,18 @@ class _DashboardPageState extends State<DashboardPage> {
 
 
   void _handleActivityTap(Map<String, dynamic> body, String type, BuildContext context) async {
-    if (type == 'appointment' && body['id'] != null) {
+    if (type == 'appointment' && body['appointmentId'] != null) {
       final doctorUserDetails = await getUserDetails(body['doctorID']);
       // convert to map
       final doctorUserDetailsMap = doctorUserDetails.data() as Map<String, dynamic>;
       print(doctorUserDetailsMap);
       if (context.mounted) {
         context.push(
-          '/user-appointment-detail/${body['id']}',
+          '/user-appointment-detail/${body['appointmentId']}',
           extra: {'doctorData': doctorUserDetailsMap},
         );
       }
-    } else if (type == 'message' && body['id'] != null) {
+    } else if (type == 'message' && body['chatRoomID'] != null) {
       final recipientUserDetails = await getUserDetails(body['senderID']);
       final recipientFullName = recipientUserDetails['full_name'];
       if (context.mounted) {

@@ -34,7 +34,9 @@ class _VideoCallPageState extends State<VideoCallPage> {
   @override
   void initState() {
     super.initState();
+    // Set up callbacks first to avoid race conditions
     _setupCallbacks();
+    // Then, start the call
     _startCall();
   }
 
@@ -77,8 +79,10 @@ class _VideoCallPageState extends State<VideoCallPage> {
 
   @override
   void dispose() {
+    // End the call and dispose the service to free up resources
     _videoCallService.endCall(
         widget.chatRoomID, widget.callerID, widget.calleeID);
+    _videoCallService.disposeAgoraEngine(); // Ensure the engine is released
     super.dispose();
   }
 
@@ -86,10 +90,24 @@ class _VideoCallPageState extends State<VideoCallPage> {
   Widget buildVideoView(int uid) {
     if (!_isInitialized) return const CircularProgressIndicator();
 
+    // If video is disabled for the local user, show a placeholder
+    if (uid == 0 && _videoDisabled) {
+      return Container(
+        color: Colors.grey[800],
+        child: const Center(
+          child: Icon(
+            Icons.videocam_off,
+            color: Colors.white,
+            size: 48,
+          ),
+        ),
+      );
+    }
+
     return AgoraVideoView(
       controller: VideoViewController(
         rtcEngine: _videoCallService.engine,
-        canvas: uid == 0 ? const VideoCanvas(uid: 0) : VideoCanvas(uid: uid),
+        canvas: VideoCanvas(uid: uid), // Always use the provided uid
       ),
     );
   }
@@ -117,7 +135,11 @@ class _VideoCallPageState extends State<VideoCallPage> {
             ),
           ),
           RawMaterialButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+              _videoCallService.endCall(
+                  widget.chatRoomID, widget.callerID, widget.calleeID);
+              Navigator.pop(context);
+            },
             shape: const CircleBorder(),
             elevation: 2.0,
             fillColor: Colors.redAccent,
@@ -176,7 +198,11 @@ class _VideoCallPageState extends State<VideoCallPage> {
           // Remote video (full screen)
           if (_users.isNotEmpty)
             Positioned.fill(
-              child: buildVideoView(_users.first),
+              child: buildVideoView(_users.first), // Display the first remote user
+            )
+          else
+            const Center(
+              child: Text('Waiting for the other user to join...'),
             ),
           
           // Local video preview (small window)
