@@ -142,17 +142,18 @@ class _ActivityListPageState extends State<ActivityListPage> {
 
   void _handleActivityTap(
       BuildContext context, Map<String, dynamic> body, String type) async {
-    if (type == 'appointment' && body['id'] != null) {
+    if (type == 'appointment' && body['appointmentId'] != null) {
       final doctorUserDetails = await getUserDetails(body['doctorID']);
       final doctorData = doctorUserDetails.data() as Map<String, dynamic>;
       if (context.mounted) {
-        context.push('/user-appointment-detail/${body['id']}', extra: doctorData);
+        context.push('/user-appointment-detail/${body['appointmentId']}', extra: {'doctorData': doctorData});
       }
-    } else if (type == 'message' && body['id'] != null) {
+    } else if (type == 'message' && body['chatRoomID'] != null) {
+      debugPrint(body['id']);
       final recipientUserDetails = await getUserDetails(body['senderID']);
       final recipientFullName = recipientUserDetails['full_name'];
       if (context.mounted) {
-        context.push('/chat/${body['id']}', extra: {'recipientID': body['senderID'], 'recipientFullName': recipientFullName});
+        context.push('/chat/${body['chatRoomID']}', extra: {'recipientID': body['senderID'], 'recipientFullName': recipientFullName});
       }
     }
   }

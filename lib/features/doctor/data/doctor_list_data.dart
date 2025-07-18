@@ -199,7 +199,25 @@ Future<void> registerEnhancedAppointment(
       patientId,
       'You have a new appointment with $doctorFullName',
       {
-        'id': docRef.id,
+        'appointmentId': docRef.id,
+        'doctorID': doctorId,
+        'patientID': patientId,
+        'appointmentDateTime': booking.appointmentDateTime.toIso8601String(),
+      },
+      'appointment',
+    );
+
+    // get user details
+    final userDoc = await getUserDetails(patientId);
+    final userData = userDoc.data() as Map<String, dynamic>;
+    final userFullName = '${userData['first_name']} ${userData['last_name']}';
+
+    // notify doctor
+    NotificationService().registerActivity(
+      doctorId,
+      'You have a new appointment with $userFullName',
+      {
+        'appointmentId': docRef.id,
         'doctorID': doctorId,
         'patientID': patientId,
         'appointmentDateTime': booking.appointmentDateTime.toIso8601String(),
@@ -245,7 +263,7 @@ Future<void> updateAppointmentStatus(String appointmentId, String status) async 
       doctorId,
       'Your appointment with $userFullName has been updated to $status',
       {
-        'id': appointmentId,
+        'appointmentId': appointmentId,
         'doctorID': doctorId,
         'patientID': userId,
         'appointmentDateTime': dateTime.toIso8601String(),
@@ -257,7 +275,7 @@ Future<void> updateAppointmentStatus(String appointmentId, String status) async 
       userId,
       'Your appointment with ${doctorData['first_name']} ${doctorData['last_name']} has been updated to $status',
       {
-        'id': appointmentId,
+        'appointmentId': appointmentId,
         'doctorID': doctorId,
         'patientID': userId,
         'appointmentDateTime': dateTime.toIso8601String(),
@@ -270,7 +288,7 @@ Future<void> updateAppointmentStatus(String appointmentId, String status) async 
     userId,
     'Your appointment with ${doctorData['first_name']} ${doctorData['last_name']} has been updated to $status',
     {
-      'id': appointmentId,
+      'appointmentId': appointmentId,
       'doctorID': doctorId,
       'patientID': userId,
       'appointmentDateTime': dateTime.toIso8601String(),
@@ -317,7 +335,7 @@ Future<void> rescheduleAppointment({
   required String patientId,
 }) async {
   final appointmentRef = FirebaseFirestore.instance.collection('appointments').doc(appointmentId);
-  
+
   // Get the current appointment data
   final appointmentDoc = await appointmentRef.get();
   if (!appointmentDoc.exists) {
