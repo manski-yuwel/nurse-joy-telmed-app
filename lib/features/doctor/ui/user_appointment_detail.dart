@@ -313,16 +313,22 @@ class _UserAppointmentDetailState extends State<UserAppointmentDetail>
         final diff = appointmentDateTime.difference(now);
 
         // Only create refund if not a no-show
-        if (status != 'no-show') {
-          int refundAmount = amount;
-          int doctorDeduct = amount;
+        if (!appointmentDateTime.isBefore(now)) {
+          int refundAmount = 0;
+          int doctorDeduct = 0;
           int fee = 0;
-
+          
           if (diff.inHours < 24) {
+            // Future appointment but within 24 hours
             fee = 15;
             refundAmount = amount - fee;
+            doctorDeduct = amount;
+          } else {
+            // Future appointment, more than 24 hours
+            refundAmount = amount;
+            doctorDeduct = amount;
           }
-
+          
           // Check doctor's balance
           final docSnap = await FirebaseFirestore.instance.collection('users').doc(doctorId).get();
           final docBalance = (docSnap.data()?['balance'] ?? 0) as int;
